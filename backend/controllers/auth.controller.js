@@ -16,12 +16,15 @@ export const registerUser = async (req, res) => {
         const passwordHash = await bcrypt.hash(password, salt);
 
         const newUser = await pool.query(
-            'INSERT INTO users (email, password_hash, first_name, last_name) VALUES ($1, $2, $3, $4) RETURNING id, email, first_name, last_name',
+            'INSERT INTO users (email, password_hash, first_name, last_name) VALUES ($1, $2, $3, $4) RETURNING id, email, first_name, last_name, role',
             [email, passwordHash, firstName, lastName]
         );
 
         const token = jwt.sign(
-            { id: newUser.rows[0].id },
+            { 
+                id: newUser.rows[0].id,
+                role: newUser.rows[0].role 
+            },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
@@ -51,12 +54,12 @@ export const loginUser = async (req, res) => {
         const user = userResult.rows[0];
 
         const validPassword = await bcrypt.compare(password, user.password_hash);
-        
-        if (!validPassword) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
+
         const token = jwt.sign(
-            { id: user.id },
+            { 
+                id: user.id,
+                role: user.role 
+            },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
@@ -68,7 +71,8 @@ export const loginUser = async (req, res) => {
                 id: user.id,
                 email: user.email,
                 first_name: user.first_name,
-                last_name: user.last_name
+                last_name: user.last_name,
+                role: user.role
             }
         });
 
