@@ -3,16 +3,16 @@ import jwt from 'jsonwebtoken';
 import pool from '../db.js';
 
 export const registerUser = async (req, res) => {
-    const { email, password, firstname, lastname } = request.body;
+    const { email, password, firstName, lastName } = req.body;
 
     try {
-        const userExists = await pool.query('select * from user where email=$1', [email]);
-
+        const userExists = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+        
         if (userExists.rows.length > 0) {
             return res.status(400).json({ error: 'User already exists' });
         }
-
-        const salt = await bcrypt.genSalt(10);
+        const saltRounds = 10;
+        const salt = await bcrypt.genSalt(saltRounds);
         const passwordHash = await bcrypt.hash(password, salt);
 
         const newUser = await pool.query(
@@ -31,18 +31,19 @@ export const registerUser = async (req, res) => {
             token,
             user: newUser.rows[0]
         });
+
     } catch (err) {
         console.error('Error during registration:', err.message);
         res.status(500).json({ error: 'Server error during registration' });
     }
-}
+};
 
 export const loginUser = async (req, res) => {
     const { email, password } = req.body;
 
     try {
         const userResult = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-
+        
         if (userResult.rows.length === 0) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
@@ -50,11 +51,10 @@ export const loginUser = async (req, res) => {
         const user = userResult.rows[0];
 
         const validPassword = await bcrypt.compare(password, user.password_hash);
-
+        
         if (!validPassword) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
-
         const token = jwt.sign(
             { id: user.id },
             process.env.JWT_SECRET,
@@ -75,5 +75,23 @@ export const loginUser = async (req, res) => {
     } catch (err) {
         console.error('Error during login:', err.message);
         res.status(500).json({ error: 'Server error during login' });
+    }
+};
+
+export const getUserProfile = async (req, res) => {
+    try {
+        const userResult = await pool.query(
+            'SELECT id, email, first_name, last_name, created_at FROM users WHERE id = $1', 
+            [req.user.id]
+        );
+
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        res.json(userResult.rows[0]);
+    } catch (err) {
+        console.error('Error fetching user profile:', err.message);
+        res.status(500).json({ error: 'Server error fetching profile' });
     }
 };
