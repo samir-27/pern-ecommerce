@@ -2,19 +2,20 @@ import pool from "../db.js"
 
 export const getCategories = async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM categories ORDER BY name ASC')
-        // console.log(result);
+        const result = await pool.query('SELECT * FROM categories ORDER BY name ASC');
         res.json(result.rows);
-    } catch (error) {
+    } catch (err) {
         console.error('Error fetching categories:', err.message);
         res.status(500).json({ error: 'Server error' });
     }
-}
+};
 
 export const getProducts = async (req, res) => {
     try {
+
         const query = `
-            SELECT p.*, c.name as category_name 
+            SELECT p.*, c.name as category_name,
+                   (SELECT v.image_urls[1] FROM product_variants v WHERE v.product_id = p.id LIMIT 1) as main_image
             FROM products p
             LEFT JOIN categories c ON p.category_id = c.id
             ORDER BY p.created_at DESC
@@ -53,7 +54,6 @@ export const getProductById = async (req, res) => {
         product.variants = variantsResult.rows;
 
         res.json(product);
-        // console.log(product);
     } catch (err) {
         console.error('Error fetching product by ID:', err.message);
         res.status(500).json({ error: 'Server error' });
@@ -61,13 +61,17 @@ export const getProductById = async (req, res) => {
 };
 
 export const createProduct = async (req, res) => {
-    const { category_name, name, description, base_price, variants } = req.body;
+    const { category_name, name, description, base_price, gender, variants } = req.body;
+
     const client = await pool.connect();
 
     try {
         await client.query('BEGIN');
 
-        const categoryResult = await client.query("SELECT id FROM categories WHERE name= $1", [category_name])
+        const categoryResult = await client.query(
+            'SELECT id FROM categories WHERE name = $1',
+            [category_name]
+        );
 
         let category_id;
 
@@ -81,39 +85,39 @@ export const createProduct = async (req, res) => {
             category_id = categoryResult.rows[0].id;
         }
 
-
         const productQuery = `
-            INSERT INTO products (category_id, name, description, base_price) 
-            VALUES ($1, $2, $3, $4) 
+            INSERT INTO products (category_id, name, description, base_price, gender) 
+            VALUES ($1, $2, $3, $4, $5) 
             RETURNING *
         `;
-        const productResult = await client.query(productQuery, [category_id, name, description, base_price]);
+        const productResult = await client.query(productQuery, [category_id, name, description, base_price, gender || 'Unisex']);
         const newProduct = productResult.rows[0];
 
         if (variants && variants.length > 0) {
-            const variantQuery = `
-                INSERT INTO product_variants (product_id, sku, size, color, stock_quantity, price_override)
-                VALUES ($1, $2, $3, $4, $5, $6)
-                RETURNING *
-            `;
-
             const insertedVariants = [];
             for (const variant of variants) {
-                const variantResult = await client.query(variantQuery, [
-                    newProduct.id,
-                    variant.sku,
-                    variant.size,
-                    variant.color,
-                    variant.stock_quantity,
-                    variant.price_override || null
-                ]);
+                const variantResult = await client.query(
+                    `INSERT INTO product_variants (product_id, sku, size, color, stock_quantity, price_override, image_urls)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7)
+                     RETURNING *`, 
+                    [
+                        newProduct.id, 
+                        variant.sku, 
+                        variant.size, 
+                        variant.color, 
+                        variant.stock_quantity, 
+                        variant.price_override || null,
+                        variant.image_urls || [] 
+                    ]
+                );
                 insertedVariants.push(variantResult.rows[0]);
             }
-
+            
             newProduct.variants = insertedVariants;
         }
-        await client.query('COMMIT');
 
+        await client.query('COMMIT');
+        
         res.status(201).json({
             message: 'Product created successfully',
             product: newProduct
@@ -126,5 +130,4 @@ export const createProduct = async (req, res) => {
     } finally {
         client.release();
     }
-
-}
+};
