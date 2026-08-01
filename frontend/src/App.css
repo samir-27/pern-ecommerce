@@ -1,1 +1,14 @@
 @import "tailwindcss";
+
+@theme {
+  /* This is where you declare your 60-30-10 colors! */
+  --color-dominant: #EEEEEE; 
+  --color-secondary: #222831; 
+  --color-accent: #00ADB5;    
+}
+
+/* Optional: Set the global background color of the whole app */
+body {
+  background-color: var(--color-dominant);
+  color: var(--color-secondary);
+}
