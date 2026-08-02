@@ -11,3 +11,8 @@ export const getCategories = async () => {
   const { data } = await api.get("/products/categories");
   return data;
 };
+
+export const getColors = async () => {
+  const { data } = await api.get("/products/colors");
+  return data;
+}

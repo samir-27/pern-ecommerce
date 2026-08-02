@@ -4,6 +4,7 @@ import Sidebar from "../components/Sidebar";
 import {
     getProducts,
     getCategories,
+    getColors,
 } from "../services/ProductService";
 import ProductCard from '../components/ProductCard';
 import { useSearchParams } from 'react-router-dom';
@@ -11,6 +12,7 @@ import { useSearchParams } from 'react-router-dom';
 const ProductsPage = () => {
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
+    const [colors, setColors] = useState([]);
     const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1 });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -21,6 +23,7 @@ const ProductsPage = () => {
     // 2. Read current state directly from URL
     const selectedCategory = searchParams.get('category') || 'All';
     const selectedGender = searchParams.get('gender') || 'All';
+    const selectedColor = searchParams.get('color') || 'All';
     const searchQuery = searchParams.get('search') || '';
     const page = parseInt(searchParams.get('page')) || 1;
 
@@ -37,6 +40,18 @@ const ProductsPage = () => {
     }, []);
 
     useEffect(() => {
+        const fetchColors = async () => {
+            try {
+                const colorData = await getColors();
+                setColors(colorData);
+            } catch (err) {
+                console.error("Failed to load colors", err);
+            }
+        };
+        fetchColors();
+    }, []);
+
+    useEffect(() => {
         const fetchProdData = async () => {
             try {
                 setLoading(true);
@@ -47,6 +62,7 @@ const ProductsPage = () => {
                     limit: 6, // Hardcoded for this preview
                     ...(selectedCategory !== 'All' && { category: selectedCategory }),
                     ...(selectedGender !== 'All' && { gender: selectedGender }),
+                    ...(selectedColor !== 'All' && { color: selectedColor }),
                     ...(searchQuery && { search: searchQuery })
                 };
 
@@ -69,7 +85,7 @@ const ProductsPage = () => {
 
         return () => clearTimeout(delayDebounceFn);
 
-    }, [selectedCategory, selectedGender, searchQuery, page]);
+    }, [selectedCategory, selectedGender,selectedColor, searchQuery, page]);
 
     // 3. Helper to update URL params
     const updateURLParams = (key, value, resetPage = true) => {
@@ -91,18 +107,13 @@ const ProductsPage = () => {
     const handleCategoryChange = (cat) => updateURLParams('category', cat);
     const handleGenderChange = (gen) => updateURLParams('gender', gen);
     const handleSearchChange = (query) => updateURLParams('search', query);
+    const handleColorChange = (color) => updateURLParams('color', color);
     const handlePageChange = (newPage) => updateURLParams('page', newPage, false);
 
     return (
         <div className="bg-dominant min-h-[90vh] pt-12 pb-24">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                
-                <div className="mb-12">
-                    <h1 className="text-4xl font-black text-secondary mb-2">Our Collection</h1>
-                    <p className="text-secondary/60">
-                        {searchParams.toString() ? 'Viewing filtered results.' : 'Discover the latest minimalist essentials.'}
-                    </p>
-                </div>
+            
 
                 <div className="flex flex-col lg:flex-row gap-12">
                     <Sidebar
@@ -110,6 +121,9 @@ const ProductsPage = () => {
                         selectedCategory={selectedCategory}
                         onCategoryChange={handleCategoryChange}
                         selectedGender={selectedGender}
+                        colors={colors}
+                        selectedColor ={selectedColor}
+                        onColorChange = {handleColorChange}
                         onGenderChange={handleGenderChange}
                         searchQuery={searchQuery}
                         onSearchChange={handleSearchChange}
