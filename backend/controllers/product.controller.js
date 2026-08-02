@@ -12,7 +12,7 @@ export const getCategories = async (req, res) => {
 
 export const getProducts = async (req, res) => {
     try {
-        const { search, category, gender, color } = req.query;
+        const { search, category, gender, color,size } = req.query;
 
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 9;
@@ -22,8 +22,8 @@ export const getProducts = async (req, res) => {
         let values = [];
         let paramIndex = 1;
         
-        // We will store the index of the color parameter so we can reuse it securely later!
         let colorParamIndex = null; 
+        let sizeParamIndex = null;
 
         if (category && category !== 'All') {
             conditions.push(`c.name = $${paramIndex}`);
@@ -39,8 +39,6 @@ export const getProducts = async (req, res) => {
 
         if (color && color !== "All") {
             colorParamIndex = paramIndex;
-            // SENIOR TRICK: Use EXISTS instead of a top-level JOIN.
-            // This prevents duplicate rows and completely removes the need for SELECT DISTINCT.
             conditions.push(`
                 EXISTS (
                     SELECT 1 FROM product_variants v 
@@ -49,6 +47,17 @@ export const getProducts = async (req, res) => {
                 )
             `);
             values.push(color);
+            paramIndex++;
+        }
+
+        if(size && size !== 'All') {
+            sizeParamIndex = paramIndex;
+            conditions.push(`EXISTS (
+                SELECT 1 FROM product_variants v
+                WHERE v.product_id = p.id
+                AND LOWER(v.size) = LOWER($${paramIndex})
+            )`);
+            values.push(size);
             paramIndex++;
         }
 
@@ -64,7 +73,7 @@ export const getProducts = async (req, res) => {
 
         const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
-        // Notice: No DISTINCT needed anymore! Much faster.
+
         const countQuery = `
             SELECT COUNT(p.id)
             FROM products p
@@ -85,6 +94,7 @@ export const getProducts = async (req, res) => {
                     FROM product_variants v
                     WHERE v.product_id = p.id
                     ${colorParamIndex ? `AND LOWER(v.color) = LOWER($${colorParamIndex})` : ''}
+                    ${sizeParamIndex ? `AND LOWER(v.size) = LOWER($${sizeParamIndex})` : ''}
                     ORDER BY v.id ASC
                     LIMIT 1
                 ) AS main_image

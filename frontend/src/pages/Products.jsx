@@ -24,6 +24,7 @@ const ProductsPage = () => {
     const selectedCategory = searchParams.get('category') || 'All';
     const selectedGender = searchParams.get('gender') || 'All';
     const selectedColor = searchParams.get('color') || 'All';
+    const selectedSize = searchParams.get('size') || 'All';
     const searchQuery = searchParams.get('search') || '';
     const page = parseInt(searchParams.get('page')) || 1;
 
@@ -63,6 +64,7 @@ const ProductsPage = () => {
                     ...(selectedCategory !== 'All' && { category: selectedCategory }),
                     ...(selectedGender !== 'All' && { gender: selectedGender }),
                     ...(selectedColor !== 'All' && { color: selectedColor }),
+                    ...(selectedSize !== 'All' && { size: selectedSize }),
                     ...(searchQuery && { search: searchQuery })
                 };
 
@@ -85,7 +87,7 @@ const ProductsPage = () => {
 
         return () => clearTimeout(delayDebounceFn);
 
-    }, [selectedCategory, selectedGender,selectedColor, searchQuery, page]);
+    }, [selectedCategory, selectedGender,selectedColor, searchQuery, selectedSize, page]);
 
     // 3. Helper to update URL params
     const updateURLParams = (key, value, resetPage = true) => {
@@ -108,6 +110,7 @@ const ProductsPage = () => {
     const handleGenderChange = (gen) => updateURLParams('gender', gen);
     const handleSearchChange = (query) => updateURLParams('search', query);
     const handleColorChange = (color) => updateURLParams('color', color);
+    const handleSizeChange = (size) => updateURLParams('size', size);
     const handlePageChange = (newPage) => updateURLParams('page', newPage, false);
 
     return (
@@ -121,6 +124,8 @@ const ProductsPage = () => {
                         selectedCategory={selectedCategory}
                         onCategoryChange={handleCategoryChange}
                         selectedGender={selectedGender}
+                        selectedSize={selectedSize}
+                        onSizeChange={handleSizeChange}
                         colors={colors}
                         selectedColor ={selectedColor}
                         onColorChange = {handleColorChange}

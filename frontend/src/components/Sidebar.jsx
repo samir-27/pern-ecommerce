@@ -1,8 +1,9 @@
 import React from 'react';
 import { Search, Filter } from 'lucide-react';
 
-const Sidebar = ({ categories = [], selectedCategory, onCategoryChange, colors = [], selectedColor, onColorChange, selectedGender, onGenderChange, searchQuery, onSearchChange }) => {
+const Sidebar = ({ categories = [], selectedCategory, onCategoryChange, colors = [], selectedColor, onColorChange, selectedGender, selectedSize, onSizeChange, onGenderChange, searchQuery, onSearchChange }) => {
    const genders = ['All', 'Mens', 'Womens', 'Kids', 'Unisex'];
+   const size = ['All', 'S', 'M', 'L', 'XL', 'XXL'];
  
    return (
      <aside className="w-full lg:w-64 flex-shrink-0 lg:pr-8 mb-8 lg:mb-0">
@@ -29,6 +30,23 @@ const Sidebar = ({ categories = [], selectedCategory, onCategoryChange, colors =
                  <input type="radio" name="gender" checked={selectedGender === gender} onChange={() => onGenderChange(gender)} className="w-4 h-4 text-accent bg-dominant border-secondary/30 focus:ring-accent" />
                  <span className={`text-sm transition-colors ${selectedGender === gender ? 'font-bold text-secondary' : 'text-secondary/70 group-hover:text-secondary'}`}>
                    {gender === 'All' ? 'All Genders' : gender}
+                 </span>
+               </label>
+             ))}
+           </div>
+         </div>
+
+         <div>
+           <div className="flex items-center gap-2 mb-4">
+       
+             <h3 className="font-bold text-lg text-secondary">Size</h3>
+           </div>
+           <div className="space-y-2">
+             {size.map((s) => (
+               <label key={s} className="flex items-center space-x-3 cursor-pointer group">
+                 <input type="radio" name="size" checked={selectedSize === s} onChange={() => onSizeChange(s)} className="w-4 h-4 text-accent bg-dominant border-secondary/30 focus:ring-accent" />
+                 <span className={`text-sm transition-colors ${selectedSize === s ? 'font-bold text-secondary' : 'text-secondary/70 group-hover:text-secondary'}`}>
+                   {s}
                  </span>
                </label>
              ))}
