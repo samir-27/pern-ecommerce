@@ -108,7 +108,7 @@ const Sidebar = ({
   );
 
   return (
-    <aside className="w-full lg:w-72 xl:w-80 shrink-0">
+    <aside className="w-full ">
 
       <div className="sticky top-24">
 

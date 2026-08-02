@@ -4,6 +4,7 @@ import Navbar from './components/Navbar'
 import Home from './pages/Home'
 import ProductsPage from './pages/Products'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import ProductDetailsPage from './components/ProductDetail'
 
 function App() {
   const dummyCartCount = 2;
@@ -19,6 +20,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/products" element={<ProductsPage />} />
+                    <Route path="/product/:id" element={<ProductDetailsPage />} />
         </Routes>
         
       </div>

@@ -16,3 +16,8 @@ export const getColors = async () => {
   const { data } = await api.get("/products/colors");
   return data;
 }
+
+export const getProductById = async (id) => {
+    const { data } = await api.get(`/products/${id}`);
+    return data;
+};
