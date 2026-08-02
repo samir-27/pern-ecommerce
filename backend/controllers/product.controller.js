@@ -13,15 +13,76 @@ export const getCategories = async (req, res) => {
 export const getProducts = async (req, res) => {
     try {
 
-        const query = `
+        const { search, category, gender } = req.query;
+        
+
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 9;
+        const offset = (page - 1) * limit;
+
+
+        let conditions = [];
+        let values = [];
+        let paramIndex = 1;
+
+
+        if (category && category !== 'All') {
+            conditions.push(`c.name = $${paramIndex}`);
+            values.push(category);
+            paramIndex++;
+        }
+
+        if (gender && gender !== 'All') {
+            conditions.push(`p.gender = $${paramIndex}`);
+            values.push(gender);
+            paramIndex++;
+        }
+
+        if (search) {
+            conditions.push(`(
+                to_tsvector('english', p.name || ' ' || coalesce(p.description, '')) @@ plainto_tsquery('english', $${paramIndex})
+                OR p.name ILIKE $${paramIndex + 1}
+            )`);
+            values.push(search);           
+            values.push(`%${search}%`);    
+            paramIndex += 2;
+        }
+
+     
+        const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+        const countQuery = `
+            SELECT COUNT(p.id) 
+            FROM products p
+            LEFT JOIN categories c ON p.category_id = c.id
+            ${whereClause}
+        `;
+        const countResult = await pool.query(countQuery, values);
+        const totalItems = parseInt(countResult.rows[0].count);
+        const totalPages = Math.ceil(totalItems / limit);
+
+        const dataQuery = `
             SELECT p.*, c.name as category_name,
                    (SELECT v.image_urls[1] FROM product_variants v WHERE v.product_id = p.id LIMIT 1) as main_image
             FROM products p
             LEFT JOIN categories c ON p.category_id = c.id
+            ${whereClause}
             ORDER BY p.created_at DESC
+            LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
         `;
-        const result = await pool.query(query);
-        res.json(result.rows);
+
+        const dataValues = [...values, limit, offset];
+        const result = await pool.query(dataQuery, dataValues);
+
+        res.json({
+            products: result.rows,
+            pagination: {
+                totalItems,
+                totalPages,
+                currentPage: page,
+                limit
+            }
+        });
     } catch (err) {
         console.error('Error fetching products:', err.message);
         res.status(500).json({ error: 'Server error' });
