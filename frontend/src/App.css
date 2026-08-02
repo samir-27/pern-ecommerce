@@ -1,14 +1,37 @@
 @import "tailwindcss";
 
-@theme {
-  /* This is where you declare your 60-30-10 colors! */
-  --color-dominant: #EEEEEE; 
-  --color-secondary: #222831; 
-  --color-accent: #00ADB5;    
+/* Default Theme */
+@import "tailwindcss";
+
+:root {
+  --dominant: #F4FBFF;
+  --secondary: #243B53;
+  --accent: #38BDF8;
 }
 
-/* Optional: Set the global background color of the whole app */
+@theme {
+  --color-dominant: var(--dominant);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+}
+
+[data-theme="dark"] {
+  --dominant: #0F172A;
+  --secondary: #FFFFFF;
+  --accent: #38BDF8;
+}
+
 body {
-  background-color: var(--color-dominant);
+  background: var(--color-dominant);
   color: var(--color-secondary);
+   transition: opacity .2s ease;
+}
+
+html{
+    transition: background-color .50s ease;
+}
+
+
+body.theme-changing{
+    opacity:.97;
 }

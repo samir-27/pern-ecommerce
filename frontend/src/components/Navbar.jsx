@@ -1,10 +1,22 @@
-import { Menu, Search, ShoppingBag, User, X } from "lucide-react";
-import { useState } from "react";
+import { Menu, Moon, Search, ShoppingBag, Sun, User, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 
 const Navbar = ({ cartItemCount = 0 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+  const [theme, setTheme] = useState(
+    localStorage.getItem("theme") || "light"
+  );
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "light" ? "dark" : "light"));
+  };
 
   return (
     <nav className="bg-dominant sticky top-0 z-50 border-b border-secondary/10">
@@ -43,6 +55,7 @@ const Navbar = ({ cartItemCount = 0 }) => {
             >
               Collections
             </Link>
+
           </div>
 
           {/* Desktop Icons */}
@@ -70,6 +83,10 @@ const Navbar = ({ cartItemCount = 0 }) => {
                 </span>
               )}
             </Link>
+            
+            <button onClick={toggleTheme}>
+              {theme === "light" ? <Moon /> : <Sun />}
+            </button>
           </div>
 
           {/* Mobile Menu Button */}

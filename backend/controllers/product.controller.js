@@ -84,7 +84,6 @@ export const getProducts = async (req, res) => {
         const totalItems = parseInt(countResult.rows[0].count);
         const totalPages = Math.ceil(totalItems / limit);
 
-        // Notice: No DISTINCT here either.
         const dataQuery = `
             SELECT 
                 p.*,
