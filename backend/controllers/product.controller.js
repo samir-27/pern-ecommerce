@@ -12,7 +12,7 @@ export const getCategories = async (req, res) => {
 
 export const getProducts = async (req, res) => {
     try {
-        const { search, category, gender, color,size } = req.query;
+        const { search, category, gender, color, size } = req.query;
 
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 9;
@@ -21,8 +21,8 @@ export const getProducts = async (req, res) => {
         let conditions = [];
         let values = [];
         let paramIndex = 1;
-        
-        let colorParamIndex = null; 
+
+        let colorParamIndex = null;
         let sizeParamIndex = null;
 
         if (category && category !== 'All') {
@@ -50,7 +50,7 @@ export const getProducts = async (req, res) => {
             paramIndex++;
         }
 
-        if(size && size !== 'All') {
+        if (size && size !== 'All') {
             sizeParamIndex = paramIndex;
             conditions.push(`EXISTS (
                 SELECT 1 FROM product_variants v
@@ -120,6 +120,53 @@ export const getProducts = async (req, res) => {
     } catch (err) {
         console.error('Error fetching products:', err.message);
         res.status(500).json({ error: 'Server error' });
+    }
+};
+
+// controllers/productController.js
+
+export const deleteProduct = async (req, res) => {
+    const productId = req.params.id;
+    const client = await pool.connect();
+
+    try {
+        await client.query('BEGIN');
+
+        const productResult = await client.query('SELECT category_id FROM products WHERE id = $1', [productId]);
+        
+        if (productResult.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ error: 'Product not found' });
+        }
+        
+        const categoryId = productResult.rows[0].category_id;
+
+        await client.query('DELETE FROM products WHERE id = $1', [productId]);
+
+
+        const checkCategory = await client.query('SELECT COUNT(*) FROM products WHERE category_id = $1', [categoryId]);
+        
+
+        if (parseInt(checkCategory.rows[0].count) === 0) {
+            await client.query('DELETE FROM categories WHERE id = $1', [categoryId]);
+            console.log(`Category ${categoryId} is empty and was deleted.`);
+        }
+
+        await client.query('COMMIT');
+        res.status(200).json({ message: 'Product and empty category cleaned up successfully' });
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Error deleting product:', err.message);
+        
+        // Handle Foreign Key constraints (if orders exist, we cannot delete the product)
+        if (err.code === '23503') {
+            res.status(400).json({ error: 'Cannot delete: Product is linked to existing orders.' });
+        } else {
+            res.status(500).json({ error: 'Server error' });
+        }
+    } finally {
+        client.release();
     }
 };
 
@@ -236,7 +283,7 @@ export const getColors = async (req, res) => {
             WHERE color IS NOT NULL AND length(TRIM(color)) > 0
             ORDER BY color ASC
         `);
-        
+
         const colors = result.rows.map(row => row.color);
         res.json(colors);
     } catch (err) {
