@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 
 const ProductCard = ({ product }) => {
   const navigate = useNavigate();
-
+  console.log(product.id)
   return (
      <div 
         key={product.id} 

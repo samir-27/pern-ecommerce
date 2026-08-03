@@ -76,7 +76,7 @@ const ProductsPage = () => {
 
                 const params = {
                     page,
-                    limit: 6,
+                    limit: 12,
                     ...(selectedCategory !== 'All' && { category: selectedCategory }),
                     ...(selectedGender !== 'All' && { gender: selectedGender }),
                     ...(selectedColor !== 'All' && { color: selectedColor }),
@@ -267,42 +267,62 @@ const ProductsPage = () => {
                             </div>
                         )}
 
-                         {!loading && !error && products.length > 0 && (
+                        {!loading && !error && products.length > 0 && (
                             <>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8 mb-12">
+                                {/* Responsive product grid:
+                                    2 cols on mobile, 3 on sm, 3 on md, 4 on xl */}
+                                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 md:gap-6 lg:gap-8 mb-8 sm:mb-12">
                                     {products.map(product => (
-                                        <ProductCard
-                                            key={product.id}
-                                            product={product}
-                                        />
+                                        <ProductCard key={product.id} product={product} />
                                     ))}
                                 </div>
+
+                                {/* Pagination */}
                                 {pagination.totalPages > 1 && (
-                                    <div className="flex justify-center items-center space-x-4 border-t border-secondary/10 pt-8">
-                                        <button 
-                                            onClick={() => setPage(prev => Math.max(prev - 1, 1))}
+                                    <div className="flex flex-wrap justify-center items-center gap-3 sm:gap-4 border-t border-secondary/10 pt-6 sm:pt-8 mt-6 sm:mt-12">
+                                        <button
+                                            onClick={() => handlePageChange(Math.max(page - 1, 1))}
                                             disabled={page === 1}
-                                            className={`px-4 py-2 rounded font-semibold transition-colors ${page === 1 ? 'text-secondary/30 cursor-not-allowed' : 'text-secondary bg-secondary/5 hover:bg-secondary/10'}`}
+                                            className={`inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${
+                                                page === 1
+                                                    ? 'text-secondary/30 cursor-not-allowed'
+                                                    : 'text-secondary bg-secondary/5 hover:bg-secondary/10 active:scale-95'
+                                            }`}
                                         >
-                                            Previous
+                                            <ChevronLeft size={18} className="sm:hidden" />
+                                            <span className="hidden sm:inline">Previous</span>
+                                            <span className="sm:hidden">Prev</span>
                                         </button>
-                                        
-                                        <span className="text-secondary/70 font-medium">
-                                            Page <span className="font-bold text-secondary">{pagination.currentPage}</span> of {pagination.totalPages}
+
+                                        <span className="text-secondary/70 font-medium text-sm sm:text-base order-first sm:order-none w-full sm:w-auto text-center">
+                                            Page{' '}
+                                            <span className="font-bold text-secondary">
+                                                {pagination.currentPage}
+                                            </span>{' '}
+                                            of {pagination.totalPages}
                                         </span>
 
-                                        <button 
-                                            onClick={() => setPage(prev => Math.min(prev + 1, pagination.totalPages))}
+                                        <button
+                                            onClick={() =>
+                                                handlePageChange(
+                                                    Math.min(page + 1, pagination.totalPages)
+                                                )
+                                            }
                                             disabled={page === pagination.totalPages}
-                                            className={`px-4 py-2 rounded font-semibold transition-colors ${page === pagination.totalPages ? 'text-secondary/30 cursor-not-allowed' : 'text-secondary bg-secondary/5 hover:bg-secondary/10'}`}
+                                            className={`inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${
+                                                page === pagination.totalPages
+                                                    ? 'text-secondary/30 cursor-not-allowed'
+                                                    : 'text-secondary bg-secondary/5 hover:bg-secondary/10 active:scale-95'
+                                            }`}
                                         >
-                                            Next
+                                            <span className="hidden sm:inline">Next</span>
+                                            <span className="sm:hidden">Next</span>
+                                            <ChevronRight size={18} className="sm:hidden" />
                                         </button>
                                     </div>
                                 )}
                             </>
                         )}
-
                     </main>
                 </div>
             </div>
