@@ -8,8 +8,10 @@ import {
     Package,
 } from 'lucide-react';
 import { getProductById } from '../services/ProductService';
+import { useCart } from '../context/CartContext';
 
 const ProductDetailsPage = () => {
+    const { addToCart } = useCart();
     const { id } = useParams();
     const navigate = useNavigate();
 
@@ -104,7 +106,17 @@ const ProductDetailsPage = () => {
     const currentPrice = activeVariant?.price_override || product.base_price;
     const isOutOfStock = activeVariant?.stock_quantity <= 0;
     const currentImages = getDeduplicatedImages(product, selectedColor);
+        console.log('Current images for selected color:', currentImages);
 
+    const handleAddToCart = () => {
+
+        const variantForCart = {
+            ...activeVariant,
+            image_urls: [activeImage] 
+        };
+        
+        addToCart(variantForCart, product, 1);
+    };
     return (
         <div className="bg-dominant min-h-screen pb-16 sm:pb-20">
             <div className="max-w-6xl mx-auto px-3 sm:px-5 lg:px-6 pt-4 sm:pt-6">
@@ -242,6 +254,7 @@ const ProductDetailsPage = () => {
                                     ? 'bg-secondary/15 text-secondary/40 cursor-not-allowed'
                                     : 'bg-secondary text-dominant hover:bg-accent active:scale-[0.98]'
                             }`}
+                            onClick={handleAddToCart}
                         >
                             <ShoppingBag size={16} />
                             {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}

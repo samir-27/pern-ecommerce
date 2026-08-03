@@ -2,7 +2,7 @@ import { Menu, Moon, Search, ShoppingBag, Sun, User, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 
-const Navbar = ({ cartItemCount = 0 }) => {
+const Navbar = ({ cartItemCount = 0, onCartClick }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const [theme, setTheme] = useState(
@@ -55,7 +55,6 @@ const Navbar = ({ cartItemCount = 0 }) => {
             >
               Collections
             </Link>
-
           </div>
 
           {/* Desktop Icons */}
@@ -71,8 +70,8 @@ const Navbar = ({ cartItemCount = 0 }) => {
               <User className="w-5 h-5" />
             </Link>
 
-            <Link
-              to="/cart"
+            <button
+              onClick={onCartClick}
               className="text-secondary hover:text-accent transition-colors relative"
             >
               <ShoppingBag className="w-5 h-5" />
@@ -82,10 +81,10 @@ const Navbar = ({ cartItemCount = 0 }) => {
                   {cartItemCount}
                 </span>
               )}
-            </Link>
+            </button>
             
-            <button onClick={toggleTheme}>
-              {theme === "light" ? <Moon /> : <Sun />}
+            <button onClick={toggleTheme} className="text-secondary hover:text-accent transition-colors">
+              {theme === "light" ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
             </button>
           </div>
 
@@ -93,7 +92,7 @@ const Navbar = ({ cartItemCount = 0 }) => {
           <div className="md:hidden flex items-center">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="text-secondary"
+              className="text-secondary hover:text-accent transition-colors"
             >
               {isMenuOpen ? (
                 <X className="w-6 h-6" />
@@ -112,7 +111,7 @@ const Navbar = ({ cartItemCount = 0 }) => {
             <Link
               to="/products"
               onClick={() => setIsMenuOpen(false)}
-              className="block py-3 text-secondary font-bold text-lg border-b border-secondary/10"
+              className="block py-3 text-secondary font-bold text-lg border-b border-secondary/10 hover:text-accent transition-colors"
             >
               Shop All
             </Link>
@@ -120,7 +119,7 @@ const Navbar = ({ cartItemCount = 0 }) => {
             <Link
               to="/products?gender=Mens"
               onClick={() => setIsMenuOpen(false)}
-              className="block py-3 text-secondary font-bold text-lg border-b border-secondary/10"
+              className="block py-3 text-secondary font-bold text-lg border-b border-secondary/10 hover:text-accent transition-colors"
             >
               Men
             </Link>
@@ -128,7 +127,7 @@ const Navbar = ({ cartItemCount = 0 }) => {
             <Link
               to="/products?gender=Womens"
               onClick={() => setIsMenuOpen(false)}
-              className="block py-3 text-secondary font-bold text-lg border-b border-secondary/10"
+              className="block py-3 text-secondary font-bold text-lg border-b border-secondary/10 hover:text-accent transition-colors"
             >
               Women
             </Link>
@@ -136,7 +135,7 @@ const Navbar = ({ cartItemCount = 0 }) => {
             <Link
               to="/collections"
               onClick={() => setIsMenuOpen(false)}
-              className="block py-3 text-secondary font-bold text-lg border-b border-secondary/10"
+              className="block py-3 text-secondary font-bold text-lg border-b border-secondary/10 hover:text-accent transition-colors"
             >
               Collections
             </Link>
@@ -145,15 +144,17 @@ const Navbar = ({ cartItemCount = 0 }) => {
               <Link
                 to="/profile"
                 onClick={() => setIsMenuOpen(false)}
-                className="text-secondary"
+                className="text-secondary hover:text-accent transition-colors"
               >
                 <User className="w-6 h-6" />
               </Link>
 
-              <Link
-                to="/cart"
-                onClick={() => setIsMenuOpen(false)}
-                className="relative text-secondary"
+              <button
+                onClick={() => {
+                  if(onCartClick) onCartClick();
+                  setIsMenuOpen(false);
+                }}
+                className="relative text-secondary hover:text-accent transition-colors"
               >
                 <ShoppingBag className="w-6 h-6" />
 
@@ -162,7 +163,7 @@ const Navbar = ({ cartItemCount = 0 }) => {
                     {cartItemCount}
                   </span>
                 )}
-              </Link>
+              </button>
             </div>
           </div>
         </div>
