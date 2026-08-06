@@ -1,28 +1,27 @@
 import React from 'react';
 import { X, Minus, Plus, Trash2 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useNavigate } from 'react-router-dom';
 
 export const CartDrawer = ({ isOpen, onClose }) => {
     const { cartItems, removeFromCart, updateQuantity, cartTotal } = useCart();
+    const navigate = useNavigate();
 
     if (!isOpen) return null;
 
     const subtotal = cartTotal;
-    const estimatedTax = subtotal * 0.08; // Assuming 8% tax for UI purposes
+    const estimatedTax = subtotal * 0.08;
     const finalTotal = subtotal + estimatedTax;
 
     return (
         <div className="fixed inset-0 z-50 flex justify-end">
-            {}
             <div 
                 className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300" 
                 onClick={onClose} 
             />
             
-            {}
             <div className="relative w-full max-w-md bg-dominant shadow-2xl flex flex-col h-full animate-in slide-in-from-right duration-300 border-l border-secondary/10">
                 
-                {}
                 <div className="p-6 border-b border-secondary/10 flex justify-between items-center bg-dominant sticky top-0 z-10">
                     <h2 className="text-2xl font-black text-secondary tracking-tight">
                         Your Cart <span className="text-secondary/50 text-lg font-bold">({cartItems.length})</span>
@@ -36,7 +35,6 @@ export const CartDrawer = ({ isOpen, onClose }) => {
                     </button>
                 </div>
 
-                {}
                 <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
                     {cartItems.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center space-y-4 opacity-50">
@@ -47,7 +45,6 @@ export const CartDrawer = ({ isOpen, onClose }) => {
                         cartItems.map(item => (
                             <div key={item.variant_id} className="flex gap-5 group">
                                 
-                                {}
                                 <div className="relative w-24 h-32 flex-shrink-0 overflow-hidden rounded-md bg-secondary/5 border border-secondary/10">
                                     <img 
                                         src={item.image || "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=150&auto=format&fit=crop"} 
@@ -56,7 +53,6 @@ export const CartDrawer = ({ isOpen, onClose }) => {
                                     />
                                 </div>
                                 
-                                {}
                                 <div className="flex flex-col flex-1 py-1 justify-between">
                                     <div>
                                         <div className="flex justify-between items-start mb-1">
@@ -74,7 +70,6 @@ export const CartDrawer = ({ isOpen, onClose }) => {
                                         </p>
                                     </div>
 
-                                    {}
                                     <div className="flex items-end justify-between mt-4">
                                         <div className="flex items-center border-2 border-secondary/20 rounded-md overflow-hidden bg-dominant">
                                             <button 
@@ -103,7 +98,6 @@ export const CartDrawer = ({ isOpen, onClose }) => {
                     )}
                 </div>
 
-                {}
                 {cartItems.length > 0 && (
                     <div className="p-6 border-t border-secondary/10 bg-dominant/95 backdrop-blur-md">
                         <div className="space-y-3 mb-6">
@@ -126,7 +120,14 @@ export const CartDrawer = ({ isOpen, onClose }) => {
                             </div>
                         </div>
                         
-                        <button className="w-full bg-secondary text-dominant hover:bg-accent hover:text-dominant transition-all duration-300 py-4 rounded-md font-bold text-lg shadow-lg hover:shadow-xl active:scale-[0.98] flex items-center justify-center gap-2">
+                        {/* FIX IS HERE: Wired up onClick to close drawer and navigate */}
+                        <button 
+                            onClick={() => {
+                                onClose();
+                                navigate('/checkout');
+                            }}
+                            className="w-full bg-secondary text-dominant hover:bg-accent hover:text-dominant transition-all duration-300 py-4 rounded-md font-bold text-lg shadow-lg hover:shadow-xl active:scale-[0.98] flex items-center justify-center gap-2"
+                        >
                             Proceed to Checkout
                         </button>
                         
@@ -137,7 +138,6 @@ export const CartDrawer = ({ isOpen, onClose }) => {
                     </div>
                 )}
             </div>
-            {/* Added custom scrollbar styling specifically for the cart to keep it sleek */}
             <style jsx>{`
                 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }

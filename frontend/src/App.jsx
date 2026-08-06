@@ -8,6 +8,8 @@ import ProductDetailsPage from './components/ProductDetail';
 import AuthPage from './pages/AuthPage';
 import { CartProvider, useCart } from './context/CartContext';
 import { CartDrawer } from './components/Cart';
+import ProfilePage from './pages/ProfilePage';
+import CheckoutPage from './components/Checkout';
 
 const ProtectedRoute = () => {
   const token = localStorage.getItem('token');
@@ -46,6 +48,8 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/products" element={<ProductsPage />} />
               <Route path="/product/:id" element={<ProductDetailsPage />} />
+              <Route path="/checkout" element={<CheckoutPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
             </Route>
           </Route>
 

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import api from "../services/Axios";
 
 const AuthPage = ({ type = "login" }) => {
   const navigate = useNavigate();
@@ -33,12 +33,11 @@ const AuthPage = ({ type = "login" }) => {
       const endpoint =
         type === "login" ? "/auth/login" : "/auth/register";
 
-      const response = await axios.post(
-        `http://localhost:5000/api${endpoint}`,
-        formData
-      );
+      const response = await api.post(endpoint, formData);
 
-      localStorage.setItem("token", response.data.token);
+      if (response.data?.token) {
+        localStorage.setItem("token", response.data.token);
+      }
 
       navigate("/");
       window.location.reload();
@@ -55,7 +54,7 @@ const AuthPage = ({ type = "login" }) => {
   return (
     <section className="min-h-screen bg-dominant flex items-center justify-center px-6 py-16">
 
-      <div className="absolute inset-0 bg-secondary/[0.03]" />
+      <div className="absolute inset-0 bg-secondary/3" />
 
       <div className="relative w-full max-w-md">
 
