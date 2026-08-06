@@ -37,9 +37,11 @@ const AuthPage = ({ type = "login" }) => {
 
       if (response.data?.token) {
         localStorage.setItem("token", response.data.token);
+        localStorage.setItem("userRole", response.data?.user?.role || "user");
       }
 
-      navigate("/");
+      const userRole = response.data?.user?.role || "user";
+      navigate(userRole === "admin" ? "/admin" : "/");
       window.location.reload();
     } catch (err) {
       setError(

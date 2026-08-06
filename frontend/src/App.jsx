@@ -10,10 +10,22 @@ import { CartProvider, useCart } from './context/CartContext';
 import { CartDrawer } from './components/Cart';
 import ProfilePage from './pages/ProfilePage';
 import CheckoutPage from './components/Checkout';
+import AdminDashboard from './pages/AdminDashboard';
 
 const ProtectedRoute = () => {
   const token = localStorage.getItem('token');
   return token ? <Outlet /> : <Navigate to="/login" replace />;
+};
+
+const AdminRoute = () => {
+  const token = localStorage.getItem('token');
+  const role = localStorage.getItem('userRole');
+
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return role === 'admin' ? <Outlet /> : <Navigate to="/" replace />;
 };
 
 // FIXED: MainLayout now accepts onCartClick and passes it to Navbar
@@ -43,7 +55,6 @@ function App() {
 
           {/* Protected routes */}
           <Route element={<ProtectedRoute />}>
-            {/* FIXED: We now pass the function to open the cart down to MainLayout */}
             <Route element={<MainLayout onCartClick={() => setIsCartOpen(true)} />}>
               <Route path="/" element={<Home />} />
               <Route path="/products" element={<ProductsPage />} />
@@ -51,6 +62,10 @@ function App() {
               <Route path="/checkout" element={<CheckoutPage />} />
               <Route path="/profile" element={<ProfilePage />} />
             </Route>
+          </Route>
+
+          <Route element={<AdminRoute />}>
+            <Route path="/admin" element={<AdminDashboard />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

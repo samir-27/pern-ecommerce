@@ -1,4 +1,4 @@
-import api from "./axios";
+import api from "./Axios";
 
 export const getProducts = async (params = {}) => {
     
@@ -19,5 +19,10 @@ export const getColors = async () => {
 
 export const getProductById = async (id) => {
     const { data } = await api.get(`/products/${id}`);
+    return data;
+};
+
+export const createProduct = async (productData) => {
+    const { data } = await api.post('/products', productData);
     return data;
 };
