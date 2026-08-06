@@ -1,17 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Users, ShoppingBag, PlusCircle, LogOut, Loader2, Trash2 } from 'lucide-react';
 import { createProduct as createProductRequest } from '../services/ProductService';
+import api from '../services/Axios';
 
-const stats = [
-  { title: 'Total Orders', value: '128', icon: ShoppingBag, accent: 'bg-secondary text-dominant' },
-  { title: 'Active Users', value: '42', icon: Users, accent: 'bg-accent text-dominant' },
-  { title: 'Create Product', value: 'New', icon: PlusCircle, accent: 'bg-green-600 text-white' },
+const defaultStats = [
+  { title: 'Products', value: '—', icon: ShoppingBag, accent: 'bg-secondary text-dominant' },
+  { title: 'Orders', value: '—', icon: ShoppingBag, accent: 'bg-accent text-dominant' },
+  { title: 'Users', value: '—', icon: Users, accent: 'bg-green-600 text-white' },
 ];
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [stats, setStats] = useState(defaultStats);
   const [formLoading, setFormLoading] = useState(false);
   const [formMessage, setFormMessage] = useState('');
   const [formError, setFormError] = useState('');
@@ -25,6 +27,23 @@ const AdminDashboard = () => {
   const [variants, setVariants] = useState([
     { size: 'M', color: 'Black', stock_quantity: '10', price_override: '', images: [] }
   ]);
+
+  useEffect(() => {
+    const fetchOverview = async () => {
+      try {
+        const response = await api.get('/admin/overview');
+        setStats([
+          { title: 'Products', value: response.data.products.toString(), icon: ShoppingBag, accent: 'bg-secondary text-dominant' },
+          { title: 'Orders', value: response.data.orders.toString(), icon: ShoppingBag, accent: 'bg-accent text-dominant' },
+          { title: 'Users', value: response.data.users.toString(), icon: Users, accent: 'bg-green-600 text-white' },
+        ]);
+      } catch (error) {
+        console.error('Could not fetch admin overview', error);
+      }
+    };
+
+    fetchOverview();
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -109,7 +128,7 @@ const AdminDashboard = () => {
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-accent">Admin Panel</p>
             <h1 className="text-3xl font-black text-secondary">Welcome back, admin</h1>
-            <p className="text-secondary/60 mt-2">Manage products, orders, and account activity from one place.</p>
+            <p className="text-secondary/60 mt-2">The available admin tools are shown below. Other sections remain hidden until they are fully connected.</p>
           </div>
           <button
             onClick={handleLogout}
@@ -154,12 +173,9 @@ const AdminDashboard = () => {
               >
                 {showCreateForm ? 'Hide Product Form' : 'Create Product'}
               </button>
-              <button className="w-full rounded-lg border border-secondary/10 bg-white px-4 py-3 text-left font-semibold text-secondary transition hover:bg-secondary/5">
-                Review Orders
-              </button>
-              <button className="w-full rounded-lg border border-secondary/10 bg-white px-4 py-3 text-left font-semibold text-secondary transition hover:bg-secondary/5">
-                View Customers
-              </button>
+              <div className="rounded-lg border border-secondary/10 bg-white px-4 py-3 text-sm text-secondary/70">
+                Product creation is available and verified. Order and customer management remain unavailable until their backend endpoints are connected.
+              </div>
             </div>
           </div>
         </div>
