@@ -1,11 +1,12 @@
 import express from 'express';
 import { protectRoute } from '../middleware/auth.middleware.js';
-import { createOrder, getMyOrders } from '../controllers/order.controller.js';
+import { createPaymentOrder, getMyOrders, verifyPayment } from '../controllers/order.controller.js';
 
 
 const router = express.Router();
 
-router.post('/', protectRoute, createOrder);
+router.post('/payment/order', protectRoute, createPaymentOrder);
+router.post('/payment/verify', protectRoute, verifyPayment);
 router.get('/myorders', protectRoute, getMyOrders);
 
 export default router;

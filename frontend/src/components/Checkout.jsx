@@ -2,7 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, CreditCard, ShieldCheck, Truck, CheckCircle2, Loader2 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
-import { createOrder as createOrderRequest } from '../services/Order';
+import { createPaymentOrder, verifyPayment } from '../services/Order';
+
+const loadRazorpayScript = () => new Promise((resolve) => {
+    if (window.Razorpay) {
+        resolve(true);
+        return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+});
 
 const CheckoutPage = () => {
     const navigate = useNavigate();
@@ -47,20 +60,55 @@ const CheckoutPage = () => {
         setError('');
 
         try {
+            const isScriptLoaded = await loadRazorpayScript();
+            if (!isScriptLoaded) {
+                throw new Error('Unable to load Razorpay Checkout. Check your internet connection and try again.');
+            }
+
             const orderPayload = {
                 shippingAddress: `${shippingData.fullName}\n${shippingData.addressLine1}, ${shippingData.city}, ${shippingData.state} ${shippingData.zipCode}, ${shippingData.country}`,
                 orderItems: cartItems.map(item => ({
                     variant_id: item.variant_id,
-                    quantity: item.quantity
-                }))
+                    quantity: item.quantity,
+                })),
             };
+            const paymentData = await createPaymentOrder(orderPayload);
 
-            const response = await createOrderRequest(orderPayload);
-            
-            setOrderInfo(response.order);
-            setStep(3);
+            await new Promise((resolve, reject) => {
+                const razorpay = new window.Razorpay({
+                    key: paymentData.keyId,
+                    amount: paymentData.paymentOrder.amount,
+                    currency: paymentData.paymentOrder.currency,
+                    name: 'PERN Store',
+                    description: 'Order payment',
+                    order_id: paymentData.paymentOrder.id,
+                    prefill: {
+                        name: shippingData.fullName,
+                    },
+                    theme: {
+                        color: '#111827',
+                    },
+                    handler: async (paymentResponse) => {
+                        try {
+                            const response = await verifyPayment({
+                                ...orderPayload,
+                                ...paymentResponse,
+                            });
+                            setOrderInfo(response.order);
+                            setStep(3);
+                            cartItems.forEach(item => removeFromCart(item.variant_id));
+                            resolve();
+                        } catch (err) {
+                            reject(new Error(err.response?.data?.error || 'Payment verification failed.'));
+                        }
+                    },
+                    modal: {
+                        ondismiss: () => reject(new Error('Payment was cancelled.')),
+                    },
+                });
 
-            cartItems.forEach(item => removeFromCart(item.variant_id));
+                razorpay.open();
+            });
 
         } catch (err) {
             console.error(err);

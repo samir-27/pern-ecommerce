@@ -18,6 +18,10 @@ app.use(express.urlencoded({ extended: true }));
 
 const initializeDatabase = async () => {
     await pool.query(`
+        ALTER TABLE orders
+        ADD COLUMN IF NOT EXISTS razorpay_payment_id TEXT UNIQUE
+    `);
+    await pool.query(`
     CREATE TABLE IF NOT EXISTS reviews (
         id SERIAL PRIMARY KEY,
         product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,

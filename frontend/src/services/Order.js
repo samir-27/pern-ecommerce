@@ -18,3 +18,17 @@ export const createOrder = async (orderData) => {
   });
   return data;
 };
+
+export const createPaymentOrder = async (orderData) => {
+  const { data } = await api.post(`/orders/payment/order`, orderData, {
+    headers: getAuthHeaders(),
+  });
+  return data;
+};
+
+export const verifyPayment = async (paymentData) => {
+  const { data } = await api.post(`/orders/payment/verify`, paymentData, {
+    headers: getAuthHeaders(),
+  });
+  return data;
+};
