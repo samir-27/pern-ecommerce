@@ -342,3 +342,64 @@ export const getColors = async (req, res) => {
         res.status(500).json({ error: 'Server error' });
     }
 };
+
+export const getProductReviews = async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT r.id, r.rating, r.content, r.created_at,
+                    COALESCE(NULLIF(TRIM(u.first_name || ' ' || u.last_name), ''), u.email) AS username
+             FROM reviews r
+             JOIN users u ON u.id = r.user_id
+             WHERE r.product_id = $1
+             ORDER BY r.created_at DESC`,
+            [req.params.id]
+        );
+
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Error fetching product reviews:', err.message);
+        res.status(500).json({ error: 'Server error' });
+    }
+};
+
+export const createProductReview = async (req, res) => {
+    const { rating, content } = req.body;
+    const numericRating = Number(rating);
+    const trimmedContent = typeof content === 'string' ? content.trim() : '';
+
+    if (!Number.isInteger(numericRating) || numericRating < 1 || numericRating > 5) {
+        return res.status(400).json({ error: 'Rating must be a whole number from 1 to 5' });
+    }
+
+    if (!trimmedContent || trimmedContent.length > 2000) {
+        return res.status(400).json({ error: 'Review content must be between 1 and 2000 characters' });
+    }
+
+    try {
+        const result = await pool.query(
+            `INSERT INTO reviews (product_id, user_id, rating, content)
+             SELECT $1, $2, $3, $4
+             WHERE EXISTS (SELECT 1 FROM products WHERE id = $1)
+             RETURNING id, rating, content, created_at`,
+            [req.params.id, req.user.id, numericRating, trimmedContent]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Product not found' });
+        }
+
+        const review = await pool.query(
+            `SELECT r.id, r.rating, r.content, r.created_at,
+                    COALESCE(NULLIF(TRIM(u.first_name || ' ' || u.last_name), ''), u.email) AS username
+             FROM reviews r
+             JOIN users u ON u.id = r.user_id
+             WHERE r.id = $1`,
+            [result.rows[0].id]
+        );
+
+        res.status(201).json(review.rows[0]);
+    } catch (err) {
+        console.error('Error creating product review:', err.message);
+        res.status(500).json({ error: 'Server error' });
+    }
+};

@@ -6,8 +6,9 @@ import {
     ShieldCheck,
     Truck,
     Package,
+    Star,
 } from 'lucide-react';
-import { getProductById } from '../services/ProductService';
+import { createProductReview, getProductById, getProductReviews } from '../services/ProductService';
 import { useCart } from '../context/CartContext';
 
 const ProductDetailsPage = () => {
@@ -22,13 +23,22 @@ const ProductDetailsPage = () => {
     const [selectedColor, setSelectedColor] = useState(null);
     const [selectedSize, setSelectedSize] = useState(null);
     const [activeImage, setActiveImage] = useState('');
+    const [reviews, setReviews] = useState([]);
+    const [reviewRating, setReviewRating] = useState(5);
+    const [reviewContent, setReviewContent] = useState('');
+    const [reviewError, setReviewError] = useState('');
+    const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
     useEffect(() => {
         const fetchProduct = async () => {
             try {
                 setLoading(true);
-                const data = await getProductById(id);
+                const [data, productReviews] = await Promise.all([
+                    getProductById(id),
+                    getProductReviews(id),
+                ]);
                 setProduct(data);
+                setReviews(productReviews);
 
                 if (data.variants && data.variants.length > 0) {
                     const initialVariant = data.variants[0];
@@ -117,6 +127,48 @@ const ProductDetailsPage = () => {
         
         addToCart(variantForCart, product, 1);
     };
+
+    const handleReviewSubmit = async (event) => {
+        event.preventDefault();
+        setReviewError('');
+
+        if (!reviewContent.trim()) {
+            setReviewError('Please write a review before submitting.');
+            return;
+        }
+
+        try {
+            setIsSubmittingReview(true);
+            const newReview = await createProductReview(id, {
+                rating: reviewRating,
+                content: reviewContent,
+            });
+            setReviews((currentReviews) => [newReview, ...currentReviews]);
+            setReviewContent('');
+            setReviewRating(5);
+        } catch (err) {
+            setReviewError(err.response?.data?.error || 'Unable to submit your review.');
+        } finally {
+            setIsSubmittingReview(false);
+        }
+    };
+
+    const averageRating = reviews.length
+        ? reviews.reduce((sum, review) => sum + Number(review.rating), 0) / reviews.length
+        : 0;
+
+    const renderStars = (rating, size = 16) => (
+        <div className="flex items-center gap-0.5" aria-label={`${rating} out of 5 stars`}>
+            {[1, 2, 3, 4, 5].map((star) => (
+                <Star
+                    key={star}
+                    size={size}
+                    className={star <= rating ? 'fill-accent text-accent' : 'text-secondary/20'}
+                />
+            ))}
+        </div>
+    );
+
     return (
         <div className="bg-dominant min-h-screen pb-16 sm:pb-20">
             <div className="max-w-6xl mx-auto px-3 sm:px-5 lg:px-6 pt-4 sm:pt-6">
@@ -277,6 +329,93 @@ const ProductDetailsPage = () => {
                         </div>
                     </div>
                 </div>
+
+                <section className="mt-12 sm:mt-16 border-t border-secondary/10 pt-8 sm:pt-10">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-secondary/50">Customer reviews</p>
+                            <div className="mt-2 flex items-center gap-3">
+                                <h2 className="text-2xl font-bold text-secondary">
+                                    {reviews.length ? averageRating.toFixed(1) : 'No ratings'}
+                                </h2>
+                                {reviews.length > 0 && renderStars(Math.round(averageRating), 18)}
+                                <span className="text-sm text-secondary/55">
+                                    {reviews.length} {reviews.length === 1 ? 'review' : 'reviews'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mt-7 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.7fr)] gap-8 lg:gap-12">
+                        <div className="space-y-6">
+                            {reviews.length === 0 ? (
+                                <p className="text-sm text-secondary/55">Be the first to review this product.</p>
+                            ) : (
+                                reviews.map((review) => (
+                                    <article key={review.id} className="border-b border-secondary/10 pb-6 last:border-0">
+                                        <div className="flex flex-wrap items-center justify-between gap-2">
+                                            <div className="flex items-center gap-3">
+                                                {renderStars(Number(review.rating), 15)}
+                                                <span className="text-sm font-semibold text-secondary">{review.username}</span>
+                                            </div>
+                                            <time className="text-xs text-secondary/45" dateTime={review.created_at}>
+                                                {new Date(review.created_at).toLocaleDateString()}
+                                            </time>
+                                        </div>
+                                        <p className="mt-3 text-sm leading-relaxed text-secondary/70">{review.content}</p>
+                                    </article>
+                                ))
+                            )}
+                        </div>
+
+                        <form onSubmit={handleReviewSubmit} className="rounded-xl border border-secondary/10 bg-secondary/5 p-5 sm:p-6">
+                            <h3 className="text-base font-semibold text-secondary">Write a review</h3>
+                            <p className="mt-1 text-xs text-secondary/55">Share your experience with this product.</p>
+
+                            <div className="mt-5">
+                                <span className="block text-xs font-semibold uppercase tracking-wide text-secondary/50">Your rating</span>
+                                <div className="mt-2 flex gap-1" role="radiogroup" aria-label="Your rating">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                        <button
+                                            key={star}
+                                            type="button"
+                                            onClick={() => setReviewRating(star)}
+                                            className="rounded p-1 text-accent transition-transform hover:scale-110"
+                                            aria-label={`${star} star${star === 1 ? '' : 's'}`}
+                                            aria-pressed={reviewRating === star}
+                                        >
+                                            <Star size={21} className={star <= reviewRating ? 'fill-accent' : 'text-secondary/20'} />
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <label className="mt-5 block text-xs font-semibold uppercase tracking-wide text-secondary/50" htmlFor="review-content">
+                                Your review
+                            </label>
+                            <textarea
+                                id="review-content"
+                                value={reviewContent}
+                                onChange={(event) => setReviewContent(event.target.value)}
+                                maxLength={2000}
+                                rows={5}
+                                placeholder="What did you think?"
+                                className="mt-2 w-full resize-y rounded-lg border border-secondary/15 bg-dominant px-3 py-2.5 text-sm text-secondary outline-none placeholder:text-secondary/35 focus:border-accent"
+                            />
+                            <div className="mt-1 text-right text-xs text-secondary/40">{reviewContent.length}/2000</div>
+
+                            {reviewError && <p className="mt-3 text-sm text-red-500">{reviewError}</p>}
+
+                            <button
+                                type="submit"
+                                disabled={isSubmittingReview}
+                                className="mt-4 w-full rounded-lg bg-secondary px-4 py-2.5 text-sm font-semibold text-dominant transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                                {isSubmittingReview ? 'Submitting...' : 'Submit review'}
+                            </button>
+                        </form>
+                    </div>
+                </section>
             </div>
         </div>
     );

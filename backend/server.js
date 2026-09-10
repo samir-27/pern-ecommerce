@@ -16,9 +16,19 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-pool.connect()
-    .then(() => console.log('Connected to PostgreSQL database'))
-    .catch(err => console.error('Database connection error', err.stack));
+const initializeDatabase = async () => {
+    await pool.query(`
+    CREATE TABLE IF NOT EXISTS reviews (
+        id SERIAL PRIMARY KEY,
+        product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+        content TEXT NOT NULL CHECK (char_length(trim(content)) BETWEEN 1 AND 2000),
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+    `);
+    console.log('Connected to PostgreSQL database');
+};
 
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
@@ -26,6 +36,10 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/admin', adminRoutes);
 
 
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-});
+initializeDatabase()
+    .then(() => {
+        app.listen(PORT, () => {
+            console.log(`Server running on http://localhost:${PORT}`);
+        });
+    })
+    .catch(err => console.error('Database initialization error', err.stack));
