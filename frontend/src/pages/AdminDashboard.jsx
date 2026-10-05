@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Users, ShoppingBag, LogOut, Trash2, Image as ImageIcon, Edit, Package, MapPin } from 'lucide-react';
 import { createProduct as createProductRequest } from '../services/ProductService';
 import api from '../services/Axios';
+import { formatCurrency } from '../services/Currency';
 
 const defaultStats = [
   { title: 'Products', value: '—', icon: ShoppingBag, accent: 'bg-secondary text-dominant' },
@@ -346,7 +347,7 @@ const AdminDashboard = () => {
                           ))}
                         </div>
                       </td>
-                      <td className="p-3">${prod.base_price}</td>
+                      <td className="p-3">{formatCurrency(prod.base_price)}</td>
                       <td className="p-3 flex gap-3">
                         <button aria-label={`Edit ${prod.name}`} onClick={() => { setEditingProduct(prod); setEditForm({name: prod.name, category_name: prod.category_name || '', gender: prod.gender || 'Unisex', base_price: prod.base_price, description: prod.description || ''}); }} className="text-blue-500 hover:text-blue-700 p-2"><Edit size={18}/></button>
                         <button onClick={() => handleDeleteProduct(prod.id)} className="text-red-500 hover:text-red-700 p-2"><Trash2 size={18}/></button>
@@ -430,7 +431,7 @@ const AdminDashboard = () => {
                             <div key={`${item.variant_id}-${index}`}>
                               <p className="font-semibold">{item.product_name} x {item.quantity}</p>
                               <p className="text-secondary/60">{item.color} / {item.size} · SKU {item.sku}</p>
-                              <p className="text-secondary/60">${item.price_at_purchase} each</p>
+                              <p className="text-secondary/60">{formatCurrency(item.price_at_purchase)} each</p>
                             </div>
                           ))}
                         </div>
@@ -441,7 +442,7 @@ const AdminDashboard = () => {
                           <span className="text-sm">{order.shipping_address}</span>
                         </div>
                       </td>
-                      <td className="p-3 font-semibold">${order.total_amount}</td>
+                      <td className="p-3 font-semibold">{formatCurrency(order.total_amount)}</td>
                       <td className="p-3">
                         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${order.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
                           {order.status || 'Pending'}

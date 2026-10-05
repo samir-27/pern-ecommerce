@@ -1,7 +1,7 @@
-import React from 'react';
 import { X, Minus, Plus, Trash2 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
+import { formatCurrency } from '../services/Currency';
 
 export const CartDrawer = ({ isOpen, onClose }) => {
     const { cartItems, removeFromCart, updateQuantity, cartTotal } = useCart();
@@ -89,7 +89,7 @@ export const CartDrawer = ({ isOpen, onClose }) => {
                                             </button>
                                         </div>
                                         <p className="font-black text-secondary text-lg">
-                                            ${(item.price * item.quantity).toFixed(2)}
+                                            {formatCurrency(item.price * item.quantity)}
                                         </p>
                                     </div>
                                 </div>
@@ -103,7 +103,7 @@ export const CartDrawer = ({ isOpen, onClose }) => {
                         <div className="space-y-3 mb-6">
                             <div className="flex justify-between text-secondary/70 text-sm font-medium">
                                 <span>Subtotal</span>
-                                <span>${subtotal.toFixed(2)}</span>
+                                <span>{formatCurrency(subtotal)}</span>
                             </div>
                             <div className="flex justify-between text-secondary/70 text-sm font-medium">
                                 <span>Shipping</span>
@@ -111,12 +111,12 @@ export const CartDrawer = ({ isOpen, onClose }) => {
                             </div>
                             <div className="flex justify-between text-secondary/70 text-sm font-medium">
                                 <span>Estimated Tax</span>
-                                <span>${estimatedTax.toFixed(2)}</span>
+                                <span>{formatCurrency(estimatedTax)}</span>
                             </div>
                             
                             <div className="pt-3 mt-3 border-t border-secondary/10 flex justify-between items-end">
                                 <span className="font-bold text-secondary text-lg">Total</span>
-                                <span className="text-2xl font-black text-secondary">${finalTotal.toFixed(2)}</span>
+                                <span className="text-2xl font-black text-secondary">{formatCurrency(finalTotal)}</span>
                             </div>
                         </div>
                         

@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, CreditCard, ShieldCheck, Truck, CheckCircle2, Loader2 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { createPaymentOrder, verifyPayment } from '../services/Order';
+import { formatCurrency } from '../services/Currency';
 
 const loadRazorpayScript = () => new Promise((resolve) => {
     if (window.Razorpay) {
@@ -32,7 +33,7 @@ const CheckoutPage = () => {
         city: '',
         state: '',
         zipCode: '',
-        country: 'US'
+        country: 'IN'
     });
 
     const subtotal = cartTotal;
@@ -105,6 +106,15 @@ const CheckoutPage = () => {
                     modal: {
                         ondismiss: () => reject(new Error('Payment was cancelled.')),
                     },
+                });
+
+                razorpay.on('payment.failed', (response) => {
+                    const paymentError = response.error?.description || response.error?.reason || '';
+                    if (/international card.*not supported|not supported.*international card/i.test(paymentError)) {
+                        reject(new Error('International cards are not enabled for this Razorpay account. Use an India-issued card, or ask the store owner to enable international card payments with Razorpay.'));
+                        return;
+                    }
+                    reject(new Error(paymentError || 'Payment failed. Please try another payment method.'));
                 });
 
                 razorpay.open();
@@ -198,6 +208,7 @@ const CheckoutPage = () => {
                                             <div>
                                                 <label className="block text-sm font-bold text-secondary/70 mb-2">Country</label>
                                                 <select required name="country" value={shippingData.country} onChange={handleInputChange} className="w-full bg-dominant border-2 border-secondary/10 rounded-lg px-4 py-3 text-secondary focus:outline-none focus:border-accent transition-colors appearance-none">
+                                                    <option value="IN">India</option>
                                                     <option value="US">United States</option>
                                                     <option value="CA">Canada</option>
                                                     <option value="UK">United Kingdom</option>
@@ -222,27 +233,11 @@ const CheckoutPage = () => {
                                     </h2>
                                     
                                     <div className="border-2 border-secondary/20 rounded-xl p-6 mb-6 bg-dominant">
-                                        <div className="flex justify-between items-center mb-6">
-                                            <span className="font-bold text-secondary">Credit Card</span>
-                                            <div className="flex gap-2 opacity-50">
-                                                <div className="w-8 h-5 bg-secondary rounded-sm"></div>
-                                                <div className="w-8 h-5 bg-secondary rounded-sm"></div>
-                                            </div>
-                                        </div>
-                                        <div className="space-y-4">
+                                        <div className="flex items-center gap-3">
+                                            <CreditCard size={24} className="text-accent" />
                                             <div>
-                                                <label className="block text-xs font-bold text-secondary/50 mb-1 uppercase tracking-wider">Card Number</label>
-                                                <input type="text" placeholder="0000 0000 0000 0000" className="w-full bg-transparent border-b-2 border-secondary/20 pb-2 text-lg text-secondary focus:outline-none focus:border-accent font-mono" />
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-6">
-                                                <div>
-                                                    <label className="block text-xs font-bold text-secondary/50 mb-1 uppercase tracking-wider">Expiry</label>
-                                                    <input type="text" placeholder="MM/YY" className="w-full bg-transparent border-b-2 border-secondary/20 pb-2 text-lg text-secondary focus:outline-none focus:border-accent font-mono" />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-xs font-bold text-secondary/50 mb-1 uppercase tracking-wider">CVC</label>
-                                                    <input type="text" placeholder="123" className="w-full bg-transparent border-b-2 border-secondary/20 pb-2 text-lg text-secondary focus:outline-none focus:border-accent font-mono" />
-                                                </div>
+                                                <p className="font-bold text-secondary">Pay securely with Razorpay</p>
+                                                <p className="mt-1 text-sm text-secondary/60">Choose an available payment method in the secure checkout window.</p>
                                             </div>
                                         </div>
                                     </div>
@@ -262,7 +257,7 @@ const CheckoutPage = () => {
                                         disabled={loading}
                                         className="px-8 py-4 bg-accent text-dominant font-bold rounded-lg hover:bg-secondary transition-colors flex items-center gap-2 shadow-lg"
                                     >
-                                        {loading ? <Loader2 className="animate-spin" size={20} /> : `Pay $${total.toFixed(2)}`}
+                                        {loading ? <Loader2 className="animate-spin" size={20} /> : `Pay ${formatCurrency(total)}`}
                                     </button>
                                 </div>
                             </div>
@@ -283,7 +278,7 @@ const CheckoutPage = () => {
                                             <p className="text-secondary/60 mb-1">{item.color} / {item.size}</p>
                                             <p className="font-medium text-secondary">Qty: {item.quantity}</p>
                                         </div>
-                                        <p className="font-bold text-secondary">${(item.price * item.quantity).toFixed(2)}</p>
+                                        <p className="font-bold text-secondary">{formatCurrency(item.price * item.quantity)}</p>
                                     </div>
                                 ))}
                             </div>
@@ -291,20 +286,20 @@ const CheckoutPage = () => {
                             <div className="border-t border-secondary/10 pt-4 space-y-3">
                                 <div className="flex justify-between text-secondary/70 font-medium">
                                     <span>Subtotal</span>
-                                    <span>${subtotal.toFixed(2)}</span>
+                                    <span>{formatCurrency(subtotal)}</span>
                                 </div>
                                 <div className="flex justify-between text-secondary/70 font-medium">
                                     <span>Shipping</span>
-                                    <span>{shipping === 0 ? <span className="text-green-600 font-bold">FREE</span> : `$${shipping.toFixed(2)}`}</span>
+                                    <span>{shipping === 0 ? <span className="text-green-600 font-bold">FREE</span> : formatCurrency(shipping)}</span>
                                 </div>
                                 <div className="flex justify-between text-secondary/70 font-medium">
                                     <span>Estimated Tax</span>
-                                    <span>${tax.toFixed(2)}</span>
+                                    <span>{formatCurrency(tax)}</span>
                                 </div>
                                 
                                 <div className="flex justify-between items-end pt-4 mt-2 border-t border-secondary/10">
                                     <span className="font-bold text-lg text-secondary">Total</span>
-                                    <span className="text-3xl font-black text-secondary">${total.toFixed(2)}</span>
+                                    <span className="text-3xl font-black text-secondary">{formatCurrency(total)}</span>
                                 </div>
                             </div>
                         </div>

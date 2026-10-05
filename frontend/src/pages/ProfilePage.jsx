@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { User, Package, Key, LogOut, Loader2, ArrowRight } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { User, Package, Key, LogOut, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/Axios';
 import { getOrders } from '../services/Order';
+import { formatCurrency } from '../services/Currency';
 
 const ProfilePage = () => {
     const navigate = useNavigate();
@@ -11,7 +12,6 @@ const ProfilePage = () => {
     const [pageLoading, setPageLoading] = useState(true);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
-    const [user, setUser] = useState(null);
     const [orders, setOrders] = useState([]);
 
     const [formData, setFormData] = useState({
@@ -34,7 +34,6 @@ const ProfilePage = () => {
                 ]);
 
                 const profileData = profileResponse.data || {};
-                setUser(profileData);
                 setFormData(prev => ({
                     ...prev,
                     first_name: profileData.first_name || '',
@@ -75,7 +74,6 @@ const ProfilePage = () => {
                 email: formData.email
             });
 
-            setUser(response.data.user || response.data);
             setSuccess(response.data.message || 'Profile updated successfully.');
         } catch (err) {
             setError(err.response?.data?.error || 'Unable to update profile.');
@@ -287,7 +285,7 @@ const ProfilePage = () => {
                                                         )}
                                                     </div>
                                                     <div className="flex flex-col sm:items-end gap-2">
-                                                        <span className="font-black text-xl text-secondary">${Number(order.total_amount || 0).toFixed(2)}</span>
+                                                        <span className="font-black text-xl text-secondary">{formatCurrency(order.total_amount)}</span>
                                                         <span className="text-sm text-secondary/60 font-medium">
                                                             {Array.isArray(order.items) ? `${order.items.length} item${order.items.length > 1 ? 's' : ''}` : 'Items available'}
                                                         </span>
@@ -309,7 +307,7 @@ const ProfilePage = () => {
                                                                     <p className="text-sm text-secondary/60">Qty: {item.quantity}</p>
                                                                 </div>
                                                                 <div className="text-sm font-semibold text-secondary">
-                                                                    ${Number(item.price_at_purchase || 0).toFixed(2)} each
+                                                                    {formatCurrency(item.price_at_purchase)} each
                                                                 </div>
                                                             </div>
                                                         ))}

@@ -1,6 +1,5 @@
-import { ShoppingBag } from 'lucide-react'
-import React from 'react'
 import { useNavigate } from 'react-router-dom'
+import { formatCurrency } from '../services/Currency';
 
 const ProductCard = ({ product }) => {
   const navigate = useNavigate();
@@ -33,7 +32,7 @@ const ProductCard = ({ product }) => {
             </h3>
           </div>
           <p className="font-semibold text-secondary">
-            ${Number(product.base_price).toFixed(2)}
+            {formatCurrency(product.base_price)}
           </p>
         </div>
       </div>

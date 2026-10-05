@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     ArrowLeft,
@@ -10,6 +10,15 @@ import {
 } from 'lucide-react';
 import { createProductReview, getProductById, getProductReviews } from '../services/ProductService';
 import { useCart } from '../context/CartContext';
+import { formatCurrency } from '../services/Currency';
+
+const getDeduplicatedImages = (productData, color) => Array.from(
+    new Set(
+        productData.variants
+            .filter((variant) => variant.color === color)
+            .flatMap((variant) => variant.image_urls || [])
+    )
+);
 
 const ProductDetailsPage = () => {
     const { addToCart } = useCart();
@@ -57,16 +66,6 @@ const ProductDetailsPage = () => {
         };
         fetchProduct();
     }, [id]);
-
-    const getDeduplicatedImages = (prod, color) => {
-        return Array.from(
-            new Set(
-                prod.variants
-                    .filter((v) => v.color === color)
-                    .flatMap((v) => v.image_urls || [])
-            )
-        );
-    };
 
     const handleColorChange = (color) => {
         setSelectedColor(color);
@@ -234,7 +233,7 @@ const ProductDetailsPage = () => {
                         </h1>
 
                         <p className="mt-2 text-lg sm:text-xl font-semibold text-secondary">
-                            ${Number(currentPrice).toFixed(2)}
+                            {formatCurrency(currentPrice)}
                         </p>
 
                         {/* Description */}
@@ -316,7 +315,7 @@ const ProductDetailsPage = () => {
                         <div className="mt-8 sm:mt-10 pt-6 border-t border-secondary/10 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                             <div className="flex items-center gap-2.5 text-secondary/55">
                                 <Truck size={16} className="shrink-0" />
-                                <span className="text-xs">Free shipping over $50</span>
+                                <span className="text-xs">Free shipping over ₹150</span>
                             </div>
                             <div className="flex items-center gap-2.5 text-secondary/55">
                                 <ShieldCheck size={16} className="shrink-0" />
