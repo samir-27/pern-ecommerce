@@ -54,6 +54,8 @@ const AuthPage = ({ initialMode = 'login' }) => {
           // 1. Buyer Registration
           const res = await api.post('/auth/register', {
             name: formData.name,
+            firstName: formData.name ? formData.name.trim().split(' ')[0] : 'User',
+            lastName: formData.name ? formData.name.trim().split(' ').slice(1).join(' ') : '',
             email: formData.email,
             password: formData.password,
           });
@@ -65,9 +67,12 @@ const AuthPage = ({ initialMode = 'login' }) => {
           // 2. Brand Seller Registration
           const res = await api.post('/auth/register-brand', {
             name: formData.name,
+            firstName: formData.name ? formData.name.trim().split(' ')[0] : 'Brand Lead',
+            lastName: formData.name ? formData.name.trim().split(' ').slice(1).join(' ') : '',
             email: formData.email,
             password: formData.password,
             brandName: formData.brandName || `${formData.name}'s Atelier`,
+            bio: formData.brandDescription || 'Independent fashion brand',
             brandDescription: formData.brandDescription || 'Independent fashion brand',
           });
 

@@ -6,7 +6,9 @@ import pool from '../db.js';
 const jwtExpiresIn = process.env.JWT_EXPIRES_IN || '7d';
 
 export const registerUser = async (req, res) => {
-    const { email, password, firstName, lastName } = req.body;
+    const { email, password, name } = req.body;
+    const firstName = req.body.firstName || (name ? name.trim().split(' ')[0] : 'User');
+    const lastName = req.body.lastName || (name ? name.trim().split(' ').slice(1).join(' ') : '');
 
     try {
         const userExists = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
@@ -48,16 +50,18 @@ export const registerBrandSeller = async (req, res) => {
     const { 
         email, 
         password, 
-        firstName, 
-        lastName, 
+        name,
         phone, 
         brandName, 
-        bio, 
         website, 
         businessNumber,
         policyReturn,
         policyShipping 
     } = req.body;
+
+    const firstName = req.body.firstName || (name ? name.trim().split(' ')[0] : '');
+    const lastName = req.body.lastName || (name ? name.trim().split(' ').slice(1).join(' ') : '');
+    const bio = req.body.bio || req.body.brandDescription || '';
 
     if (!email || !password || !firstName || !brandName) {
         return res.status(400).json({ error: 'Email, password, personal name, and Brand name are required.' });
