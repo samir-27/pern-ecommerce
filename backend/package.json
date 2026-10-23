@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
+    "predev": "node scripts/ensure-db.js",
     "dev": "nodemon server.js",
     "migrate": "node migrations/migrate.js",
     "test": "node --test tests/marketplace.test.js"
