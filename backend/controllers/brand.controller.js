@@ -118,12 +118,12 @@ export const getBrandOverview = async (req, res) => {
         const orderStats = await pool.query(
             `SELECT
                 COUNT(*) as total_orders,
-                COUNT(*) FILTER (WHERE fulfillment_status = 'pending') as pending_fulfillment,
-                COUNT(*) FILTER (WHERE fulfillment_status = 'shipped') as shipped_orders,
-                COUNT(*) FILTER (WHERE fulfillment_status = 'delivered') as delivered_orders,
+                COUNT(*) FILTER (WHERE status = 'pending' OR fulfillment_status = 'pending') as pending_fulfillment,
+                COUNT(*) FILTER (WHERE status = 'shipped' OR fulfillment_status = 'shipped') as shipped_orders,
+                COUNT(*) FILTER (WHERE status = 'delivered' OR fulfillment_status = 'delivered') as delivered_orders,
                 COALESCE(SUM(subtotal), 0) as gross_sales,
                 COALESCE(SUM(commission_amount), 0) as total_commission,
-                COALESCE(SUM(net_payout), 0) as net_earnings
+                COALESCE(SUM(COALESCE(seller_net_earnings, net_payout, 0)), 0) as net_earnings
              FROM seller_orders WHERE brand_id = $1`,
             [brandId]
         );
@@ -177,13 +177,13 @@ export const getBrandProducts = async (req, res) => {
                             'sku', pv.sku,
                             'size', pv.size,
                             'color', pv.color,
-                            'price', pv.price,
+                            'price', COALESCE(pv.price_override, p.base_price),
                             'compare_at_price', pv.compare_at_price,
                             'stock_quantity', pv.stock_quantity,
                             'low_stock_threshold', pv.low_stock_threshold
                         )
                     ) FILTER (WHERE pv.id IS NOT NULL),
-                    '[]'
+                    '[]'::json
                 ) as variants
              FROM products p
              LEFT JOIN categories c ON p.category_id = c.id
@@ -254,8 +254,8 @@ export const createBrandProduct = async (req, res) => {
             for (const v of variants) {
                 const varRes = await client.query(
                     `INSERT INTO product_variants (
-                        product_id, sku, size, color, price_override, compare_at_price, stock_quantity, low_stock_threshold
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                        product_id, sku, size, color, price_override, compare_at_price, stock_quantity, low_stock_threshold, image_urls
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
                     RETURNING *`,
                     [
                         product.id,
@@ -265,7 +265,8 @@ export const createBrandProduct = async (req, res) => {
                         v.price || product.base_price,
                         v.compare_at_price || null,
                         parseInt(v.stock_quantity, 10) || 0,
-                        parseInt(v.low_stock_threshold, 10) || 5
+                        parseInt(v.low_stock_threshold, 10) || 5,
+                        v.image_urls || images || []
                     ]
                 );
                 createdVariants.push({ ...varRes.rows[0], price: varRes.rows[0].price_override || product.base_price });
@@ -273,10 +274,10 @@ export const createBrandProduct = async (req, res) => {
         } else {
             // Default variant
             const defaultVar = await client.query(
-                `INSERT INTO product_variants (product_id, sku, size, color, price_override, stock_quantity)
-                 VALUES ($1, $2, 'Standard', 'Default', $3, 10)
+                `INSERT INTO product_variants (product_id, sku, size, color, price_override, stock_quantity, image_urls)
+                 VALUES ($1, $2, 'Standard', 'Default', $3, 10, $4)
                  RETURNING *`,
-                [product.id, `${product.id}-STD-DEF`, product.base_price]
+                [product.id, `${product.id}-STD-DEF`, product.base_price, images || []]
             );
             createdVariants.push({ ...defaultVar.rows[0], price: product.base_price });
         }
@@ -479,13 +480,14 @@ export const updateOrderFulfillment = async (req, res) => {
 
         const updateRes = await pool.query(
             `UPDATE seller_orders SET
+                status = COALESCE($1, status),
                 fulfillment_status = COALESCE($1, fulfillment_status),
                 tracking_number = COALESCE($2, tracking_number),
+                shipping_carrier = COALESCE($3, shipping_carrier),
                 carrier = COALESCE($3, carrier),
                 shipped_at = CASE WHEN $1 = 'shipped' AND shipped_at IS NULL THEN NOW() ELSE shipped_at END,
-                delivered_at = CASE WHEN $1 = 'delivered' AND delivered_at IS NULL THEN NOW() ELSE delivered_at END,
-                updated_at = NOW()
-             WHERE id = $4 AND brand_id = $5
+                delivered_at = CASE WHEN $1 = 'delivered' AND delivered_at IS NULL THEN NOW() ELSE delivered_at END
+             WHERE id = $4 AND (brand_id = $5 OR seller_id = (SELECT user_id FROM brands WHERE id = $5))
              RETURNING *`,
             [fulfillment_status, tracking_number, carrier, id, req.brand.id]
         );
@@ -523,9 +525,9 @@ export const getBrandAnalytics = async (req, res) => {
             `SELECT 
                 DATE(created_at) as date,
                 COUNT(*) as orders_count,
-                SUM(subtotal) as gross_sales,
-                SUM(commission_amount) as platform_fees,
-                SUM(net_payout) as net_earnings
+                COALESCE(SUM(subtotal), 0) as gross_sales,
+                COALESCE(SUM(commission_amount), 0) as platform_fees,
+                COALESCE(SUM(COALESCE(seller_net_earnings, net_payout, 0)), 0) as net_earnings
              FROM seller_orders
              WHERE brand_id = $1 AND created_at >= NOW() - INTERVAL '30 days'
              GROUP BY DATE(created_at)
@@ -538,9 +540,10 @@ export const getBrandAnalytics = async (req, res) => {
             `SELECT 
                 p.id, p.name, p.images, p.clothing_type,
                 COUNT(oi.id) as units_sold,
-                SUM(oi.total_price) as total_revenue
+                COALESCE(SUM(oi.quantity * oi.price_at_purchase), 0) as total_revenue
              FROM order_items oi
-             JOIN products p ON oi.product_id = p.id
+             JOIN product_variants pv ON oi.variant_id = pv.id
+             JOIN products p ON pv.product_id = p.id
              WHERE p.brand_id = $1
              GROUP BY p.id, p.name, p.images, p.clothing_type
              ORDER BY units_sold DESC

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { 
   User, 
@@ -15,13 +15,26 @@ import {
 import api from '@api';
 
 const AuthPage = ({ initialMode = 'login' }) => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
   // Mode: 'buyer' | 'seller'
   const [roleMode, setRoleMode] = useState(searchParams.get('mode') === 'seller' ? 'seller' : 'buyer');
   // Type: 'login' | 'register'
   const [isRegister, setIsRegister] = useState(initialMode === 'register');
+
+  useEffect(() => {
+    setIsRegister(initialMode === 'register');
+  }, [initialMode]);
+
+  useEffect(() => {
+    const mode = searchParams.get('mode');
+    if (mode === 'seller' || mode === 'brand') {
+      setRoleMode('seller');
+    } else if (mode === 'buyer') {
+      setRoleMode('buyer');
+    }
+  }, [searchParams]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -42,6 +55,17 @@ const AuthPage = ({ initialMode = 'login' }) => {
     }));
   };
 
+  const handleRoleChange = (newRole) => {
+    setRoleMode(newRole);
+    setError('');
+    // Synchronize query parameter
+    setSearchParams(prev => {
+      const p = new URLSearchParams(prev);
+      p.set('mode', newRole);
+      return p;
+    }, { replace: true });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -51,12 +75,22 @@ const AuthPage = ({ initialMode = 'login' }) => {
     try {
       if (isRegister) {
         if (roleMode === 'buyer') {
-          // 1. Buyer Registration
+          // 1. Buyer Registration Validation & Call
+          if (!formData.name?.trim()) {
+            throw new Error('Please enter your full name.');
+          }
+          if (!formData.email?.trim()) {
+            throw new Error('Please enter your email address.');
+          }
+          if (!formData.password || formData.password.length < 6) {
+            throw new Error('Password must be at least 6 characters long.');
+          }
+
           const res = await api.post('/auth/register', {
-            name: formData.name,
-            firstName: formData.name ? formData.name.trim().split(' ')[0] : 'User',
-            lastName: formData.name ? formData.name.trim().split(' ').slice(1).join(' ') : '',
-            email: formData.email,
+            name: formData.name.trim(),
+            firstName: formData.name.trim().split(' ')[0],
+            lastName: formData.name.trim().split(' ').slice(1).join(' ') || '',
+            email: formData.email.trim(),
             password: formData.password,
           });
 
@@ -64,16 +98,29 @@ const AuthPage = ({ initialMode = 'login' }) => {
           localStorage.setItem('userRole', 'buyer');
           navigate('/');
         } else {
-          // 2. Brand Seller Registration
+          // 2. Brand Seller Registration Validation & Call
+          if (!formData.brandName?.trim()) {
+            throw new Error('Brand / Studio Label Name is required.');
+          }
+          if (!formData.name?.trim()) {
+            throw new Error('Founder / Business Lead Name is required.');
+          }
+          if (!formData.email?.trim()) {
+            throw new Error('Email address is required.');
+          }
+          if (!formData.password || formData.password.length < 6) {
+            throw new Error('Password must be at least 6 characters long.');
+          }
+
           const res = await api.post('/auth/register-brand', {
-            name: formData.name,
-            firstName: formData.name ? formData.name.trim().split(' ')[0] : 'Brand Lead',
-            lastName: formData.name ? formData.name.trim().split(' ').slice(1).join(' ') : '',
-            email: formData.email,
+            name: formData.name.trim(),
+            firstName: formData.name.trim().split(' ')[0],
+            lastName: formData.name.trim().split(' ').slice(1).join(' ') || '',
+            email: formData.email.trim(),
             password: formData.password,
-            brandName: formData.brandName || `${formData.name}'s Atelier`,
-            bio: formData.brandDescription || 'Independent fashion brand',
-            brandDescription: formData.brandDescription || 'Independent fashion brand',
+            brandName: formData.brandName.trim(),
+            bio: formData.brandDescription?.trim() || `Official brand line of ${formData.brandName.trim()}`,
+            brandDescription: formData.brandDescription?.trim() || `Official brand line of ${formData.brandName.trim()}`,
           });
 
           localStorage.setItem('token', res.data.token);
@@ -82,19 +129,24 @@ const AuthPage = ({ initialMode = 'login' }) => {
         }
       } else {
         // Login for either role
+        if (!formData.email?.trim() || !formData.password) {
+          throw new Error('Please provide both email and password.');
+        }
+
         const targetRole = roleMode === 'seller' ? 'seller' : 'buyer';
         const res = await api.post('/auth/login', {
-          email: formData.email,
+          email: formData.email.trim(),
           password: formData.password,
           targetRole: targetRole,
         });
 
         localStorage.setItem('token', res.data.token);
-        localStorage.setItem('userRole', res.data.user?.role || targetRole);
+        const resolvedRole = res.data.user?.role || targetRole;
+        localStorage.setItem('userRole', resolvedRole);
 
-        if (res.data.user?.role === 'seller' || res.data.user?.role === 'brand') {
+        if (resolvedRole === 'seller' || resolvedRole === 'brand') {
           navigate('/seller');
-        } else if (res.data.user?.role === 'admin' || res.data.user?.role === 'super_admin') {
+        } else if (resolvedRole === 'admin' || resolvedRole === 'super_admin') {
           navigate('/admin');
         } else {
           const redirect = searchParams.get('redirect') || '/';
@@ -103,7 +155,14 @@ const AuthPage = ({ initialMode = 'login' }) => {
       }
     } catch (err) {
       console.error('Authentication error:', err);
-      setError(err.response?.data?.message || err.response?.data?.error || 'Authentication failed. Please verify credentials.');
+      const serverMsg = err.response?.data?.error || err.response?.data?.message;
+      if (serverMsg) {
+        setError(serverMsg);
+      } else if (err.message && err.message !== 'Network Error') {
+        setError(err.message);
+      } else {
+        setError('Cannot connect to API server. Please verify backend is active on http://localhost:5000.');
+      }
     } finally {
       setLoading(false);
     }
@@ -134,7 +193,7 @@ const AuthPage = ({ initialMode = 'login' }) => {
           <div className="grid grid-cols-2 p-1 rounded-2xl bg-zinc-100 dark:bg-zinc-800">
             <button
               type="button"
-              onClick={() => { setRoleMode('buyer'); setError(''); }}
+              onClick={() => handleRoleChange('buyer')}
               className={`py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                 roleMode === 'buyer'
                   ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-sm'
@@ -147,7 +206,7 @@ const AuthPage = ({ initialMode = 'login' }) => {
 
             <button
               type="button"
-              onClick={() => { setRoleMode('seller'); setError(''); }}
+              onClick={() => handleRoleChange('seller')}
               className={`py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                 roleMode === 'seller'
                   ? 'bg-amber-500 text-zinc-950 shadow-sm'
@@ -295,7 +354,12 @@ const AuthPage = ({ initialMode = 'login' }) => {
             </span>
             <button
               type="button"
-              onClick={() => { setIsRegister(!isRegister); setError(''); }}
+              onClick={() => { 
+                const nextRegister = !isRegister;
+                setIsRegister(nextRegister); 
+                setError('');
+                navigate(`${nextRegister ? '/register' : '/login'}?mode=${roleMode}`, { replace: true });
+              }}
               className="font-bold text-blue-600 dark:text-blue-400 hover:underline"
             >
               {isRegister ? 'Sign In instead' : 'Create an Account'}
