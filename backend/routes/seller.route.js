@@ -20,6 +20,8 @@ const router = express.Router();
 // Public store endpoints
 router.get('/public/all', getAllStores);
 router.get('/public/:slug', getPublicStoreBySlug);
+router.get('/stores', getAllStores);
+router.get('/stores/:slug', getPublicStoreBySlug);
 
 // Seller onboarding & status
 router.post('/apply', protectRoute, applySeller);

@@ -15,11 +15,11 @@ const StorefrontPage = () => {
         const fetchStore = async () => {
             try {
                 setLoading(true);
-                const res = await api.get(`/seller/public/${slug}`);
-                setStore(res.data.store);
+                const res = await api.get(`/brand/public/${slug}`);
+                setStore(res.data.brand || res.data.store);
                 setProducts(res.data.products || []);
             } catch (err) {
-                setError(err.response?.data?.error || 'Store not found.');
+                setError(err.response?.data?.error || 'Brand not found.');
             } finally {
                 setLoading(false);
             }

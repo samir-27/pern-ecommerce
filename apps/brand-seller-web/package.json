@@ -1,0 +1,19 @@
+{
+  "name": "brand-seller-web",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Dedicated Brand Seller Application & Operations Studio for MINIMAL. Fashion Marketplace",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "axios": "^1.19.0",
+    "lucide-react": "^1.28.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router-dom": "^7.18.2"
+  }
+}

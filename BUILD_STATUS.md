@@ -5,8 +5,9 @@
 ### Project Information
 - **Repository**: PERN Fashion Marketplace (`d:\projects\pern-ecommerce`)
 - **Active Branch**: `main`
-- **Verification Date**: October 2026
-- **Current Phase**: All 9 Execution Phases Complete and Fully Verified
+- **Architecture**: 3 Distinct Applications (Buyer Storefront, Dedicated Brand Seller Portal, Standalone Super Admin Console)
+- **Database Model**: Brand-Based Fashion Seller System (`brands` table, `brand_id` relations)
+- **Current Phase**: Fully Verified & Operational
 
 ---
 
@@ -14,17 +15,27 @@
 
 ```bash
 # Backend Automated Test Suite
-npm --prefix backend test
-# Result: 9/9 tests passed (0 failures)
+cd backend && npm test
+# Result: 10/10 tests passed (0 failures)
 
 # Frontend ESLint Verification
-npm --prefix frontend run lint
+cd frontend && npm run lint
 # Result: 0 errors
 
 # Frontend Production Build
-npm --prefix frontend run build
-# Result: Vite built in 424ms without warnings/errors
+cd frontend && npm run build
+# Result: Vite production build succeeded in 655ms (0 errors)
 ```
+
+---
+
+### Application Architecture Matrix
+
+| Application | Path / Route | Role | Design & Scope |
+|---|---|---|---|
+| **Buyer Web** | `apps/buyer-web` (`/`) | `user` | Curated apparel storefront, category/attribute filters, AI stylist, cart, checkout, order tracking, returns, dual auth. |
+| **Brand Seller Web** | `apps/brand-seller-web` (`/seller`) | `seller` / `brand` | Dedicated studio portal (dark slate/amber), brand business credentials, clothing catalog & variant inventory, order dispatch hub, revenue analytics. |
+| **Super Admin Web** | `apps/super-admin-web` (`/admin`) | `admin` / `super_admin` | Standalone governance console (obsidian/indigo), brand seller moderation & commission overrides, buyer spend analytics, catalog moderation, security audit logs, dedicated `/admin/login`. |
 
 ---
 

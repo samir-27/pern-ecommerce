@@ -57,19 +57,19 @@ const Navbar = ({ cartItemCount = 0, onCartClick, onOpenAiStylist }) => {
               <Store size={16} /> Brands
             </Link>
 
-            {role === "seller" && (
+            {(role === "seller" || role === "brand") && (
               <Link
                 to="/seller"
-                className="text-accent hover:text-secondary font-bold transition-colors"
+                className="text-amber-500 hover:text-amber-400 font-bold transition-colors"
               >
-                Seller Hub
+                Brand Studio
               </Link>
             )}
 
             {(role === "admin" || role === "super_admin") && (
               <Link
                 to="/admin"
-                className="text-accent hover:text-secondary font-bold transition-colors"
+                className="text-indigo-500 hover:text-indigo-400 font-bold transition-colors"
               >
                 Super Admin
               </Link>
@@ -77,10 +77,10 @@ const Navbar = ({ cartItemCount = 0, onCartClick, onOpenAiStylist }) => {
 
             {!role || role === "user" || role === "customer" ? (
               <Link
-                to="/seller/apply"
+                to="/register"
                 className="text-xs font-bold uppercase tracking-wider text-secondary/70 hover:text-accent px-3 py-1.5 rounded-full border border-secondary/15 transition"
               >
-                Become a Seller
+                Sell as Brand
               </Link>
             ) : null}
           </div>

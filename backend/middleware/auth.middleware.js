@@ -30,29 +30,42 @@ export const protectRoute = async (req, res, next) => {
     }
 };
 
-export const sellerRoute = async (req, res, next) => {
+export const brandRoute = async (req, res, next) => {
     if (!req.user) {
         return res.status(401).json({ error: 'Not authenticated' });
     }
 
     if (req.user.role === 'admin' || req.user.role === 'super_admin') {
-        // Admin can act as seller or view seller tools
-        const storeRes = await pool.query('SELECT * FROM seller_stores WHERE user_id = $1', [req.user.id]);
-        req.sellerStore = storeRes.rows[0] || null;
+        const brandRes = await pool.query('SELECT * FROM brands WHERE user_id = $1', [req.user.id]);
+        req.brand = brandRes.rows[0] || null;
+        req.sellerStore = req.brand;
         return next();
     }
 
-    if (req.user.role === 'seller') {
-        const storeRes = await pool.query('SELECT * FROM seller_stores WHERE user_id = $1 AND is_active = true', [req.user.id]);
-        if (storeRes.rows.length === 0) {
-            return res.status(403).json({ error: 'Seller store is suspended or does not exist' });
+    if (req.user.role === 'seller' || req.user.role === 'brand') {
+        const brandRes = await pool.query('SELECT * FROM brands WHERE user_id = $1', [req.user.id]);
+        if (brandRes.rows.length === 0) {
+            return res.status(403).json({ error: 'No brand profile registered for this account', code: 'NO_BRAND' });
         }
-        req.sellerStore = storeRes.rows[0];
+        const brand = brandRes.rows[0];
+        if (brand.status === 'suspended') {
+            return res.status(403).json({ error: 'Your brand account is currently suspended. Please contact platform administration.', code: 'BRAND_SUSPENDED' });
+        }
+        if (brand.status === 'pending') {
+            return res.status(403).json({ error: 'Your brand application is currently under review by Super Admin.', code: 'BRAND_PENDING' });
+        }
+        if (brand.status === 'rejected') {
+            return res.status(403).json({ error: 'Your brand application was not approved.', code: 'BRAND_REJECTED' });
+        }
+        req.brand = brand;
+        req.sellerStore = brand;
         return next();
     }
 
-    return res.status(403).json({ error: 'Access restricted to authorized sellers' });
+    return res.status(403).json({ error: 'Access restricted to authorized brand sellers', code: 'UNAUTHORIZED_ROLE' });
 };
+
+export const sellerRoute = brandRoute;
 
 export const adminRoute = (req, res, next) => {
     if (req.user && (req.user.role === 'admin' || req.user.role === 'super_admin')) {

@@ -15,7 +15,10 @@ import {
     updatePayoutStatus,
     getAdminReturns,
     updateReturnStatus,
-    getAuditLogs
+    getAuditLogs,
+    getBuyers,
+    getBrandSellers,
+    updateBrandStatus
 } from '../controllers/admin.controller.js';
 
 const router = express.Router();
@@ -26,11 +29,14 @@ router.get('/products', protectRoute, superAdminRoute, getAdminProducts);
 router.put('/products/:id/moderation', protectRoute, superAdminRoute, moderateProduct);
 router.get('/orders', protectRoute, superAdminRoute, getAdminOrders);
 
-// Seller Management & Applications
+// Seller & Brand Management
 router.get('/seller-applications', protectRoute, superAdminRoute, getSellerApplications);
 router.put('/seller-applications/:id', protectRoute, superAdminRoute, reviewSellerApplication);
 router.get('/sellers', protectRoute, superAdminRoute, getAdminSellers);
 router.put('/sellers/:id', protectRoute, superAdminRoute, updateSellerStatus);
+router.get('/brands', protectRoute, superAdminRoute, getBrandSellers);
+router.put('/brands/:id', protectRoute, superAdminRoute, updateBrandStatus);
+router.get('/buyers', protectRoute, superAdminRoute, getBuyers);
 
 // Commission Rules & Payouts
 router.get('/commissions', protectRoute, superAdminRoute, getCommissionRules);

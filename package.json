@@ -1,0 +1,15 @@
+{
+  "name": "ecommerce-platform",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Multi-Vendor Fashion Marketplace: Buyer Storefront, Brand Seller Portal, and Super Admin Command Center",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev": "npm --prefix frontend run dev",
+    "test": "npm --prefix backend test",
+    "build": "npm --prefix frontend run build",
+    "migrate": "node backend/migrations/migrate.js"
+  }
+}

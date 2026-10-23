@@ -1,3 +1,4 @@
+import '../env.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import pool from '../db.js';
@@ -43,19 +44,138 @@ export const registerUser = async (req, res) => {
     }
 };
 
+export const registerBrandSeller = async (req, res) => {
+    const { 
+        email, 
+        password, 
+        firstName, 
+        lastName, 
+        phone, 
+        brandName, 
+        bio, 
+        website, 
+        businessNumber,
+        policyReturn,
+        policyShipping 
+    } = req.body;
+
+    if (!email || !password || !firstName || !brandName) {
+        return res.status(400).json({ error: 'Email, password, personal name, and Brand name are required.' });
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        const userExists = await client.query('SELECT id FROM users WHERE email = $1', [email]);
+        if (userExists.rows.length > 0) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ error: 'An account with this email already exists' });
+        }
+
+        const baseSlug = brandName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') || 'brand';
+        const slug = `${baseSlug}-${Date.now().toString(36)}`;
+
+        const saltRounds = 10;
+        const salt = await bcrypt.genSalt(saltRounds);
+        const passwordHash = await bcrypt.hash(password, salt);
+
+        const userRes = await client.query(
+            'INSERT INTO users (email, password_hash, first_name, last_name, phone, role) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, email, first_name, last_name, phone, role',
+            [email, passwordHash, firstName, lastName || '', phone || null, 'seller']
+        );
+        const user = userRes.rows[0];
+
+        const brandRes = await client.query(
+            `INSERT INTO brands (
+                user_id, name, slug, bio, website, contact_email, contact_phone, 
+                business_registration_number, policy_return, policy_shipping, status
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'active')
+            RETURNING *`,
+            [
+                user.id,
+                brandName.trim(),
+                slug,
+                bio || `Official marketplace brand for ${brandName}`,
+                website || null,
+                email,
+                phone || null,
+                businessNumber || null,
+                policyReturn || 'Standard 14-day unworn clothing returns accepted.',
+                policyShipping || 'Dispatched within 2 business days.'
+            ]
+        );
+        const brand = brandRes.rows[0];
+
+        // Also populate backward-compatible seller_stores
+        await client.query(
+            `INSERT INTO seller_stores (id, user_id, name, slug, bio, is_active)
+             VALUES ($1, $2, $3, $4, $5, true)
+             ON CONFLICT (id) DO NOTHING`,
+            [brand.id, user.id, brand.name, brand.slug, brand.bio]
+        );
+
+        await client.query('COMMIT');
+
+        const token = jwt.sign(
+            { id: user.id, role: user.role },
+            process.env.JWT_SECRET,
+            { expiresIn: jwtExpiresIn }
+        );
+
+        res.status(201).json({
+            message: 'Brand Seller registered successfully',
+            token,
+            user,
+            brand
+        });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Error during brand registration:', err);
+        res.status(500).json({ error: 'Server error during brand registration: ' + err.message });
+    } finally {
+        client.release();
+    }
+};
+
 export const loginUser = async (req, res) => {
-    const { email, password } = req.body;
+    const { email, password, targetRole } = req.body;
 
     try {
         const userResult = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
         
         if (userResult.rows.length === 0) {
-            return res.status(401).json({ error: 'Invalid credentials' });
+            return res.status(401).json({ error: 'Invalid email or password' });
         }
 
         const user = userResult.rows[0];
 
         const validPassword = await bcrypt.compare(password, user.password_hash);
+        if (!validPassword) {
+            return res.status(401).json({ error: 'Invalid email or password' });
+        }
+
+        // Enforce role-appropriate login routing
+        if (targetRole === 'seller' && user.role === 'user') {
+            return res.status(403).json({ 
+                error: 'This account is registered as a Buyer. Please sign in via the Buyer portal or register as a Brand Seller.',
+                code: 'ROLE_MISMATCH_BUYER'
+            });
+        }
+
+        if (targetRole === 'admin' && user.role !== 'admin' && user.role !== 'super_admin') {
+            return res.status(403).json({ 
+                error: 'Access denied: Requires Super Administrator credentials.',
+                code: 'ROLE_NOT_ADMIN'
+            });
+        }
+
+        // Fetch brand details if user is seller/admin
+        let brand = null;
+        if (user.role === 'seller' || user.role === 'admin' || user.role === 'super_admin') {
+            const brandRes = await pool.query('SELECT * FROM brands WHERE user_id = $1', [user.id]);
+            brand = brandRes.rows[0] || null;
+        }
 
         const token = jwt.sign(
             { 
@@ -75,12 +195,14 @@ export const loginUser = async (req, res) => {
                 first_name: user.first_name,
                 last_name: user.last_name,
                 role: user.role
-            }
+            },
+            brand
         });
 
     } catch (err) {
-        console.error('Error during login:', err.message);
-        res.status(500).json({ error: 'Server error during login' });
+        console.error('Error during login:', err);
+        const errDetail = err?.stack || err?.message || String(err);
+        res.status(500).json({ error: 'Server error during login: ' + errDetail });
     }
 };
 

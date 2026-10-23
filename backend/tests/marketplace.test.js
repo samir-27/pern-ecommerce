@@ -307,4 +307,36 @@ describe('PERN Multi-Vendor Fashion Marketplace Test Suite', () => {
         assert.ok(auditRes.rows.length > 0, 'Audit log event must be persisted');
         assert.equal(auditRes.rows[0].target_entity, 'orders');
     });
+
+    test('10. Brand Seller Data Model & Super Admin Moderation', async () => {
+        const brandSlug = `brand-test-${Date.now()}`;
+        const brandRes = await pool.query(`
+            INSERT INTO brands (user_id, name, slug, bio, status, commission_rate)
+            VALUES ($1, 'Milan Haute', $2, 'Italian craftsmanship', 'active', 10.00)
+            RETURNING *
+        `, [testSellerUser1.id, brandSlug]);
+
+        const brand = brandRes.rows[0];
+        assert.equal(brand.name, 'Milan Haute');
+        assert.equal(brand.status, 'active');
+
+        const brandProdRes = await pool.query(`
+            INSERT INTO products (name, base_price, category_id, seller_id, brand_id, brand, status)
+            VALUES ('Milan Silk Blazer', 4500, $1, $2, $3, $4, 'approved')
+            RETURNING *
+        `, [categoryShirtId, testSellerUser1.id, brand.id, brand.name]);
+
+        assert.equal(brandProdRes.rows[0].brand_id, brand.id);
+
+        // Super Admin update brand status to suspended
+        const updateRes = await pool.query(`
+            UPDATE brands SET status = 'suspended', updated_at = NOW() WHERE id = $1 RETURNING *
+        `, [brand.id]);
+
+        assert.equal(updateRes.rows[0].status, 'suspended');
+
+        // Cleanup
+        await pool.query('DELETE FROM products WHERE id = $1', [brandProdRes.rows[0].id]);
+        await pool.query('DELETE FROM brands WHERE id = $1', [brand.id]);
+    });
 });

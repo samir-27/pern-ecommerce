@@ -524,3 +524,92 @@ export const getAuditLogs = async (req, res) => {
         res.status(500).json({ error: 'Server error' });
     }
 };
+
+// Platform Buyers Management
+export const getBuyers = async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT u.id, u.email, u.first_name, u.last_name, u.phone, u.created_at,
+                   COUNT(o.id) as total_orders,
+                   COALESCE(SUM(o.total_amount), 0) as total_spent
+            FROM users u
+            LEFT JOIN orders o ON u.id = o.user_id
+            WHERE u.role = 'user' OR u.role = 'customer'
+            GROUP BY u.id
+            ORDER BY u.created_at DESC
+        `);
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Error fetching buyers:', err);
+        res.status(500).json({ error: 'Server error fetching buyers' });
+    }
+};
+
+// Brand Sellers Directory & Moderation for Super Admin
+export const getBrandSellers = async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT b.*, u.email as owner_email, u.first_name, u.last_name, u.phone as owner_phone,
+                   COUNT(DISTINCT p.id) as total_products,
+                   COUNT(DISTINCT so.id) as total_orders,
+                   COALESCE(SUM(so.subtotal), 0) as gross_volume,
+                   COALESCE(SUM(so.commission_amount), 0) as platform_commission,
+                   COALESCE(SUM(so.net_payout), 0) as net_payout
+            FROM brands b
+            JOIN users u ON b.user_id = u.id
+            LEFT JOIN products p ON b.id = p.brand_id
+            LEFT JOIN seller_orders so ON b.id = so.brand_id
+            GROUP BY b.id, u.email, u.first_name, u.last_name, u.phone
+            ORDER BY b.created_at DESC
+        `);
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Error fetching brand sellers:', err);
+        res.status(500).json({ error: 'Server error fetching brands' });
+    }
+};
+
+// Super Admin Update Brand Status (Approve / Suspend / Reactivate / Commission)
+export const updateBrandStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status, commission_rate } = req.body;
+        const validStatuses = ['active', 'suspended', 'rejected', 'pending'];
+        if (status && !validStatuses.includes(status)) {
+            return res.status(400).json({ error: 'Invalid brand status' });
+        }
+
+        const result = await pool.query(`
+            UPDATE brands SET
+                status = COALESCE($1, status),
+                commission_rate = COALESCE($2, commission_rate),
+                updated_at = NOW()
+            WHERE id = $3
+            RETURNING *
+        `, [status, commission_rate, id]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Brand not found' });
+        }
+
+        if (status) {
+            await pool.query(
+                `UPDATE seller_stores SET is_active = $1 WHERE id = $2`,
+                [status === 'active', id]
+            );
+        }
+
+        await logAuditEvent({
+            userId: req.user.id,
+            action: 'SUPER_ADMIN_BRAND_STATUS_CHANGED',
+            targetType: 'brand',
+            targetId: id,
+            details: { status, commission_rate }
+        });
+
+        res.json({ message: 'Brand status updated successfully', brand: result.rows[0] });
+    } catch (err) {
+        console.error('Error updating brand status:', err);
+        res.status(500).json({ error: 'Server error updating brand status' });
+    }
+};

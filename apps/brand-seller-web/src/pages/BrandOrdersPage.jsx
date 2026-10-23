@@ -1,0 +1,323 @@
+import React, { useState, useEffect } from 'react';
+import { 
+    PackageCheck, 
+    Truck, 
+    Calendar, 
+    User, 
+    MapPin, 
+    CheckCircle2, 
+    Clock, 
+    Search, 
+    ExternalLink, 
+    Loader2, 
+    X, 
+    AlertCircle 
+} from 'lucide-react';
+import api from '@api';
+
+const BrandOrdersPage = () => {
+    const [orders, setOrders] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedOrder, setSelectedOrder] = useState(null);
+    const [isFulfillModalOpen, setIsFulfillModalOpen] = useState(false);
+    const [carrier, setCarrier] = useState('BlueDart');
+    const [trackingNumber, setTrackingNumber] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const fetchOrders = async () => {
+        try {
+            setLoading(true);
+            const res = await api.get('/brand/orders');
+            setOrders(res.data || []);
+        } catch (err) {
+            console.error('Error fetching brand orders:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchOrders();
+    }, []);
+
+    const openFulfillModal = (order) => {
+        setSelectedOrder(order);
+        setCarrier(order.carrier || 'BlueDart');
+        setTrackingNumber(order.tracking_number || '');
+        setIsFulfillModalOpen(true);
+    };
+
+    const handleFulfillSubmit = async (e) => {
+        e.preventDefault();
+        if (!selectedOrder) return;
+        setSubmitting(true);
+        try {
+            await api.put(`/brand/orders/${selectedOrder.id}/fulfill`, {
+                fulfillment_status: 'shipped',
+                carrier,
+                tracking_number: trackingNumber
+            });
+            setIsFulfillModalOpen(false);
+            await fetchOrders();
+        } catch (err) {
+            console.error('Error fulfilling order:', err);
+            alert('Failed to update shipment status');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const filteredOrders = orders.filter(o => 
+        (o.order_number || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (o.customer_email || '').toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    if (loading) {
+        return (
+            <div className="h-[60vh] flex items-center justify-center">
+                <Loader2 className="animate-spin text-amber-500" size={32} />
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl md:text-3xl font-black text-white">Fulfillment & Dispatch Hub</h1>
+                    <p className="text-slate-400 text-sm mt-1">
+                        Review customer purchases for your garments and assign parcel tracking information.
+                    </p>
+                </div>
+                <div className="relative">
+                    <Search className="absolute left-3 top-2.5 text-slate-500" size={16} />
+                    <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Search order number or buyer..."
+                        className="pl-9 pr-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs w-64 focus:outline-none focus:border-amber-500"
+                    />
+                </div>
+            </div>
+
+            {/* Orders Feed */}
+            {filteredOrders.length === 0 ? (
+                <div className="p-12 text-center rounded-2xl bg-slate-900/60 border border-slate-800 text-slate-400">
+                    <PackageCheck className="mx-auto text-slate-600 mb-3" size={40} />
+                    <h3 className="text-base font-bold text-white">No orders matching criteria</h3>
+                    <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                        New orders for your apparel will appear here automatically.
+                    </p>
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    {filteredOrders.map((o) => {
+                        const isPending = o.fulfillment_status === 'pending';
+                        const isShipped = o.fulfillment_status === 'shipped';
+                        const isDelivered = o.fulfillment_status === 'delivered';
+
+                        return (
+                            <div 
+                                key={o.id} 
+                                className="p-5 md:p-6 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-slate-700/80 transition-all space-y-4"
+                            >
+                                {/* Order Header */}
+                                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2.5 rounded-xl bg-slate-800 text-amber-400">
+                                            <PackageCheck size={20} />
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-bold text-white text-sm">
+                                                    Order #{o.order_number || `ORD-${o.id}`}
+                                                </span>
+                                                <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md uppercase tracking-wider ${
+                                                    isDelivered
+                                                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                                                        : isShipped
+                                                        ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30'
+                                                        : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                                                }`}>
+                                                    {isDelivered || isShipped ? <Truck size={11} /> : <Clock size={11} />}
+                                                    {o.fulfillment_status}
+                                                </span>
+                                            </div>
+                                            <span className="text-xs text-slate-400 mt-0.5 flex items-center gap-1.5">
+                                                <Calendar size={12} /> {new Date(o.created_at).toLocaleDateString()}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-4 text-right">
+                                        <div>
+                                            <span className="text-xs text-slate-400 block">Brand Net Payout</span>
+                                            <span className="text-base font-black text-amber-400">
+                                                ₹{Number(o.net_payout || o.subtotal).toLocaleString('en-IN')}
+                                            </span>
+                                        </div>
+                                        {isPending && (
+                                            <button
+                                                onClick={() => openFulfillModal(o)}
+                                                className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition-all shadow-md active:scale-95 flex items-center gap-1.5"
+                                            >
+                                                <Truck size={14} /> Dispatch Parcel
+                                            </button>
+                                        )}
+                                        {isShipped && (
+                                            <button
+                                                onClick={() => openFulfillModal(o)}
+                                                className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+                                            >
+                                                Edit Tracking
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Customer & Shipping Info */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs bg-slate-950/40 p-3.5 rounded-xl border border-slate-800/60">
+                                    <div className="flex items-start gap-2 text-slate-300">
+                                        <User size={14} className="text-amber-400 shrink-0 mt-0.5" />
+                                        <div>
+                                            <span className="font-semibold text-white block">
+                                                {o.customer_first_name} {o.customer_last_name}
+                                            </span>
+                                            <span className="text-slate-400">{o.customer_email}</span>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-start gap-2 text-slate-300">
+                                        <MapPin size={14} className="text-amber-400 shrink-0 mt-0.5" />
+                                        <div>
+                                            <span className="text-slate-400 block">Delivery Address:</span>
+                                            <span className="text-white">
+                                                {typeof o.shipping_address === 'object' 
+                                                    ? `${o.shipping_address?.street || ''}, ${o.shipping_address?.city || ''} ${o.shipping_address?.pincode || ''}`
+                                                    : o.shipping_address || 'Address provided on customer file'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Tracking Info if Shipped */}
+                                {o.tracking_number && (
+                                    <div className="flex items-center gap-3 text-xs bg-blue-950/20 border border-blue-500/30 text-blue-300 px-3.5 py-2 rounded-xl">
+                                        <Truck size={14} className="text-blue-400" />
+                                        <span>
+                                            Carrier: <strong>{o.carrier || 'Express Courier'}</strong> • Tracking AWB: <strong>{o.tracking_number}</strong>
+                                        </span>
+                                    </div>
+                                )}
+
+                                {/* Line Items */}
+                                <div className="space-y-2 pt-2">
+                                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+                                        Garments in this order
+                                    </span>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                                        {o.items?.map((item) => (
+                                            <div 
+                                                key={item.id} 
+                                                className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center gap-3 text-xs"
+                                            >
+                                                <img 
+                                                    src={item.images?.[0] || 'https://via.placeholder.com/60'} 
+                                                    alt={item.product_name}
+                                                    className="w-10 h-12 rounded-lg object-cover bg-slate-800 shrink-0"
+                                                />
+                                                <div className="truncate">
+                                                    <div className="font-bold text-white truncate">{item.product_name}</div>
+                                                    <div className="text-slate-400 text-[11px]">
+                                                        Size: {item.size || 'M'} • {item.color || 'Standard'}
+                                                    </div>
+                                                    <div className="text-amber-400 font-semibold mt-0.5">
+                                                        Qty {item.quantity} × ₹{item.unit_price}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+
+            {/* Fulfill Modal */}
+            {isFulfillModalOpen && selectedOrder && (
+                <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-5">
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                            <h3 className="text-base font-bold text-white flex items-center gap-2">
+                                <Truck size={18} className="text-amber-400" /> Dispatch Order #{selectedOrder.order_number}
+                            </h3>
+                            <button
+                                onClick={() => setIsFulfillModalOpen(false)}
+                                className="text-slate-400 hover:text-white"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleFulfillSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+                                    Shipping Courier / Carrier *
+                                </label>
+                                <select
+                                    value={carrier}
+                                    onChange={(e) => setCarrier(e.target.value)}
+                                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-amber-500"
+                                >
+                                    <option value="BlueDart">BlueDart Express</option>
+                                    <option value="Delhivery">Delhivery</option>
+                                    <option value="FedEx">FedEx India</option>
+                                    <option value="DHL">DHL Express</option>
+                                    <option value="Shadowfax">Shadowfax</option>
+                                    <option value="DTDC">DTDC Courier</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+                                    Tracking / AWB Number *
+                                </label>
+                                <input
+                                    type="text"
+                                    value={trackingNumber}
+                                    onChange={(e) => setTrackingNumber(e.target.value)}
+                                    required
+                                    placeholder="e.g. BD7891234567"
+                                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-amber-500"
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsFulfillModalOpen(false)}
+                                    className="px-4 py-2 rounded-xl text-slate-400 hover:text-white text-xs font-semibold"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={submitting}
+                                    className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition-all shadow-md disabled:opacity-50"
+                                >
+                                    {submitting ? 'Confirming...' : 'Confirm Dispatch'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default BrandOrdersPage;

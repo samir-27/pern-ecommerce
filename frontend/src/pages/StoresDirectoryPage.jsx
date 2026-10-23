@@ -10,10 +10,10 @@ const StoresDirectoryPage = () => {
     useEffect(() => {
         const fetchStores = async () => {
             try {
-                const res = await api.get('/seller/public/all');
+                const res = await api.get('/brand/public/all');
                 setStores(res.data || []);
             } catch (err) {
-                console.error('Error fetching stores:', err);
+                console.error('Error fetching brands:', err);
             } finally {
                 setLoading(false);
             }
