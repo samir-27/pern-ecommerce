@@ -11,6 +11,11 @@ import { CartDrawer } from './components/Cart';
 import ProfilePage from './pages/ProfilePage';
 import CheckoutPage from './components/Checkout';
 import AdminDashboard from './pages/AdminDashboard';
+import SellerDashboard from './pages/SellerDashboard';
+import SellerApply from './pages/SellerApply';
+import StorefrontPage from './pages/StorefrontPage';
+import StoresDirectoryPage from './pages/StoresDirectoryPage';
+import AIFashionAssistant from './components/AIFashionAssistant';
 
 const ProtectedRoute = () => {
   const token = localStorage.getItem('token');
@@ -25,25 +30,34 @@ const AdminRoute = () => {
     return <Navigate to="/login" replace />;
   }
 
-  return role === 'admin' ? <Outlet /> : <Navigate to="/" replace />;
+  return (role === 'admin' || role === 'super_admin') ? <Outlet /> : <Navigate to="/" replace />;
 };
 
-// FIXED: MainLayout now accepts onCartClick and passes it to Navbar
-const MainLayout = ({ onCartClick }) => {
-    // We get the cart length here to pass to the Navbar badge
+const SellerRoute = () => {
+  const token = localStorage.getItem('token');
+  const role = localStorage.getItem('userRole');
+
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return (role === 'seller' || role === 'admin' || role === 'super_admin') ? <Outlet /> : <Navigate to="/seller/apply" replace />;
+};
+
+const MainLayout = ({ onCartClick, onOpenAiStylist }) => {
     const { cartItems } = useCart();
     
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <Navbar cartItemCount={cartItems.length} onCartClick={onCartClick} />
+            <Navbar cartItemCount={cartItems.length} onCartClick={onCartClick} onOpenAiStylist={onOpenAiStylist} />
             <Outlet />
         </div>
     );
 };
 
 function App() {
-  // State for the drawer lives here
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isAiStylistOpen, setIsAiStylistOpen] = useState(false);
 
   return (
     <CartProvider>
@@ -53,17 +67,28 @@ function App() {
           <Route path="/login" element={<AuthPage type="login" />} />
           <Route path="/register" element={<AuthPage type="register" />} />
 
-          {/* Protected routes */}
-          <Route element={<ProtectedRoute />}>
-            <Route element={<MainLayout onCartClick={() => setIsCartOpen(true)} />}>
-              <Route path="/" element={<Home />} />
-              <Route path="/products" element={<ProductsPage />} />
-              <Route path="/product/:id" element={<ProductDetailsPage />} />
+          {/* Public & Customer Storefront */}
+          <Route element={<MainLayout onCartClick={() => setIsCartOpen(true)} onOpenAiStylist={() => setIsAiStylistOpen(true)} />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/products" element={<ProductsPage />} />
+            <Route path="/product/:id" element={<ProductDetailsPage />} />
+            <Route path="/stores" element={<StoresDirectoryPage />} />
+            <Route path="/stores/:slug" element={<StorefrontPage />} />
+            
+            {/* Authenticated Customer routes */}
+            <Route element={<ProtectedRoute />}>
               <Route path="/checkout" element={<CheckoutPage />} />
               <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/seller/apply" element={<SellerApply />} />
             </Route>
           </Route>
 
+          {/* Seller Dashboard */}
+          <Route element={<SellerRoute />}>
+            <Route path="/seller" element={<SellerDashboard />} />
+          </Route>
+
+          {/* Super Admin Dashboard */}
           <Route element={<AdminRoute />}>
             <Route path="/admin" element={<AdminDashboard />} />
           </Route>
@@ -71,8 +96,9 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         
-        {/* The Drawer sits at the app level so it overlays everything */}
+        {/* Drawers */}
         <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+        <AIFashionAssistant isOpen={isAiStylistOpen} onClose={() => setIsAiStylistOpen(false)} />
       </BrowserRouter>
     </CartProvider>
   );

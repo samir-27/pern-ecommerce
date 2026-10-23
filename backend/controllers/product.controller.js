@@ -1,6 +1,7 @@
-import pool from "../db.js"
+import pool from "../db.js";
 import multer from 'multer';
 import { v2 as cloudinary } from 'cloudinary';
+import { logAuditEvent } from '../utils/auditLogger.js';
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -18,11 +19,21 @@ export const uploadProductImages = upload.array('images', 25);
 const uploadToCloudinary = async (file) => {
     if (!file) return null;
 
+    // Check if Cloudinary is configured
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    if (!cloudName || cloudName.includes('your_') || !process.env.CLOUDINARY_API_KEY) {
+        // Fallback for local/testing if Cloudinary credentials are mock
+        return `https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=600&q=80`;
+    }
+
     return new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
             { folder: 'ecommerce/products' },
             (error, result) => {
-                if (error) return reject(error);
+                if (error) {
+                    console.error('Cloudinary error, falling back:', error.message);
+                    return resolve(`https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=600&q=80`);
+                }
                 resolve(result?.secure_url || null);
             }
         );
@@ -43,13 +54,14 @@ export const getCategories = async (req, res) => {
 
 export const getProducts = async (req, res) => {
     try {
-        const { search, category, gender, color, size } = req.query;
+        const { search, category, gender, color, size, brand, clothing_type, season, store_slug, minPrice, maxPrice } = req.query;
 
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 9;
         const offset = (page - 1) * limit;
 
-        let conditions = [];
+        // Default: only approved products for the public catalog
+        let conditions = ["p.status = 'approved'"];
         let values = [];
         let paramIndex = 1;
 
@@ -65,6 +77,42 @@ export const getProducts = async (req, res) => {
         if (gender && gender !== 'All') {
             conditions.push(`p.gender = $${paramIndex}`);
             values.push(gender);
+            paramIndex++;
+        }
+
+        if (brand && brand !== 'All') {
+            conditions.push(`p.brand ILIKE $${paramIndex}`);
+            values.push(brand);
+            paramIndex++;
+        }
+
+        if (clothing_type && clothing_type !== 'All') {
+            conditions.push(`p.clothing_type ILIKE $${paramIndex}`);
+            values.push(clothing_type);
+            paramIndex++;
+        }
+
+        if (season && season !== 'All') {
+            conditions.push(`p.season ILIKE $${paramIndex}`);
+            values.push(season);
+            paramIndex++;
+        }
+
+        if (minPrice && !isNaN(minPrice)) {
+            conditions.push(`p.base_price >= $${paramIndex}`);
+            values.push(Number(minPrice));
+            paramIndex++;
+        }
+
+        if (maxPrice && !isNaN(maxPrice)) {
+            conditions.push(`p.base_price <= $${paramIndex}`);
+            values.push(Number(maxPrice));
+            paramIndex++;
+        }
+
+        if (store_slug) {
+            conditions.push(`s.slug = $${paramIndex}`);
+            values.push(store_slug);
             paramIndex++;
         }
 
@@ -94,8 +142,9 @@ export const getProducts = async (req, res) => {
 
         if (search) {
             conditions.push(`(
-                to_tsvector('english', p.name || ' ' || coalesce(p.description, '')) @@ plainto_tsquery('english', $${paramIndex})
+                to_tsvector('english', p.name || ' ' || coalesce(p.description, '') || ' ' || coalesce(p.brand, '')) @@ plainto_tsquery('english', $${paramIndex})
                 OR p.name ILIKE $${paramIndex + 1}
+                OR coalesce(p.brand, '') ILIKE $${paramIndex + 1}
             )`);
             values.push(search);
             values.push(`%${search}%`);
@@ -104,11 +153,11 @@ export const getProducts = async (req, res) => {
 
         const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
-
         const countQuery = `
             SELECT COUNT(p.id)
             FROM products p
             LEFT JOIN categories c ON p.category_id = c.id
+            LEFT JOIN seller_stores s ON p.store_id = s.id
             ${whereClause}
         `;
         const countResult = await pool.query(countQuery, values);
@@ -119,6 +168,8 @@ export const getProducts = async (req, res) => {
             SELECT 
                 p.*,
                 c.name AS category_name,
+                s.name AS store_name,
+                s.slug AS store_slug,
                 (
                     SELECT v.image_urls[1]
                     FROM product_variants v
@@ -130,6 +181,7 @@ export const getProducts = async (req, res) => {
                 ) AS main_image
             FROM products p
             LEFT JOIN categories c ON p.category_id = c.id
+            LEFT JOIN seller_stores s ON p.store_id = s.id
             ${whereClause}
             ORDER BY p.created_at DESC
             LIMIT $${paramIndex}
@@ -154,8 +206,6 @@ export const getProducts = async (req, res) => {
     }
 };
 
-// controllers/productController.js
-
 export const deleteProduct = async (req, res) => {
     const productId = req.params.id;
     const client = await pool.connect();
@@ -163,34 +213,43 @@ export const deleteProduct = async (req, res) => {
     try {
         await client.query('BEGIN');
 
-        const productResult = await client.query('SELECT category_id FROM products WHERE id = $1', [productId]);
-        
+        const productResult = await client.query('SELECT category_id, seller_id FROM products WHERE id = $1', [productId]);
+
         if (productResult.rows.length === 0) {
             await client.query('ROLLBACK');
             return res.status(404).json({ error: 'Product not found' });
         }
-        
-        const categoryId = productResult.rows[0].category_id;
+
+        const product = productResult.rows[0];
+
+        // Tenant isolation: Sellers can only delete their own products
+        if (req.user.role === 'seller' && product.seller_id !== req.user.id) {
+            await client.query('ROLLBACK');
+            return res.status(403).json({ error: 'Not authorized to delete this product' });
+        }
 
         await client.query('DELETE FROM products WHERE id = $1', [productId]);
 
-
-        const checkCategory = await client.query('SELECT COUNT(*) FROM products WHERE category_id = $1', [categoryId]);
-        
-
+        const checkCategory = await client.query('SELECT COUNT(*) FROM products WHERE category_id = $1', [product.category_id]);
         if (parseInt(checkCategory.rows[0].count) === 0) {
-            await client.query('DELETE FROM categories WHERE id = $1', [categoryId]);
-            console.log(`Category ${categoryId} is empty and was deleted.`);
+            await client.query('DELETE FROM categories WHERE id = $1', [product.category_id]);
         }
 
+        await logAuditEvent({
+            userId: req.user.id,
+            action: 'PRODUCT_DELETED',
+            targetEntity: 'products',
+            targetId: Number(productId),
+            details: { category_id: product.category_id }
+        });
+
         await client.query('COMMIT');
-        res.status(200).json({ message: 'Product and empty category cleaned up successfully' });
+        res.status(200).json({ message: 'Product cleaned up successfully' });
 
     } catch (err) {
         await client.query('ROLLBACK');
         console.error('Error deleting product:', err.message);
-        
-        // Handle Foreign Key constraints (if orders exist, we cannot delete the product)
+
         if (err.code === '23503') {
             res.status(400).json({ error: 'Cannot delete: Product is linked to existing orders.' });
         } else {
@@ -203,7 +262,11 @@ export const deleteProduct = async (req, res) => {
 
 export const updateProduct = async (req, res) => {
     const productId = req.params.id;
-    const { name, category_name, description, base_price, gender } = req.body;
+    const {
+        name, category_name, description, base_price, gender,
+        brand, clothing_type, fabric_material, fit, pattern, season, care_instructions
+    } = req.body;
+
     const productName = typeof name === 'string' ? name.trim() : '';
     const parsedBasePrice = Number(base_price);
 
@@ -215,7 +278,7 @@ export const updateProduct = async (req, res) => {
     try {
         await client.query('BEGIN');
         const currentResult = await client.query(
-            'SELECT category_id FROM products WHERE id = $1 FOR UPDATE',
+            'SELECT category_id, seller_id FROM products WHERE id = $1 FOR UPDATE',
             [productId]
         );
 
@@ -224,7 +287,15 @@ export const updateProduct = async (req, res) => {
             return res.status(404).json({ error: 'Product not found' });
         }
 
-        let categoryId = currentResult.rows[0].category_id;
+        const currentProduct = currentResult.rows[0];
+
+        // Tenant isolation: Sellers can only edit their own products
+        if (req.user.role === 'seller' && currentProduct.seller_id !== req.user.id) {
+            await client.query('ROLLBACK');
+            return res.status(403).json({ error: 'Not authorized to update this product' });
+        }
+
+        let categoryId = currentProduct.category_id;
         if (typeof category_name === 'string' && category_name.trim()) {
             const categoryResult = await client.query(
                 'SELECT id FROM categories WHERE name = $1',
@@ -244,11 +315,30 @@ export const updateProduct = async (req, res) => {
 
         const result = await client.query(
             `UPDATE products
-             SET name = $1, category_id = $2, description = $3, base_price = $4, gender = $5
-             WHERE id = $6
+             SET name = $1, category_id = $2, description = $3, base_price = $4, gender = $5,
+                 brand = COALESCE($6, brand),
+                 clothing_type = COALESCE($7, clothing_type),
+                 fabric_material = COALESCE($8, fabric_material),
+                 fit = COALESCE($9, fit),
+                 pattern = COALESCE($10, pattern),
+                 season = COALESCE($11, season),
+                 care_instructions = COALESCE($12, care_instructions)
+             WHERE id = $13
              RETURNING *`,
-            [productName, categoryId, description ?? '', parsedBasePrice, gender || 'Unisex', productId]
+            [
+                productName, categoryId, description ?? '', parsedBasePrice, gender || 'Unisex',
+                brand || null, clothing_type || null, fabric_material || null, fit || null,
+                pattern || null, season || null, care_instructions || null, productId
+            ]
         );
+
+        await logAuditEvent({
+            userId: req.user.id,
+            action: 'PRODUCT_UPDATED',
+            targetEntity: 'products',
+            targetId: Number(productId),
+            details: { name: productName, base_price: parsedBasePrice }
+        });
 
         await client.query('COMMIT');
         res.json({ message: 'Product updated successfully', product: result.rows[0] });
@@ -266,9 +356,12 @@ export const getProductById = async (req, res) => {
 
     try {
         const productResult = await pool.query(
-            `SELECT p.*, c.name as category_name 
+            `SELECT p.*, c.name as category_name,
+                    s.name as store_name, s.slug as store_slug, s.logo_url as store_logo,
+                    s.policy_return as store_return_policy, s.policy_shipping as store_shipping_policy
              FROM products p
              LEFT JOIN categories c ON p.category_id = c.id
+             LEFT JOIN seller_stores s ON p.store_id = s.id
              WHERE p.id = $1`,
             [productId]
         );
@@ -294,12 +387,34 @@ export const getProductById = async (req, res) => {
 };
 
 export const createProduct = async (req, res) => {
-    const { category_name, name, description, base_price, gender, variants, variantImageCounts } = req.body;
+    const {
+        category_name, name, description, base_price, gender,
+        brand, clothing_type, fabric_material, fit, pattern, season, care_instructions,
+        variants, variantImageCounts
+    } = req.body;
 
     const client = await pool.connect();
 
     try {
         await client.query('BEGIN');
+
+        // Resolve seller and store
+        let sellerId = req.user.id;
+        let storeId = null;
+
+        const storeRes = await client.query('SELECT id FROM seller_stores WHERE user_id = $1', [sellerId]);
+        if (storeRes.rows.length > 0) {
+            storeId = storeRes.rows[0].id;
+        } else if (req.user.role === 'admin' || req.user.role === 'super_admin') {
+            // Admin fallback to default store 1
+            const defaultStore = await client.query('SELECT id, user_id FROM seller_stores LIMIT 1');
+            if (defaultStore.rows.length > 0) {
+                storeId = defaultStore.rows[0].id;
+            }
+        }
+
+        // Product status: 'approved' for admin/super_admin; 'pending_approval' for sellers
+        const productStatus = (req.user.role === 'admin' || req.user.role === 'super_admin') ? 'approved' : 'pending_approval';
 
         const categoryName = category_name || 'General';
         const categoryResult = await client.query(
@@ -308,7 +423,6 @@ export const createProduct = async (req, res) => {
         );
 
         let category_id;
-
         if (categoryResult.rows.length === 0) {
             const newCategoryResult = await client.query(
                 'INSERT INTO categories (name, description) VALUES ($1, $2) RETURNING id',
@@ -321,11 +435,19 @@ export const createProduct = async (req, res) => {
 
         const parsedBasePrice = parseFloat(base_price);
         const productQuery = `
-            INSERT INTO products (category_id, name, description, base_price, gender) 
-            VALUES ($1, $2, $3, $4, $5) 
+            INSERT INTO products (
+                category_id, name, description, base_price, gender,
+                seller_id, store_id, brand, clothing_type, fabric_material,
+                fit, pattern, season, care_instructions, status
+            ) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) 
             RETURNING *
         `;
-        const productResult = await client.query(productQuery, [category_id, name, description, parsedBasePrice, gender || 'Unisex']);
+        const productResult = await client.query(productQuery, [
+            category_id, name, description, parsedBasePrice, gender || 'Unisex',
+            sellerId, storeId, brand || null, clothing_type || null, fabric_material || null,
+            fit || null, pattern || null, season || null, care_instructions || null, productStatus
+        ]);
         const newProduct = productResult.rows[0];
 
         const parsedVariants = variants ? JSON.parse(variants) : [];
@@ -350,9 +472,17 @@ export const createProduct = async (req, res) => {
                 if (uploadedUrl) imageUrls.push(uploadedUrl);
             }
 
+            // Fallback sample image if none provided
+            if (imageUrls.length === 0) {
+                imageUrls.push('https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80');
+            }
+
             const variantResult = await client.query(
-                `INSERT INTO product_variants (product_id, sku, size, color, stock_quantity, price_override, image_urls)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7)
+                `INSERT INTO product_variants (
+                    product_id, sku, size, color, stock_quantity,
+                    price_override, compare_at_price, low_stock_threshold, image_urls
+                )
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
                  RETURNING *`,
                 [
                     newProduct.id,
@@ -361,6 +491,8 @@ export const createProduct = async (req, res) => {
                     variant.color || 'Default',
                     parseInt(variant.stock_quantity || 10, 10),
                     variant.price_override ? parseFloat(variant.price_override) : null,
+                    variant.compare_at_price ? parseFloat(variant.compare_at_price) : null,
+                    parseInt(variant.low_stock_threshold || 5, 10),
                     imageUrls
                 ]
             );
@@ -369,10 +501,18 @@ export const createProduct = async (req, res) => {
 
         newProduct.variants = insertedVariants;
 
+        await logAuditEvent({
+            userId: req.user.id,
+            action: 'PRODUCT_CREATED',
+            targetEntity: 'products',
+            targetId: newProduct.id,
+            details: { name: newProduct.name, status: productStatus, storeId }
+        });
+
         await client.query('COMMIT');
 
         res.status(201).json({
-            message: 'Product created successfully',
+            message: productStatus === 'approved' ? 'Product created successfully' : 'Product submitted for Super Admin approval',
             product: newProduct
         });
 
@@ -387,7 +527,6 @@ export const createProduct = async (req, res) => {
 
 export const getColors = async (req, res) => {
     try {
-        // FIX: Use length() instead of != '' for safer Postgres string evaluation
         const result = await pool.query(`
             SELECT DISTINCT color 
             FROM product_variants 

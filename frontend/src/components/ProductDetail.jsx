@@ -311,7 +311,35 @@ const ProductDetailsPage = () => {
                             {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
                         </button>
 
-                        {/* Trust badges — compact */}
+                        {/* Trust badges & Store Information */}
+                        {product.store_name && (
+                            <div className="mt-6 p-4 rounded-xl border border-secondary/15 bg-secondary/5 flex items-center justify-between">
+                                <div>
+                                    <p className="text-[11px] font-bold uppercase tracking-wider text-secondary/60">Designed & Shipped By</p>
+                                    <h4 className="font-bold text-secondary text-sm">{product.store_name}</h4>
+                                    <p className="text-xs text-secondary/60">Verified Independent Fashion Creator</p>
+                                </div>
+                                {product.store_slug && (
+                                    <button
+                                        onClick={() => navigate(`/stores/${product.store_slug}`)}
+                                        className="text-xs font-bold text-accent hover:underline cursor-pointer"
+                                    >
+                                        Visit Storefront →
+                                    </button>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Fashion Garment Specs */}
+                        {(product.fabric_material || product.fit || product.care_instructions) && (
+                            <div className="mt-6 space-y-2 text-xs text-secondary/70 border-t border-secondary/10 pt-4">
+                                {product.fabric_material && <p><span className="font-semibold text-secondary">Fabric:</span> {product.fabric_material}</p>}
+                                {product.fit && <p><span className="font-semibold text-secondary">Fit:</span> {product.fit}</p>}
+                                {product.season && <p><span className="font-semibold text-secondary">Season:</span> {product.season}</p>}
+                                {product.care_instructions && <p><span className="font-semibold text-secondary">Care:</span> {product.care_instructions}</p>}
+                            </div>
+                        )}
+
                         <div className="mt-8 sm:mt-10 pt-6 border-t border-secondary/10 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                             <div className="flex items-center gap-2.5 text-secondary/55">
                                 <Truck size={16} className="shrink-0" />

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Filter, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Filter, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import Sidebar from "../components/Sidebar";
 import {
     getProducts,
@@ -26,11 +26,6 @@ const ProductsPage = () => {
     const selectedSize = searchParams.get('size') || 'All';
     const searchQuery = searchParams.get('search') || '';
     const page = parseInt(searchParams.get('page')) || 1;
-
-    // Close mobile filter when filters change (optional UX polish)
-    useEffect(() => {
-        setIsMobileFilterOpen(false);
-    }, [selectedCategory, selectedGender, selectedColor, selectedSize, searchQuery]);
 
     // Prevent body scroll when mobile filter is open
     useEffect(() => {
@@ -85,7 +80,6 @@ const ProductsPage = () => {
                 };
 
                 const data = await getProducts(params);
-
                 setProducts(data.products || []);
                 setPagination(data.pagination || { currentPage: 1, totalPages: 1 });
 
@@ -106,6 +100,7 @@ const ProductsPage = () => {
     }, [selectedCategory, selectedGender, selectedColor, searchQuery, selectedSize, page]);
 
     const updateURLParams = (key, value, resetPage = true) => {
+        setIsMobileFilterOpen(false);
         const newParams = new URLSearchParams(searchParams);
 
         if (value && value !== 'All') {
@@ -143,7 +138,7 @@ const ProductsPage = () => {
                 <div className="flex items-center justify-between gap-3 mb-4 lg:hidden">
                     <button
                         onClick={() => setIsMobileFilterOpen(true)}
-                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-secondary text-dominant rounded-lg font-semibold text-sm shadow-sm active:scale-95 transition-transform"
+                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-secondary text-dominant rounded-lg font-semibold text-sm shadow-sm active:scale-95 transition-transform cursor-pointer"
                     >
                         <Filter size={18} />
                         Filters
@@ -182,7 +177,6 @@ const ProductsPage = () => {
                     </aside>
 
                     {/* ===== Mobile Filter Drawer ===== */}
-                    {/* Backdrop */}
                     <div
                         className={`fixed inset-0 z-40 bg-black/50 transition-opacity duration-300 lg:hidden ${
                             isMobileFilterOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
@@ -190,14 +184,12 @@ const ProductsPage = () => {
                         onClick={() => setIsMobileFilterOpen(false)}
                     />
 
-                    {/* Drawer panel */}
                     <div
                         className={`fixed inset-y-0 left-0 z-50 w-[min(100%,320px)] bg-dominant shadow-2xl transform transition-transform duration-300 ease-out lg:hidden ${
                             isMobileFilterOpen ? 'translate-x-0' : '-translate-x-full'
                         }`}
                     >
                         <div className="flex flex-col h-full">
-                            {/* Drawer header */}
                             <div className="flex items-center justify-between px-4 py-4 border-b border-secondary/10">
                                 <h2 className="text-lg font-bold text-secondary">Filters</h2>
                                 <button
@@ -209,7 +201,6 @@ const ProductsPage = () => {
                                 </button>
                             </div>
 
-                            {/* Scrollable sidebar content */}
                             <div className="flex-1 overflow-y-auto overscroll-contain p-4">
                                 <Sidebar
                                     categories={categories}
@@ -227,7 +218,6 @@ const ProductsPage = () => {
                                 />
                             </div>
 
-                            {/* Drawer footer */}
                             <div className="p-4 border-t border-secondary/10 bg-dominant">
                                 <button
                                     onClick={() => setIsMobileFilterOpen(false)}
@@ -260,7 +250,7 @@ const ProductsPage = () => {
                                 </p>
                                 <button
                                     onClick={() => setSearchParams(new URLSearchParams())}
-                                    className="mt-5 sm:mt-6 px-5 sm:px-6 py-2.5 bg-secondary text-dominant rounded-md hover:bg-accent transition-colors font-semibold shadow-md text-sm sm:text-base"
+                                    className="mt-5 sm:mt-6 px-5 sm:px-6 py-2.5 bg-secondary text-dominant rounded-md hover:bg-accent transition-colors font-semibold shadow-md text-sm sm:text-base cursor-pointer"
                                 >
                                     Clear all filters
                                 </button>
@@ -269,15 +259,12 @@ const ProductsPage = () => {
 
                         {!loading && !error && products.length > 0 && (
                             <>
-                                {/* Responsive product grid:
-                                    2 cols on mobile, 3 on sm, 3 on md, 4 on xl */}
                                 <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 md:gap-6 lg:gap-8 mb-8 sm:mb-12">
                                     {products.map(product => (
                                         <ProductCard key={product.id} product={product} />
                                     ))}
                                 </div>
 
-                                {/* Pagination */}
                                 {pagination.totalPages > 1 && (
                                     <div className="flex flex-wrap justify-center items-center gap-3 sm:gap-4 border-t border-secondary/10 pt-6 sm:pt-8 mt-6 sm:mt-12">
                                         <button
@@ -286,7 +273,7 @@ const ProductsPage = () => {
                                             className={`inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${
                                                 page === 1
                                                     ? 'text-secondary/30 cursor-not-allowed'
-                                                    : 'text-secondary bg-secondary/5 hover:bg-secondary/10 active:scale-95'
+                                                    : 'text-secondary bg-secondary/5 hover:bg-secondary/10 active:scale-95 cursor-pointer'
                                             }`}
                                         >
                                             <ChevronLeft size={18} className="sm:hidden" />
@@ -312,7 +299,7 @@ const ProductsPage = () => {
                                             className={`inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${
                                                 page === pagination.totalPages
                                                     ? 'text-secondary/30 cursor-not-allowed'
-                                                    : 'text-secondary bg-secondary/5 hover:bg-secondary/10 active:scale-95'
+                                                    : 'text-secondary bg-secondary/5 hover:bg-secondary/10 active:scale-95 cursor-pointer'
                                             }`}
                                         >
                                             <span className="hidden sm:inline">Next</span>

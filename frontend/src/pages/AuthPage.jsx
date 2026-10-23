@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import api from "../services/Axios";
@@ -30,18 +30,24 @@ const AuthPage = ({ type = "login" }) => {
     setError("");
 
     try {
-      const endpoint =
-        type === "login" ? "/auth/login" : "/auth/register";
-
+      const endpoint = type === "login" ? "/auth/login" : "/auth/register";
       const response = await api.post(endpoint, formData);
+
+      const user = response.data?.user;
+      const userRole = user?.role || "user";
 
       if (response.data?.token) {
         localStorage.setItem("token", response.data.token);
-        localStorage.setItem("userRole", response.data?.user?.role || "user");
+        localStorage.setItem("userRole", userRole);
       }
 
-      const userRole = response.data?.user?.role || "user";
-      navigate(userRole === "admin" ? "/admin" : "/");
+      if (userRole === "admin" || userRole === "super_admin") {
+        navigate("/admin");
+      } else if (userRole === "seller") {
+        navigate("/seller");
+      } else {
+        navigate("/");
+      }
       window.location.reload();
     } catch (err) {
       setError(
@@ -55,32 +61,22 @@ const AuthPage = ({ type = "login" }) => {
 
   return (
     <section className="min-h-screen bg-dominant flex items-center justify-center px-6 py-16">
-
       <div className="absolute inset-0 bg-secondary/3" />
 
       <div className="relative w-full max-w-md">
-
-
         <div className="bg-dominant border border-secondary/10 rounded-3xl shadow-xl p-8">
-
           <div className="mb-8 text-center">
-
             <h1 className="text-3xl font-black text-secondary">
-              {type === "login"
-                ? "Welcome Back"
-                : "Create Account"}
+              {type === "login" ? "Welcome Back" : "Create Account"}
             </h1>
-
             <p className="text-secondary/60 mt-2">
               {type === "login"
-                ? "Sign in to continue shopping."
-                : "Join us and start shopping."}
+                ? "Sign in to your MINIMAL. account."
+                : "Join the MINIMAL. fashion marketplace."}
             </p>
-
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-
             {type === "register" && (
               <div className="grid grid-cols-2 gap-4">
                 <input
@@ -90,7 +86,6 @@ const AuthPage = ({ type = "login" }) => {
                   onChange={handleChange}
                   className="w-full rounded-xl border border-secondary/15 bg-secondary/5 px-4 py-3 outline-none focus:border-accent"
                 />
-
                 <input
                   name="lastName"
                   placeholder="Last Name"
@@ -127,7 +122,7 @@ const AuthPage = ({ type = "login" }) => {
 
             <button
               disabled={isLoading}
-              className="w-full h-12 rounded-xl bg-secondary text-dominant font-semibold hover:bg-accent transition-all disabled:opacity-70 flex items-center justify-center gap-2"
+              className="w-full h-12 rounded-xl bg-secondary text-dominant font-semibold hover:bg-accent transition-all disabled:opacity-70 flex items-center justify-center gap-2 cursor-pointer"
             >
               {isLoading ? (
                 <>
@@ -140,28 +135,20 @@ const AuthPage = ({ type = "login" }) => {
                 "Create Account"
               )}
             </button>
-
           </form>
 
           <div className="mt-8 text-center text-secondary/60">
-
             {type === "login"
               ? "Don't have an account?"
               : "Already have an account?"}
-
             <button
-              onClick={() =>
-                navigate(type === "login" ? "/register" : "/login")
-              }
-              className="ml-2 font-semibold text-accent hover:underline"
+              onClick={() => navigate(type === "login" ? "/register" : "/login")}
+              className="ml-2 font-semibold text-accent hover:underline cursor-pointer"
             >
               {type === "login" ? "Register" : "Login"}
             </button>
-
           </div>
-
         </div>
-
       </div>
     </section>
   );

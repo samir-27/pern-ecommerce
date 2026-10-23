@@ -1,27 +1,24 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { X, Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
-
-// --- 1. CART CONTEXT ---
-const CartContext = createContext();
+import { useState, useEffect } from 'react';
+import { CartContext } from './CartContextDef';
+export { useCart } from './useCart';
 
 export const CartProvider = ({ children }) => {
-    const [cartItems, setCartItems] = useState([]);
-    const [isLoaded, setIsLoaded] = useState(false);
+    const [cartItems, setCartItems] = useState(() => {
+        try {
+            const saved = localStorage.getItem('min_cart');
+            return saved ? JSON.parse(saved) : [];
+        } catch {
+            return [];
+        }
+    });
 
     useEffect(() => {
         try {
-            const saved = localStorage.getItem('min_cart');
-            if (saved) setCartItems(JSON.parse(saved));
+            localStorage.setItem('min_cart', JSON.stringify(cartItems));
         } catch (e) {
-            setCartItems([]);
-        } finally {
-            setIsLoaded(true);
+            console.error('Failed to save cart to localStorage', e);
         }
-    }, []);
-
-    useEffect(() => {
-        if (isLoaded) localStorage.setItem('min_cart', JSON.stringify(cartItems));
-    }, [cartItems, isLoaded]);
+    }, [cartItems]);
 
     const addToCart = (variant, product, quantity = 1) => {
         setCartItems(prev => {
@@ -35,7 +32,7 @@ export const CartProvider = ({ children }) => {
                 name: product.name,
                 color: variant.color,
                 size: variant.size,
-                price: variant.price_override || product.base_price,
+                price: Number(variant.price_override || product.base_price),
                 image: variant.image_urls?.[0] || '',
                 quantity
             }];
@@ -49,13 +46,13 @@ export const CartProvider = ({ children }) => {
         setCartItems(prev => prev.map(item => item.variant_id === variantId ? { ...item, quantity: qty } : item));
     };
 
+    const clearCart = () => setCartItems([]);
+
     const cartTotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
 
     return (
-        <CartContext.Provider value={{ cartItems, addToCart, removeFromCart, updateQuantity, cartTotal }}>
+        <CartContext.Provider value={{ cartItems, addToCart, removeFromCart, updateQuantity, clearCart, cartTotal }}>
             {children}
         </CartContext.Provider>
     );
 };
-
-export const useCart = () => useContext(CartContext);

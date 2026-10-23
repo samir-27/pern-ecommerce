@@ -1,11 +1,48 @@
 import express from 'express';
-import { protectRoute, adminRoute } from '../middleware/auth.middleware.js';
-import { getAdminOverview, getAdminProducts, getAdminOrders } from '../controllers/admin.controller.js';
+import { protectRoute, superAdminRoute } from '../middleware/auth.middleware.js';
+import {
+    getAdminOverview,
+    getAdminProducts,
+    getAdminOrders,
+    moderateProduct,
+    getSellerApplications,
+    reviewSellerApplication,
+    getAdminSellers,
+    updateSellerStatus,
+    getCommissionRules,
+    createOrUpdateCommissionRule,
+    getAdminPayouts,
+    updatePayoutStatus,
+    getAdminReturns,
+    updateReturnStatus,
+    getAuditLogs
+} from '../controllers/admin.controller.js';
 
 const router = express.Router();
 
-router.get('/overview', protectRoute, adminRoute, getAdminOverview);
-router.get('/products', protectRoute, adminRoute, getAdminProducts);
-router.get('/orders', protectRoute, adminRoute, getAdminOrders);
+// All admin routes strictly protected by superAdminRoute
+router.get('/overview', protectRoute, superAdminRoute, getAdminOverview);
+router.get('/products', protectRoute, superAdminRoute, getAdminProducts);
+router.put('/products/:id/moderation', protectRoute, superAdminRoute, moderateProduct);
+router.get('/orders', protectRoute, superAdminRoute, getAdminOrders);
+
+// Seller Management & Applications
+router.get('/seller-applications', protectRoute, superAdminRoute, getSellerApplications);
+router.put('/seller-applications/:id', protectRoute, superAdminRoute, reviewSellerApplication);
+router.get('/sellers', protectRoute, superAdminRoute, getAdminSellers);
+router.put('/sellers/:id', protectRoute, superAdminRoute, updateSellerStatus);
+
+// Commission Rules & Payouts
+router.get('/commissions', protectRoute, superAdminRoute, getCommissionRules);
+router.post('/commissions', protectRoute, superAdminRoute, createOrUpdateCommissionRule);
+router.get('/payouts', protectRoute, superAdminRoute, getAdminPayouts);
+router.put('/payouts/:id', protectRoute, superAdminRoute, updatePayoutStatus);
+
+// Returns & Disputes
+router.get('/returns', protectRoute, superAdminRoute, getAdminReturns);
+router.put('/returns/:id', protectRoute, superAdminRoute, updateReturnStatus);
+
+// Audit Logs
+router.get('/audit-logs', protectRoute, superAdminRoute, getAuditLogs);
 
 export default router;

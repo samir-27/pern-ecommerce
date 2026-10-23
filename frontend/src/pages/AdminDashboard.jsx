@@ -1,464 +1,875 @@
-import { startTransition, useState, useEffect, useEffectEvent } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, ShoppingBag, LogOut, Trash2, Image as ImageIcon, Edit, Package, MapPin } from 'lucide-react';
-import { createProduct as createProductRequest } from '../services/ProductService';
+import {
+    Users, ShoppingBag, LogOut, Package, MapPin,
+    DollarSign, Shield, CheckCircle2, XCircle, Sparkles, Bot
+} from 'lucide-react';
 import api from '../services/Axios';
 import { formatCurrency } from '../services/Currency';
 
-const defaultStats = [
-  { title: 'Products', value: '—', icon: ShoppingBag, accent: 'bg-secondary text-dominant' },
-  { title: 'Orders', value: '—', icon: Package, accent: 'bg-accent text-dominant' },
-  { title: 'Users', value: '—', icon: Users, accent: 'bg-green-600 text-white' },
-];
-
-const SIZES = ['All', 'S', 'M', 'L', 'XL', 'XXL'];
-const COLORS = ['Black', 'White', 'Grey', 'Navy', 'Blue', 'Teal', 'Green', 'Olive', 'Yellow', 'Orange', 'Red', 'Maroon', 'Pink', 'Purple', 'Brown'];
-const CATEGORIES = ['Shirt', 'T-Shirt', 'Pants', 'Shorts', 'Coats', 'Hoodie', 'Jacket', 'Sweater', 'Dress', 'Skirt', 'Activewear', 'Accessories'];
-const GENDERS = ['Mens', 'Womens', 'Kids', 'Unisex'];
-
 const AdminDashboard = () => {
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'products', 'orders'
-  const [stats, setStats] = useState(defaultStats);
-  
-  // Data States
-  const [productsList, setProductsList] = useState([]);
-  const [ordersList, setOrdersList] = useState([]);
-  const [dataLoading, setDataLoading] = useState(false);
+    const navigate = useNavigate();
+    const [activeTab, setActiveTab] = useState('overview'); // overview, sellers, applications, products, orders, commissions, payouts, returns, audit, ai_analytics
 
-  // Form States
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [formLoading, setFormLoading] = useState(false);
-  const [formMessage, setFormMessage] = useState('');
-  const [formError, setFormError] = useState('');
-  
-  // Edit State
-  const [editingProduct, setEditingProduct] = useState(null);
-  const [editForm, setEditForm] = useState({});
+    // Overview Stats
+    const [stats, setStats] = useState(null);
+    const [dataLoading, setDataLoading] = useState(false);
 
-  const [productForm, setProductForm] = useState({
-    name: '', category_name: CATEGORIES[0], description: '', base_price: '', gender: 'Unisex'
-  });
-  
-  const [variants, setVariants] = useState([
-    { size: 'M', color: 'Black', stock_quantity: '10', price_override: '', images: [] }
-  ]);
+    // Lists
+    const [productsList, setProductsList] = useState([]);
+    const [ordersList, setOrdersList] = useState([]);
+    const [sellersList, setSellersList] = useState([]);
+    const [applicationsList, setApplicationsList] = useState([]);
+    const [commissionsList, setCommissionsList] = useState([]);
+    const [payoutsList, setPayoutsList] = useState([]);
+    const [returnsList, setReturnsList] = useState([]);
+    const [auditLogsList, setAuditLogsList] = useState([]);
 
-  const fetchOverview = async () => {
-    try {
-      const overviewRes = await api.get('/admin/overview');
-      setStats([
-        { title: 'Products', value: overviewRes.data.products.toString(), icon: ShoppingBag, accent: 'bg-secondary text-dominant' },
-        { title: 'Orders', value: overviewRes.data.orders.toString(), icon: Package, accent: 'bg-accent text-dominant' },
-        { title: 'Users', value: overviewRes.data.users.toString(), icon: Users, accent: 'bg-green-600 text-white' },
-      ]);
-    } catch (error) {
-      console.error('Could not fetch admin data', error);
-    }
-  };
+    // AI Analytics Assistant State
+    const [aiQuestion, setAiQuestion] = useState('');
+    const [aiAnswer, setAiAnswer] = useState(null);
+    const [aiLoading, setAiLoading] = useState(false);
 
-  const fetchProducts = async () => {
-    startTransition(() => setDataLoading(true));
-    try {
-      const response = await api.get('/admin/products');
-      setProductsList(response.data || []);
-    } catch (error) {
-      console.error('Error fetching products', error);
-    } finally {
-      setDataLoading(false);
-    }
-  };
+    // New Commission Rule Form
+    const [showNewRuleModal, setShowNewRuleModal] = useState(false);
+    const [newRule, setNewRule] = useState({ ruleType: 'category', targetId: '', rate: '10' });
 
-  const fetchOrders = async () => {
-    startTransition(() => setDataLoading(true));
-    try {
-      const response = await api.get('/admin/orders');
-      setOrdersList(response.data || []);
-    } catch (error) {
-      console.error('Error fetching orders', error);
-    } finally {
-      setDataLoading(false);
-    }
-  };
+    // Review Application Modal
+    const [reviewingApp, setReviewingApp] = useState(null);
+    const [reviewNotes, setReviewNotes] = useState('');
 
-  const refreshOverview = useEffectEvent(() => fetchOverview());
-  const loadActiveTab = useEffectEvent(() => {
-    if (activeTab === 'products') fetchProducts();
-    if (activeTab === 'orders') fetchOrders();
-  });
+    const fetchOverview = async () => {
+        try {
+            const res = await api.get('/admin/overview');
+            setStats(res.data);
+        } catch (error) {
+            console.error('Could not fetch admin overview', error);
+        }
+    };
 
-  useEffect(() => {
-    Promise.resolve().then(refreshOverview);
-  }, []);
+    useEffect(() => {
+        let isMounted = true;
+        api.get('/admin/overview').then(res => {
+            if (isMounted) setStats(res.data);
+        }).catch(err => console.error(err));
+        return () => { isMounted = false; };
+    }, []);
 
-  useEffect(() => {
-    Promise.resolve().then(loadActiveTab);
-  }, [activeTab]);
+    useEffect(() => {
+        const loadTab = async () => {
+            setDataLoading(true);
+            try {
+                if (activeTab === 'products') {
+                    const res = await api.get('/admin/products');
+                    setProductsList(res.data || []);
+                } else if (activeTab === 'orders') {
+                    const res = await api.get('/admin/orders');
+                    setOrdersList(res.data || []);
+                } else if (activeTab === 'sellers') {
+                    const res = await api.get('/admin/sellers');
+                    setSellersList(res.data || []);
+                } else if (activeTab === 'applications') {
+                    const res = await api.get('/admin/seller-applications');
+                    setApplicationsList(res.data || []);
+                } else if (activeTab === 'commissions') {
+                    const res = await api.get('/admin/commissions');
+                    setCommissionsList(res.data || []);
+                } else if (activeTab === 'payouts') {
+                    const res = await api.get('/admin/payouts');
+                    setPayoutsList(res.data || []);
+                } else if (activeTab === 'returns') {
+                    const res = await api.get('/admin/returns');
+                    setReturnsList(res.data || []);
+                } else if (activeTab === 'audit') {
+                    const res = await api.get('/admin/audit-logs');
+                    setAuditLogsList(res.data || []);
+                }
+            } catch (err) {
+                console.error(`Error loading ${activeTab}:`, err);
+            } finally {
+                setDataLoading(false);
+            }
+        };
+        loadTab();
+    }, [activeTab]);
 
-  const handleDeleteProduct = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this product?')) return;
-    try {
-      await api.delete(`/products/${id}`);
-      fetchProducts(); // Refresh list
-      fetchOverview(); // Refresh stats
-      alert('Product deleted successfully');
-    } catch (error) {
-      alert(error.response?.data?.error || 'Cannot delete product (orders might be attached).');
-    }
-  };
+    const handleModerateProduct = async (id, status) => {
+        try {
+            await api.put(`/admin/products/${id}/moderation`, { status });
+            setProductsList(prev => prev.map(p => p.id === id ? { ...p, status } : p));
+            fetchOverview();
+            alert(`Listing marked as ${status}`);
+        } catch {
+            alert('Failed to update product moderation.');
+        }
+    };
 
-  const handleUpdateProduct = async (e) => {
-    e.preventDefault();
-    try {
-      await api.put(`/products/${editingProduct.id}`, editForm);
-      setEditingProduct(null);
-      fetchProducts();
-      alert('Product updated successfully');
-    } catch {
-      alert('Error updating product.');
-    }
-  };
+    const handleReviewApplication = async (status) => {
+        if (!reviewingApp) return;
+        try {
+            await api.put(`/admin/seller-applications/${reviewingApp.id}`, {
+                status,
+                adminNotes: reviewNotes
+            });
+            setReviewingApp(null);
+            setReviewNotes('');
+            const res = await api.get('/admin/seller-applications');
+            setApplicationsList(res.data || []);
+            fetchOverview();
+            alert(`Application ${status} successfully.`);
+        } catch {
+            alert('Failed to review application.');
+        }
+    };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('userRole');
-    navigate('/login');
-    window.location.reload();
-  };
+    const handleProcessPayout = async (id, status) => {
+        const refId = prompt('Enter Bank / UTR Reference ID:');
+        if (!refId && status === 'completed') return;
 
-  // --- Form Handlers for Create Product ---
-  const handleInputChange = (e) => setProductForm({ ...productForm, [e.target.name]: e.target.value });
-  const handleVariantChange = (index, field, value) => {
-    setVariants((prev) => prev.map((v, i) => i === index ? { ...v, [field]: value } : v));
-  };
-  const handleVariantImagesChange = (index, e) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length > 5) {
-      setFormError(`Max 5 images per variant. You selected ${files.length}.`);
-      e.target.value = ''; return;
-    }
-    setFormError('');
-    setVariants((prev) => prev.map((v, i) => i === index ? { ...v, images: files } : v));
-  };
-  const addVariant = () => setVariants((prev) => [...prev, { size: 'L', color: 'White', stock_quantity: '10', price_override: '', images: [] }]);
-  const removeVariant = (index) => variants.length > 1 && setVariants((prev) => prev.filter((_, i) => i !== index));
+        try {
+            await api.put(`/admin/payouts/${id}`, {
+                status,
+                referenceId: refId || 'MANUAL-PROCESSED'
+            });
+            const res = await api.get('/admin/payouts');
+            setPayoutsList(res.data || []);
+            fetchOverview();
+            alert(`Payout marked as ${status}`);
+        } catch {
+            alert('Failed to update payout.');
+        }
+    };
 
-  const handleCreateProduct = async (e) => {
-    e.preventDefault();
-    setFormLoading(true); setFormError(''); setFormMessage('');
+    const handleResolveReturn = async (id, status, restock = false) => {
+        try {
+            await api.put(`/admin/returns/${id}`, { status, restockInventory: restock });
+            const res = await api.get('/admin/returns');
+            setReturnsList(res.data || []);
+            alert(`Return request marked as ${status}`);
+        } catch {
+            alert('Failed to update return request.');
+        }
+    };
 
-    if (variants.some(v => v.images.length === 0)) {
-        setFormError('Please select at least 1 image for every variant.');
-        setFormLoading(false); return;
-    }
+    const handleAskAIAnalytics = async (e) => {
+        e.preventDefault();
+        if (!aiQuestion.trim() || aiLoading) return;
 
-    try {
-      const formData = new FormData();
-      formData.append('name', productForm.name);
-      formData.append('category_name', productForm.category_name);
-      formData.append('description', productForm.description);
-      formData.append('base_price', productForm.base_price);
-      formData.append('gender', productForm.gender);
-      
-      const normalizedVariants = variants.map((variant, index) => ({
-        sku: `${productForm.name.replace(/\s+/g, '-').toLowerCase()}-${Date.now().toString().slice(-4)}-${index + 1}`,
-        size: variant.size, color: variant.color,
-        stock_quantity: Number(variant.stock_quantity || 10),
-        price_override: variant.price_override ? Number(variant.price_override) : null
-      }));
-      
-      formData.append('variants', JSON.stringify(normalizedVariants));
-      formData.append('variantImageCounts', JSON.stringify(variants.map((v) => v.images.length)));
+        setAiLoading(true);
+        try {
+            const res = await api.post('/ai/admin-analytics', { question: aiQuestion.trim() });
+            setAiAnswer(res.data);
+        } catch {
+            alert('AI analytics query failed.');
+        } finally {
+            setAiLoading(false);
+        }
+    };
 
-      variants.forEach((v) => v.images.forEach((img) => formData.append('images', img)));
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('userRole');
+        navigate('/login');
+        window.location.reload();
+    };
 
-      await createProductRequest(formData);
-      setFormMessage('Product created successfully.');
-      setProductForm({ name: '', category_name: CATEGORIES[0], description: '', base_price: '', gender: 'Unisex' });
-      setVariants([{ size: 'M', color: 'Black', stock_quantity: '10', price_override: '', images: [] }]);
-      fetchOverview();
-      setTimeout(() => setShowCreateForm(false), 2000);
-    } catch (err) {
-      setFormError(err.response?.data?.error || 'Failed to create product.');
-    } finally {
-      setFormLoading(false);
-    }
-  };
-
-  return (
-    <div className="min-h-[80vh] bg-dominant py-10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-        {/* Header */}
-        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-accent">Admin Panel</p>
-            <h1 className="text-3xl font-black text-secondary">Dashboard</h1>
-          </div>
-          <button onClick={handleLogout} className="flex items-center gap-2 rounded-lg border border-red-200 px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-50">
-            <LogOut size={18} /> Sign out
-          </button>
-        </div>
-
-        {/* Tab Navigation */}
-        <div className="mb-8 flex gap-4 border-b border-secondary/10 pb-4">
-          <button onClick={() => setActiveTab('overview')} className={`font-semibold pb-2 ${activeTab === 'overview' ? 'border-b-2 border-accent text-accent' : 'text-secondary/60'}`}>Overview & Create</button>
-          <button onClick={() => setActiveTab('products')} className={`font-semibold pb-2 ${activeTab === 'products' ? 'border-b-2 border-accent text-accent' : 'text-secondary/60'}`}>Manage Products</button>
-          <button onClick={() => setActiveTab('orders')} className={`font-semibold pb-2 ${activeTab === 'orders' ? 'border-b-2 border-accent text-accent' : 'text-secondary/60'}`}>View Orders</button>
-        </div>
-
-        {/* --- TAB 1: OVERVIEW & CREATE --- */}
-        {activeTab === 'overview' && (
-          <>
-            <div className="grid gap-6 md:grid-cols-3">
-              {stats.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <div key={item.title} className="rounded-2xl border border-secondary/10 bg-secondary/5 p-6 shadow-sm">
-                    <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-xl ${item.accent}`}><Icon size={20} /></div>
-                    <p className="text-sm font-semibold text-secondary/60">{item.title}</p>
-                    <p className="mt-2 text-3xl font-black text-secondary">{item.value}</p>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="mt-8">
-              <button onClick={() => setShowCreateForm((prev) => !prev)} className="w-full md:w-auto rounded-lg bg-secondary px-6 py-3 font-semibold text-dominant transition hover:bg-accent">
-                {showCreateForm ? 'Hide Product Form' : '+ Add New Product'}
-              </button>
-            </div>
-
-            {/* Create Product Form (Existing code) */}
-            {showCreateForm && (
-              <div className="mt-8 rounded-2xl border border-secondary/10 bg-white p-6 shadow-sm">
-                 <h2 className="text-2xl font-bold text-secondary mb-6">Create New Product</h2>
-                {formMessage && <div className="mb-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700">{formMessage}</div>}
-                {formError && <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{formError}</div>}
-                <form onSubmit={handleCreateProduct} className="grid gap-4 md:grid-cols-2">
-                  <div className="md:col-span-2">
-                    <label className="mb-2 block text-sm font-semibold text-secondary/70">Product Name</label>
-                    <input name="name" value={productForm.name} onChange={handleInputChange} required className="w-full rounded-lg border border-secondary/10 bg-secondary/5 px-4 py-3" />
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-sm font-semibold text-secondary/70">Category (Type)</label>
-                    <select name="category_name" value={productForm.category_name} onChange={handleInputChange} required className="w-full rounded-lg border border-secondary/10 bg-secondary/5 px-4 py-3">
-                      {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-sm font-semibold text-secondary/70">Gender</label>
-                    <select name="gender" value={productForm.gender} onChange={handleInputChange} className="w-full rounded-lg border border-secondary/10 bg-secondary/5 px-4 py-3">
-                      {GENDERS.map(gender => <option key={gender} value={gender}>{gender}</option>)}
-                    </select>
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="mb-2 block text-sm font-semibold text-secondary/70">Description</label>
-                    <textarea name="description" value={productForm.description} onChange={handleInputChange} rows="3" className="w-full rounded-lg border border-secondary/10 bg-secondary/5 px-4 py-3" />
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-sm font-semibold text-secondary/70">Base Price</label>
-                    <input type="number" min="0" step="0.01" name="base_price" value={productForm.base_price} onChange={handleInputChange} required className="w-full rounded-lg border border-secondary/10 bg-secondary/5 px-4 py-3" />
-                  </div>
-                  <div className="md:col-span-2 mt-4">
-                    <div className="flex justify-between items-center"><h3 className="text-lg font-semibold text-secondary">Variants</h3>
-                    <button type="button" onClick={addVariant} className="text-sm font-semibold text-secondary">+ Add Variant</button></div>
-                    <div className="mt-4 space-y-4">
-                      {variants.map((variant, index) => (
-                        <div key={index} className="rounded-xl border border-secondary/10 bg-secondary/5 p-4">
-                          <div className="flex justify-between">
-                            <p className="font-semibold text-secondary">Variant {index + 1}</p>
-                            <button type="button" onClick={() => removeVariant(index)} className="text-red-500 text-sm"><Trash2 size={16}/></button>
-                          </div>
-                          <div className="mt-3 grid gap-4 md:grid-cols-2">
-                            <div>
-                              <label className="text-sm font-semibold">Size</label>
-                              <select value={variant.size} onChange={(e) => handleVariantChange(index, 'size', e.target.value)} className="w-full rounded-lg bg-white px-4 py-2 mt-1">
-                                {SIZES.map(s => <option key={s}>{s}</option>)}
-                              </select>
-                            </div>
-                            <div>
-                              <label className="text-sm font-semibold">Color</label>
-                              <select value={variant.color} onChange={(e) => handleVariantChange(index, 'color', e.target.value)} className="w-full rounded-lg bg-white px-4 py-2 mt-1">
-                                {COLORS.map(c => <option key={c}>{c}</option>)}
-                              </select>
-                            </div>
-                            <div>
-                              <label className="text-sm font-semibold">Stock Qty</label>
-                              <input type="number" min="0" value={variant.stock_quantity} onChange={(e) => handleVariantChange(index, 'stock_quantity', e.target.value)} className="w-full rounded-lg bg-white px-4 py-2 mt-1" />
-                            </div>
-                            <div>
-                              <label className="text-sm font-semibold">Price Override</label>
-                              <input type="number" min="0" value={variant.price_override} onChange={(e) => handleVariantChange(index, 'price_override', e.target.value)} className="w-full rounded-lg bg-white px-4 py-2 mt-1" />
-                            </div>
-                            <div className="md:col-span-2">
-                              <label className="text-sm font-semibold">Images (Max 5)</label>
-                              <input type="file" multiple accept="image/*" onChange={(e) => handleVariantImagesChange(index, e)} className="w-full rounded-lg bg-white px-4 py-2 mt-1" />
-                              {variant.images.length > 0 && <p className="text-xs text-green-600 mt-2">{variant.images.length} images selected.</p>}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+    return (
+        <div className="min-h-[85vh] bg-dominant py-8 max-w-7xl mx-auto px-4">
+            {/* Header */}
+            <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-accent">
+                        <Shield size={16} /> Super Admin Control Center
                     </div>
-                  </div>
-                  <div className="md:col-span-2 mt-4">
-                    <button type="submit" disabled={formLoading} className="w-full md:w-auto rounded-lg bg-secondary px-6 py-4 font-semibold text-dominant text-white">
-                      {formLoading ? 'Submitting...' : 'Submit Product'}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
-          </>
-        )}
-
-        {/* --- TAB 2: MANAGE PRODUCTS --- */}
-        {activeTab === 'products' && (
-          <div className="rounded-2xl border border-secondary/10 bg-white p-6 shadow-sm overflow-x-auto">
-            <h2 className="text-2xl font-bold text-secondary mb-6">Manage Products</h2>
-            {dataLoading ? <p>Loading products...</p> : (
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-secondary/10 text-secondary/60">
-                    <th className="p-3">Image</th>
-                    <th className="p-3">Name</th>
-                    <th className="p-3">Category</th>
-                    <th className="p-3">Product details</th>
-                    <th className="p-3">Variants / stock</th>
-                    <th className="p-3">Price</th>
-                    <th className="p-3">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {productsList.map(prod => (
-                    <tr key={prod.id} className="border-b border-secondary/5 hover:bg-secondary/5">
-                      <td className="p-3">
-                        {prod.main_image ? <img src={prod.main_image} alt="prod" className="w-12 h-12 object-cover rounded" /> : <ImageIcon className="text-secondary/30"/>}
-                      </td>
-                      <td className="p-3">
-                        <p className="font-semibold">{prod.name}</p>
-                        <p className="max-w-xs text-sm text-secondary/60">{prod.description}</p>
-                        <p className="mt-1 text-xs text-secondary/60">{prod.category_name} · {prod.gender}</p>
-                      </td>
-                      <td className="p-3 text-sm">
-                        <div className="min-w-48 space-y-1">
-                          {(prod.variants || []).map(variant => (
-                            <p key={variant.id}>{variant.color} / {variant.size}: {variant.stock_quantity} in stock</p>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="p-3">{formatCurrency(prod.base_price)}</td>
-                      <td className="p-3 flex gap-3">
-                        <button aria-label={`Edit ${prod.name}`} onClick={() => { setEditingProduct(prod); setEditForm({name: prod.name, category_name: prod.category_name || '', gender: prod.gender || 'Unisex', base_price: prod.base_price, description: prod.description || ''}); }} className="text-blue-500 hover:text-blue-700 p-2"><Edit size={18}/></button>
-                        <button onClick={() => handleDeleteProduct(prod.id)} className="text-red-500 hover:text-red-700 p-2"><Trash2 size={18}/></button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-
-            {/* Quick Edit Modal Placeholder */}
-            {editingProduct && (
-              <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-                <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-                  <h3 className="text-xl font-bold mb-4">Edit Product Info</h3>
-                  <form onSubmit={handleUpdateProduct} className="space-y-4">
-                    <div>
-                      <label className="text-sm font-semibold">Name</label>
-                      <input value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} className="w-full border rounded-lg p-2 mt-1" />
-                    </div>
-                    <div>
-                      <label className="text-sm font-semibold">Base Price</label>
-                      <input type="number" min="0" step="0.01" value={editForm.base_price} onChange={e => setEditForm({...editForm, base_price: e.target.value})} className="w-full border rounded-lg p-2 mt-1" />
-                    </div>
-                    <div>
-                      <label className="text-sm font-semibold">Category</label>
-                      <input value={editForm.category_name} onChange={e => setEditForm({...editForm, category_name: e.target.value})} className="w-full border rounded-lg p-2 mt-1" />
-                    </div>
-                    <div>
-                      <label className="text-sm font-semibold">Gender</label>
-                      <select value={editForm.gender} onChange={e => setEditForm({...editForm, gender: e.target.value})} className="w-full border rounded-lg p-2 mt-1">
-                        {GENDERS.map(gender => <option key={gender} value={gender}>{gender}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-sm font-semibold">Description</label>
-                      <textarea value={editForm.description} onChange={e => setEditForm({...editForm, description: e.target.value})} rows="3" className="w-full border rounded-lg p-2 mt-1" />
-                    </div>
-                    <div className="flex gap-4 mt-6">
-                      <button type="submit" className="bg-secondary text-white px-4 py-2 rounded-lg font-semibold">Save Changes</button>
-                      <button type="button" onClick={() => setEditingProduct(null)} className="px-4 py-2 rounded-lg border font-semibold">Cancel</button>
-                    </div>
-                  </form>
+                    <h1 className="text-3xl font-black text-secondary mt-1">Platform Governance</h1>
                 </div>
-              </div>
-            )}
-          </div>
-        )}
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => navigate('/seller')}
+                        className="px-4 py-2 text-sm font-semibold border border-secondary/15 rounded-xl hover:bg-secondary/5 transition"
+                    >
+                        Seller Hub
+                    </button>
+                    <button
+                        onClick={handleLogout}
+                        className="flex items-center gap-2 rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+                    >
+                        <LogOut size={16} /> Sign out
+                    </button>
+                </div>
+            </div>
 
-        {/* --- TAB 3: VIEW ORDERS --- */}
-        {activeTab === 'orders' && (
-          <div className="rounded-2xl border border-secondary/10 bg-white p-6 shadow-sm overflow-x-auto">
-            <h2 className="text-2xl font-bold text-secondary mb-2">Customer Orders</h2>
-            <p className="text-sm text-secondary/60 mb-6">Review orders and shipping addresses for fulfillment.</p>
+            {/* Tab Navigation */}
+            <div className="mb-8 flex gap-2 border-b border-secondary/10 pb-2 overflow-x-auto text-sm">
+                {[
+                    { id: 'overview', label: 'Overview' },
+                    { id: 'sellers', label: `Sellers (${stats?.activeSellers || 0})` },
+                    { id: 'applications', label: `Applications (${stats?.pendingApplications || 0})` },
+                    { id: 'products', label: `Products (${stats?.products || 0})` },
+                    { id: 'orders', label: `Orders (${stats?.orders || 0})` },
+                    { id: 'commissions', label: 'Commissions' },
+                    { id: 'payouts', label: 'Payouts' },
+                    { id: 'returns', label: 'Returns' },
+                    { id: 'audit', label: 'Audit Logs' },
+                    { id: 'ai_analytics', label: 'AI Analytics' },
+                ].map(tab => (
+                    <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        className={`px-4 py-2 font-bold rounded-lg transition whitespace-nowrap cursor-pointer ${
+                            activeTab === tab.id ? 'bg-secondary text-dominant shadow-sm' : 'text-secondary/60 hover:text-secondary'
+                        }`}
+                    >
+                        {tab.label}
+                    </button>
+                ))}
+            </div>
 
-            {dataLoading ? <p>Loading orders...</p> : (
-              ordersList.length === 0 ? <p className="text-secondary/60">No orders found.</p> :
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-secondary/10 text-secondary/60">
-                    <th className="p-3">Order ID</th>
-                    <th className="p-3">Customer Info</th>
-                    <th className="p-3">Items</th>
-                    <th className="p-3">Shipping Address</th>
-                    <th className="p-3">Total Paid</th>
-                    <th className="p-3">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ordersList.map(order => (
-                    <tr key={order.id} className="border-b border-secondary/5 hover:bg-secondary/5">
-                      <td className="p-3 font-semibold">#{order.id}</td>
-                      <td className="p-3">
-                        <p className="font-semibold">{order.user_name || 'User'}</p>
-                        <p className="text-sm text-secondary/60">{order.email}</p>
-                        <p className="text-xs text-secondary/50">Customer #{order.user_id}</p>
-                      </td>
-                      <td className="p-3 text-sm">
-                        <div className="min-w-48 space-y-2">
-                          {(order.items || []).map((item, index) => (
-                            <div key={`${item.variant_id}-${index}`}>
-                              <p className="font-semibold">{item.product_name} x {item.quantity}</p>
-                              <p className="text-secondary/60">{item.color} / {item.size} · SKU {item.sku}</p>
-                              <p className="text-secondary/60">{formatCurrency(item.price_at_purchase)} each</p>
+            {/* TAB: OVERVIEW */}
+            {activeTab === 'overview' && (
+                <div className="space-y-8">
+                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="rounded-2xl border border-secondary/10 bg-secondary/5 p-6">
+                            <div className="w-10 h-10 rounded-xl bg-green-500/15 text-green-600 flex items-center justify-center mb-3">
+                                <DollarSign size={20} />
                             </div>
-                          ))}
+                            <p className="text-xs font-semibold uppercase tracking-wider text-secondary/60">Gross Merchandise Value (GMV)</p>
+                            <h3 className="text-3xl font-black text-secondary mt-1">{formatCurrency(stats?.gmv || 0)}</h3>
                         </div>
-                      </td>
-                      <td className="p-3">
-                        <div className="flex items-start gap-2 max-w-xs">
-                          <MapPin size={16} className="text-accent mt-1 flex-shrink-0"/>
-                          <span className="text-sm">{order.shipping_address}</span>
-                        </div>
-                      </td>
-                      <td className="p-3 font-semibold">{formatCurrency(order.total_amount)}</td>
-                      <td className="p-3">
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${order.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
-                          {order.status || 'Pending'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        )}
 
-      </div>
-    </div>
-  );
+                        <div className="rounded-2xl border border-secondary/10 bg-secondary/5 p-6">
+                            <div className="w-10 h-10 rounded-xl bg-purple-500/15 text-purple-600 flex items-center justify-center mb-3">
+                                <DollarSign size={20} />
+                            </div>
+                            <p className="text-xs font-semibold uppercase tracking-wider text-secondary/60">Platform Commission Revenue</p>
+                            <h3 className="text-3xl font-black text-secondary mt-1">{formatCurrency(stats?.platformRevenue || 0)}</h3>
+                        </div>
+
+                        <div className="rounded-2xl border border-secondary/10 bg-secondary/5 p-6">
+                            <div className="w-10 h-10 rounded-xl bg-accent/15 text-accent flex items-center justify-center mb-3">
+                                <ShoppingBag size={20} />
+                            </div>
+                            <p className="text-xs font-semibold uppercase tracking-wider text-secondary/60">Active Marketplace Listings</p>
+                            <h3 className="text-3xl font-black text-secondary mt-1">{stats?.products || 0}</h3>
+                        </div>
+
+                        <div className="rounded-2xl border border-secondary/10 bg-secondary/5 p-6">
+                            <div className="w-10 h-10 rounded-xl bg-yellow-500/15 text-yellow-600 flex items-center justify-center mb-3">
+                                <Users size={20} />
+                            </div>
+                            <p className="text-xs font-semibold uppercase tracking-wider text-secondary/60">Pending Seller Reviews</p>
+                            <h3 className="text-3xl font-black text-secondary mt-1">{stats?.pendingApplications || 0}</h3>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="p-6 rounded-2xl border border-secondary/10 bg-dominant">
+                            <h3 className="text-lg font-bold text-secondary mb-3">Marketplace Governance</h3>
+                            <div className="space-y-3 text-sm">
+                                <div className="flex justify-between py-2 border-b border-secondary/5">
+                                    <span className="text-secondary/70">Total Customers</span>
+                                    <span className="font-bold text-secondary">{stats?.users || 0}</span>
+                                </div>
+                                <div className="flex justify-between py-2 border-b border-secondary/5">
+                                    <span className="text-secondary/70">Approved Active Stores</span>
+                                    <span className="font-bold text-secondary">{stats?.activeSellers || 0}</span>
+                                </div>
+                                <div className="flex justify-between py-2 border-b border-secondary/5">
+                                    <span className="text-secondary/70">Pending Listing Approvals</span>
+                                    <span className="font-bold text-accent">{stats?.pendingProducts || 0}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-6 rounded-2xl border border-secondary/10 bg-dominant col-span-2">
+                            <h3 className="text-lg font-bold text-secondary mb-3">Operational Fast Actions</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                                <button
+                                    onClick={() => setActiveTab('applications')}
+                                    className="p-3 text-left rounded-xl bg-secondary/5 hover:bg-secondary/10 transition flex items-center justify-between"
+                                >
+                                    <span className="text-sm font-semibold">Review Pending Applications</span>
+                                    <span className="px-2 py-0.5 rounded-full bg-accent text-dominant text-xs font-bold">{stats?.pendingApplications || 0}</span>
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('products')}
+                                    className="p-3 text-left rounded-xl bg-secondary/5 hover:bg-secondary/10 transition flex items-center justify-between"
+                                >
+                                    <span className="text-sm font-semibold">Moderate Product Listings</span>
+                                    <span className="px-2 py-0.5 rounded-full bg-yellow-200 text-yellow-800 text-xs font-bold">{stats?.pendingProducts || 0}</span>
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('commissions')}
+                                    className="p-3 text-left rounded-xl bg-secondary/5 hover:bg-secondary/10 transition flex items-center justify-between"
+                                >
+                                    <span className="text-sm font-semibold">Configure Commission Rules</span>
+                                    <DollarSign size={16} className="text-green-600" />
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('ai_analytics')}
+                                    className="p-3 text-left rounded-xl bg-secondary/5 hover:bg-secondary/10 transition flex items-center justify-between"
+                                >
+                                    <span className="text-sm font-semibold">Query Executive AI Assistant</span>
+                                    <Sparkles size={16} className="text-purple-600" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* TAB: SELLER APPLICATIONS */}
+            {activeTab === 'applications' && (
+                <div className="bg-dominant border border-secondary/10 rounded-2xl p-6 overflow-x-auto shadow-sm">
+                    <h2 className="text-xl font-bold text-secondary mb-6">Seller Onboarding Applications</h2>
+                    {dataLoading ? <p className="text-sm text-secondary/60">Loading applications...</p> : (
+                        applicationsList.length === 0 ? <p className="text-sm text-secondary/60">No applications found.</p> : (
+                            <table className="w-full text-left text-sm">
+                                <thead>
+                                    <tr className="border-b border-secondary/10 text-secondary/60 text-xs uppercase">
+                                        <th className="py-3 px-4">Applicant</th>
+                                        <th className="py-3 px-4">Business Info</th>
+                                        <th className="py-3 px-4">Tax ID & Docs</th>
+                                        <th className="py-3 px-4">Status</th>
+                                        <th className="py-3 px-4">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {applicationsList.map(app => (
+                                        <tr key={app.id} className="border-b border-secondary/5 hover:bg-secondary/5 transition">
+                                            <td className="py-3 px-4">
+                                                <p className="font-bold text-secondary">{app.user_name}</p>
+                                                <p className="text-xs text-secondary/60">{app.user_email}</p>
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                <p className="font-semibold text-secondary">{app.business_name}</p>
+                                                <p className="text-xs text-secondary/60">{app.business_email} · {app.phone || 'No phone'}</p>
+                                            </td>
+                                            <td className="py-3 px-4 text-xs">
+                                                <p><span className="font-semibold">Tax ID:</span> {app.tax_id || 'N/A'}</p>
+                                                {app.document_urls?.[0] && (
+                                                    <a href={app.document_urls[0]} target="_blank" rel="noreferrer" className="text-accent underline">View Document</a>
+                                                )}
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                                    app.status === 'approved' ? 'bg-green-100 text-green-700' :
+                                                    app.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
+                                                }`}>
+                                                    {app.status}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                {app.status === 'pending' && (
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => {
+                                                                setReviewingApp(app);
+                                                                handleReviewApplication('approved');
+                                                            }}
+                                                            className="p-1.5 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition"
+                                                            title="Approve Seller"
+                                                        >
+                                                            <CheckCircle2 size={18} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                setReviewingApp(app);
+                                                                const note = prompt('Reason for rejection:');
+                                                                setReviewNotes(note || '');
+                                                                handleReviewApplication('rejected');
+                                                            }}
+                                                            className="p-1.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition"
+                                                            title="Reject Seller"
+                                                        >
+                                                            <XCircle size={18} />
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )
+                    )}
+                </div>
+            )}
+
+            {/* TAB: SELLERS */}
+            {activeTab === 'sellers' && (
+                <div className="bg-dominant border border-secondary/10 rounded-2xl p-6 overflow-x-auto shadow-sm">
+                    <h2 className="text-xl font-bold text-secondary mb-6">Registered Marketplace Sellers</h2>
+                    {dataLoading ? <p className="text-sm text-secondary/60">Loading sellers...</p> : (
+                        <table className="w-full text-left text-sm">
+                            <thead>
+                                <tr className="border-b border-secondary/10 text-secondary/60 text-xs uppercase">
+                                    <th className="py-3 px-4">Store Name</th>
+                                    <th className="py-3 px-4">Owner</th>
+                                    <th className="py-3 px-4">Catalog & Orders</th>
+                                    <th className="py-3 px-4">Gross Sales</th>
+                                    <th className="py-3 px-4">Commission %</th>
+                                    <th className="py-3 px-4">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {sellersList.map(s => (
+                                    <tr key={s.id} className="border-b border-secondary/5 hover:bg-secondary/5 transition">
+                                        <td className="py-3 px-4">
+                                            <p className="font-bold text-secondary">{s.name}</p>
+                                            <p className="text-xs text-secondary/60">/stores/{s.slug}</p>
+                                        </td>
+                                        <td className="py-3 px-4">
+                                            <p className="font-semibold text-secondary">{s.owner_name}</p>
+                                            <p className="text-xs text-secondary/60">{s.email}</p>
+                                        </td>
+                                        <td className="py-3 px-4 text-xs">
+                                            <p>{s.total_products} products listed</p>
+                                            <p className="text-secondary/60">{s.total_orders} orders fulfilled</p>
+                                        </td>
+                                        <td className="py-3 px-4 font-bold text-secondary">{formatCurrency(s.total_sales || 0)}</td>
+                                        <td className="py-3 px-4 font-semibold">{s.commission_rate || 10}%</td>
+                                        <td className="py-3 px-4">
+                                            <button
+                                                onClick={async () => {
+                                                    const newStatus = !s.is_active;
+                                                    await api.put(`/admin/sellers/${s.id}`, { isActive: newStatus });
+                                                    setSellersList(prev => prev.map(item => item.id === s.id ? { ...item, is_active: newStatus } : item));
+                                                }}
+                                                className={`px-3 py-1 rounded-full text-xs font-semibold cursor-pointer ${
+                                                    s.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                                }`}
+                                            >
+                                                {s.is_active ? 'Active' : 'Suspended'}
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
+                </div>
+            )}
+
+            {/* TAB: PRODUCTS MODERATION */}
+            {activeTab === 'products' && (
+                <div className="bg-dominant border border-secondary/10 rounded-2xl p-6 overflow-x-auto shadow-sm">
+                    <h2 className="text-xl font-bold text-secondary mb-6">Product Catalog Moderation</h2>
+                    {dataLoading ? <p className="text-sm text-secondary/60">Loading products...</p> : (
+                        <table className="w-full text-left text-sm">
+                            <thead>
+                                <tr className="border-b border-secondary/10 text-secondary/60 text-xs uppercase">
+                                    <th className="py-3 px-4">Image</th>
+                                    <th className="py-3 px-4">Title & Store</th>
+                                    <th className="py-3 px-4">Category</th>
+                                    <th className="py-3 px-4">Price</th>
+                                    <th className="py-3 px-4">Status</th>
+                                    <th className="py-3 px-4">Moderation Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {productsList.map(prod => (
+                                    <tr key={prod.id} className="border-b border-secondary/5 hover:bg-secondary/5 transition">
+                                        <td className="py-3 px-4">
+                                            <div className="w-12 h-14 rounded-lg bg-secondary/10 overflow-hidden">
+                                                {prod.main_image ? <img src={prod.main_image} alt={prod.name} className="w-full h-full object-cover" /> : <Package size={18} />}
+                                            </div>
+                                        </td>
+                                        <td className="py-3 px-4">
+                                            <p className="font-bold text-secondary">{prod.name}</p>
+                                            <p className="text-xs text-secondary/60">Store: <span className="font-semibold text-secondary">{prod.store_name || 'Flagship Store'}</span></p>
+                                        </td>
+                                        <td className="py-3 px-4 text-xs">{prod.category_name} · {prod.gender}</td>
+                                        <td className="py-3 px-4 font-bold text-secondary">{formatCurrency(prod.base_price)}</td>
+                                        <td className="py-3 px-4">
+                                            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                                prod.status === 'approved' ? 'bg-green-100 text-green-700' :
+                                                prod.status === 'pending_approval' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
+                                            }`}>
+                                                {prod.status}
+                                            </span>
+                                        </td>
+                                        <td className="py-3 px-4">
+                                            <div className="flex items-center gap-2">
+                                                {prod.status !== 'approved' && (
+                                                    <button
+                                                        onClick={() => handleModerateProduct(prod.id, 'approved')}
+                                                        className="px-2.5 py-1 bg-green-600 text-white rounded text-xs font-bold"
+                                                    >
+                                                        Approve
+                                                    </button>
+                                                )}
+                                                {prod.status !== 'rejected' && (
+                                                    <button
+                                                        onClick={() => handleModerateProduct(prod.id, 'rejected')}
+                                                        className="px-2.5 py-1 bg-red-600 text-white rounded text-xs font-bold"
+                                                    >
+                                                        Reject
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
+                </div>
+            )}
+
+            {/* TAB: ORDERS */}
+            {activeTab === 'orders' && (
+                <div className="bg-dominant border border-secondary/10 rounded-2xl p-6 overflow-x-auto shadow-sm">
+                    <h2 className="text-xl font-bold text-secondary mb-6">Marketplace Order Oversight</h2>
+                    {dataLoading ? <p className="text-sm text-secondary/60">Loading orders...</p> : (
+                        <table className="w-full text-left text-sm">
+                            <thead>
+                                <tr className="border-b border-secondary/10 text-secondary/60 text-xs uppercase">
+                                    <th className="py-3 px-4">Order ID</th>
+                                    <th className="py-3 px-4">Customer Info</th>
+                                    <th className="py-3 px-4">Items & Sellers</th>
+                                    <th className="py-3 px-4">Shipping Address</th>
+                                    <th className="py-3 px-4">Total Amount</th>
+                                    <th className="py-3 px-4">Payment Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {ordersList.map(order => (
+                                    <tr key={order.id} className="border-b border-secondary/5 hover:bg-secondary/5 transition">
+                                        <td className="py-3 px-4 font-bold text-secondary">#{order.id}</td>
+                                        <td className="py-3 px-4">
+                                            <p className="font-semibold text-secondary">{order.user_name}</p>
+                                            <p className="text-xs text-secondary/60">{order.email}</p>
+                                        </td>
+                                        <td className="py-3 px-4 text-xs space-y-1">
+                                            {(order.items || []).map((item, idx) => (
+                                                <p key={idx}>
+                                                    <span className="font-semibold">{item.product_name}</span> x {item.quantity} · {item.store_name || 'Flagship'}
+                                                </p>
+                                            ))}
+                                        </td>
+                                        <td className="py-3 px-4 text-xs max-w-xs text-secondary/70">
+                                            <div className="flex items-start gap-1">
+                                                <MapPin size={14} className="text-accent flex-shrink-0 mt-0.5" />
+                                                <span>{order.shipping_address}</span>
+                                            </div>
+                                        </td>
+                                        <td className="py-3 px-4 font-bold text-secondary">{formatCurrency(order.total_amount)}</td>
+                                        <td className="py-3 px-4">
+                                            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                                                {order.status || 'Paid'}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
+                </div>
+            )}
+
+            {/* TAB: COMMISSIONS */}
+            {activeTab === 'commissions' && (
+                <div className="space-y-6">
+                    <div className="bg-dominant border border-secondary/10 rounded-2xl p-6 shadow-sm">
+                        <div className="flex justify-between items-center mb-6">
+                            <div>
+                                <h2 className="text-xl font-bold text-secondary">Platform Commission Architecture</h2>
+                                <p className="text-xs text-secondary/60">Configure global default commission rate and seller or category-specific overrides.</p>
+                            </div>
+                            <button
+                                onClick={() => setShowNewRuleModal(true)}
+                                className="px-4 py-2 bg-secondary text-dominant text-sm font-bold rounded-lg hover:bg-accent transition"
+                            >
+                                + Add Override Rule
+                            </button>
+                        </div>
+
+                        <table className="w-full text-left text-sm">
+                            <thead>
+                                <tr className="border-b border-secondary/10 text-secondary/60 text-xs uppercase">
+                                    <th className="py-3 px-4">Rule Scope</th>
+                                    <th className="py-3 px-4">Target</th>
+                                    <th className="py-3 px-4">Commission %</th>
+                                    <th className="py-3 px-4">Effective Date</th>
+                                    <th className="py-3 px-4">Active</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {commissionsList.map(rule => (
+                                    <tr key={rule.id} className="border-b border-secondary/5">
+                                        <td className="py-3 px-4 font-bold text-secondary capitalize">{rule.rule_type}</td>
+                                        <td className="py-3 px-4">{rule.target_name || 'All Catalog'}</td>
+                                        <td className="py-3 px-4 font-black text-accent">{rule.rate}%</td>
+                                        <td className="py-3 px-4 text-xs text-secondary/60">{new Date(rule.effective_from).toLocaleDateString()}</td>
+                                        <td className="py-3 px-4">
+                                            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">Active</span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {/* TAB: PAYOUTS */}
+            {activeTab === 'payouts' && (
+                <div className="bg-dominant border border-secondary/10 rounded-2xl p-6 overflow-x-auto shadow-sm">
+                    <h2 className="text-xl font-bold text-secondary mb-6">Seller Payouts Oversight</h2>
+                    {dataLoading ? <p className="text-sm text-secondary/60">Loading payouts...</p> : (
+                        <table className="w-full text-left text-sm">
+                            <thead>
+                                <tr className="border-b border-secondary/10 text-secondary/60 text-xs uppercase">
+                                    <th className="py-3 px-4">Store</th>
+                                    <th className="py-3 px-4">Amount</th>
+                                    <th className="py-3 px-4">Requested On</th>
+                                    <th className="py-3 px-4">Status</th>
+                                    <th className="py-3 px-4">Reference</th>
+                                    <th className="py-3 px-4">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {payoutsList.map(p => (
+                                    <tr key={p.id} className="border-b border-secondary/5 hover:bg-secondary/5 transition">
+                                        <td className="py-3 px-4">
+                                            <p className="font-bold text-secondary">{p.store_name || p.seller_name}</p>
+                                            <p className="text-xs text-secondary/60">{p.seller_email}</p>
+                                        </td>
+                                        <td className="py-3 px-4 font-black text-secondary">{formatCurrency(p.amount)}</td>
+                                        <td className="py-3 px-4 text-xs">{new Date(p.created_at).toLocaleDateString()}</td>
+                                        <td className="py-3 px-4">
+                                            <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                                p.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                                            }`}>
+                                                {p.status}
+                                            </span>
+                                        </td>
+                                        <td className="py-3 px-4 text-xs text-secondary/60">{p.reference_id || 'Pending'}</td>
+                                        <td className="py-3 px-4">
+                                            {p.status === 'pending' && (
+                                                <button
+                                                    onClick={() => handleProcessPayout(p.id, 'completed')}
+                                                    className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-bold"
+                                                >
+                                                    Mark Completed
+                                                </button>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
+                </div>
+            )}
+
+            {/* TAB: RETURNS & DISPUTES */}
+            {activeTab === 'returns' && (
+                <div className="bg-dominant border border-secondary/10 rounded-2xl p-6 overflow-x-auto shadow-sm">
+                    <h2 className="text-xl font-bold text-secondary mb-6">Returns & Buyer Disputes</h2>
+                    {dataLoading ? <p className="text-sm text-secondary/60">Loading returns...</p> : (
+                        returnsList.length === 0 ? <p className="text-sm text-secondary/60">No return requests recorded.</p> : (
+                            <table className="w-full text-left text-sm">
+                                <thead>
+                                    <tr className="border-b border-secondary/10 text-secondary/60 text-xs uppercase">
+                                        <th className="py-3 px-4">Order & Item</th>
+                                        <th className="py-3 px-4">Customer</th>
+                                        <th className="py-3 px-4">Seller Store</th>
+                                        <th className="py-3 px-4">Reason</th>
+                                        <th className="py-3 px-4">Status</th>
+                                        <th className="py-3 px-4">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {returnsList.map(r => (
+                                        <tr key={r.id} className="border-b border-secondary/5 hover:bg-secondary/5 transition">
+                                            <td className="py-3 px-4">
+                                                <p className="font-bold text-secondary">#{r.order_id} - {r.product_name}</p>
+                                                <p className="text-xs text-secondary/60">{r.color} / {r.size}</p>
+                                            </td>
+                                            <td className="py-3 px-4 text-xs">{r.customer_email}</td>
+                                            <td className="py-3 px-4 text-xs font-semibold">{r.store_name}</td>
+                                            <td className="py-3 px-4 text-xs max-w-xs">{r.reason}</td>
+                                            <td className="py-3 px-4">
+                                                <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                                    r.status === 'approved' ? 'bg-green-100 text-green-700' :
+                                                    r.status === 'completed' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'
+                                                }`}>
+                                                    {r.status}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                {r.status === 'pending' && (
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => handleResolveReturn(r.id, 'completed', true)}
+                                                            className="px-2.5 py-1 bg-green-600 text-white text-xs rounded font-bold"
+                                                        >
+                                                            Refund & Restock
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleResolveReturn(r.id, 'rejected')}
+                                                            className="px-2.5 py-1 bg-red-600 text-white text-xs rounded font-bold"
+                                                        >
+                                                            Reject
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )
+                    )}
+                </div>
+            )}
+
+            {/* TAB: AUDIT LOGS */}
+            {activeTab === 'audit' && (
+                <div className="bg-dominant border border-secondary/10 rounded-2xl p-6 overflow-x-auto shadow-sm">
+                    <h2 className="text-xl font-bold text-secondary mb-6">Security & Administrative Audit Trail</h2>
+                    {dataLoading ? <p className="text-sm text-secondary/60">Loading audit trail...</p> : (
+                        <table className="w-full text-left text-sm">
+                            <thead>
+                                <tr className="border-b border-secondary/10 text-secondary/60 text-xs uppercase">
+                                    <th className="py-3 px-4">Timestamp</th>
+                                    <th className="py-3 px-4">Admin / Actor</th>
+                                    <th className="py-3 px-4">Action</th>
+                                    <th className="py-3 px-4">Entity</th>
+                                    <th className="py-3 px-4">Audit Details</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {auditLogsList.map(log => (
+                                    <tr key={log.id} className="border-b border-secondary/5 text-xs">
+                                        <td className="py-3 px-4 text-secondary/60">{new Date(log.created_at).toLocaleString()}</td>
+                                        <td className="py-3 px-4 font-semibold text-secondary">{log.user_email || 'System'}</td>
+                                        <td className="py-3 px-4 font-bold text-accent">{log.action}</td>
+                                        <td className="py-3 px-4">{log.target_entity} #{log.target_id}</td>
+                                        <td className="py-3 px-4 text-secondary/60 font-mono text-[11px] max-w-xs truncate">
+                                            {JSON.stringify(log.details)}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
+                </div>
+            )}
+
+            {/* TAB: AI ANALYTICS */}
+            {activeTab === 'ai_analytics' && (
+                <div className="space-y-6">
+                    <div className="bg-dominant border border-secondary/10 rounded-2xl p-6 shadow-sm">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Sparkles size={22} className="text-accent" />
+                            <h2 className="text-xl font-bold text-secondary">Super Admin AI Analytics Assistant</h2>
+                        </div>
+                        <p className="text-xs text-secondary/60 mb-6">
+                            Ask complex questions in natural language. Translated into verified read-only PostgreSQL aggregates with zero hallucination.
+                        </p>
+
+                        <form onSubmit={handleAskAIAnalytics} className="flex gap-3 mb-6">
+                            <input
+                                required
+                                value={aiQuestion}
+                                onChange={e => setAiQuestion(e.target.value)}
+                                placeholder="e.g. Which categories generated the highest GMV? or Which sellers are top performers?"
+                                className="flex-1 p-3.5 bg-secondary/5 border border-secondary/15 rounded-xl text-sm text-secondary focus:outline-none focus:border-accent"
+                            />
+                            <button
+                                type="submit"
+                                disabled={aiLoading}
+                                className="px-6 py-3.5 bg-secondary text-dominant rounded-xl text-sm font-bold hover:bg-accent transition flex items-center gap-2"
+                            >
+                                <Bot size={18} /> {aiLoading ? 'Analyzing...' : 'Ask AI'}
+                            </button>
+                        </form>
+
+                        {aiAnswer && (
+                            <div className="p-6 rounded-2xl bg-secondary/5 border border-secondary/10">
+                                <h3 className="font-bold text-secondary mb-3">Executive Summary</h3>
+                                <div className="text-sm text-secondary/80 whitespace-pre-line leading-relaxed mb-6">
+                                    {aiAnswer.answer}
+                                </div>
+
+                                <div className="p-4 rounded-xl bg-dominant border border-secondary/10">
+                                    <h4 className="text-xs font-bold text-secondary uppercase tracking-wider mb-2">Verified Database Snapshot</h4>
+                                    <pre className="text-[11px] text-secondary/70 overflow-x-auto">
+                                        {JSON.stringify(aiAnswer.dataSnapshot, null, 2)}
+                                    </pre>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL: ADD COMMISSION RULE */}
+            {showNewRuleModal && (
+                <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                    <div className="bg-dominant border border-secondary/15 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+                        <h3 className="text-xl font-bold text-secondary mb-4">Add Commission Override Rule</h3>
+                        <form onSubmit={async (e) => {
+                            e.preventDefault();
+                            await api.post('/admin/commissions', newRule);
+                            setShowNewRuleModal(false);
+                            const res = await api.get('/admin/commissions');
+                            setCommissionsList(res.data || []);
+                        }} className="space-y-4">
+                            <div>
+                                <label className="text-xs font-bold text-secondary uppercase block mb-1">Rule Scope</label>
+                                <select
+                                    value={newRule.ruleType}
+                                    onChange={e => setNewRule({ ...newRule, ruleType: e.target.value })}
+                                    className="w-full p-3 bg-secondary/5 border border-secondary/15 rounded-xl text-sm"
+                                >
+                                    <option value="global">Global Platform Default</option>
+                                    <option value="category">Category Override</option>
+                                    <option value="seller">Seller Store Override</option>
+                                </select>
+                            </div>
+
+                            {newRule.ruleType !== 'global' && (
+                                <div>
+                                    <label className="text-xs font-bold text-secondary uppercase block mb-1">Target ID (Category or User ID)</label>
+                                    <input
+                                        required
+                                        type="number"
+                                        value={newRule.targetId}
+                                        onChange={e => setNewRule({ ...newRule, targetId: e.target.value })}
+                                        placeholder="Target numeric ID"
+                                        className="w-full p-3 bg-secondary/5 border border-secondary/15 rounded-xl text-sm"
+                                    />
+                                </div>
+                            )}
+
+                            <div>
+                                <label className="text-xs font-bold text-secondary uppercase block mb-1">Commission Rate (%)</label>
+                                <input
+                                    required
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    step="0.01"
+                                    value={newRule.rate}
+                                    onChange={e => setNewRule({ ...newRule, rate: e.target.value })}
+                                    className="w-full p-3 bg-secondary/5 border border-secondary/15 rounded-xl text-sm"
+                                />
+                            </div>
+
+                            <div className="flex justify-end gap-3 pt-4">
+                                <button type="button" onClick={() => setShowNewRuleModal(false)} className="px-4 py-2 border rounded-xl text-sm font-semibold">Cancel</button>
+                                <button type="submit" className="px-5 py-2 bg-secondary text-dominant rounded-xl text-sm font-bold">Save Rule</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 };
 
 export default AdminDashboard;
