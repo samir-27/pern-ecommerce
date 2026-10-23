@@ -16,8 +16,51 @@ const BrandAnalyticsPage = () => {
     useEffect(() => {
         const fetchAnalytics = async () => {
             try {
-                const res = await api.get('/brand/analytics');
-                setAnalytics(res.data);
+                const res = await api.get('/seller/orders');
+                const orders = res.data || [];
+                const cutoff = new Date();
+                cutoff.setDate(cutoff.getDate() - 30);
+                const recentOrders = orders.filter((order) => new Date(order.created_at) >= cutoff);
+                const revenueByDate = new Map();
+                const productsById = new Map();
+
+                recentOrders.forEach((order) => {
+                    const date = new Date(order.created_at).toISOString().slice(0, 10);
+                    const revenue = revenueByDate.get(date) || {
+                        date,
+                        orders: 0,
+                        gross_sales: 0,
+                        platform_fees: 0,
+                        net_earnings: 0,
+                    };
+                    revenue.orders += 1;
+                    revenue.gross_sales += Number(order.subtotal || 0);
+                    revenue.platform_fees += Number(order.commission_amount || 0);
+                    revenue.net_earnings += Number(order.seller_net_earnings || 0);
+                    revenueByDate.set(date, revenue);
+
+                    (order.items || []).forEach((item) => {
+                        const productId = item.product_name || item.variant_id;
+                        const product = productsById.get(productId) || {
+                            id: productId,
+                            name: item.product_name,
+                            images: item.image_urls || [],
+                            clothing_type: 'Apparel',
+                            units_sold: 0,
+                            total_revenue: 0,
+                        };
+                        product.units_sold += Number(item.quantity || 0);
+                        product.total_revenue += Number(item.price_at_purchase || 0) * Number(item.quantity || 0);
+                        productsById.set(productId, product);
+                    });
+                });
+
+                setAnalytics({
+                    recent_revenue: [...revenueByDate.values()].sort((a, b) => b.date.localeCompare(a.date)),
+                    top_products: [...productsById.values()]
+                        .sort((a, b) => b.units_sold - a.units_sold)
+                        .slice(0, 10),
+                });
             } catch (err) {
                 console.error('Error fetching brand analytics:', err);
             } finally {
@@ -110,7 +153,7 @@ const BrandAnalyticsPage = () => {
                                         <td className="py-3">
                                             <div className="flex items-center gap-2.5">
                                                 <img 
-                                                    src={item.images?.[0] || 'https://via.placeholder.com/40'} 
+                                                    src={item.images?.[0] || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=80&q=80'} 
                                                     alt={item.name}
                                                     className="w-8 h-10 rounded object-cover bg-slate-800"
                                                 />

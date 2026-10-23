@@ -24,14 +24,16 @@ const BrandOrdersPage = () => {
     const [trackingNumber, setTrackingNumber] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [error, setError] = useState('');
 
     const fetchOrders = async () => {
         try {
             setLoading(true);
-            const res = await api.get('/brand/orders');
+            const res = await api.get('/seller/orders');
             setOrders(res.data || []);
         } catch (err) {
             console.error('Error fetching brand orders:', err);
+            setError(err.response?.data?.error || 'Unable to load orders. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -43,7 +45,7 @@ const BrandOrdersPage = () => {
 
     const openFulfillModal = (order) => {
         setSelectedOrder(order);
-        setCarrier(order.carrier || 'BlueDart');
+        setCarrier(order.shipping_carrier || 'BlueDart');
         setTrackingNumber(order.tracking_number || '');
         setIsFulfillModalOpen(true);
     };
@@ -53,10 +55,10 @@ const BrandOrdersPage = () => {
         if (!selectedOrder) return;
         setSubmitting(true);
         try {
-            await api.put(`/brand/orders/${selectedOrder.id}/fulfill`, {
-                fulfillment_status: 'shipped',
-                carrier,
-                tracking_number: trackingNumber
+            await api.put(`/seller/orders/${selectedOrder.id}/fulfill`, {
+                status: 'shipped',
+                shippingCarrier: carrier,
+                trackingNumber
             });
             setIsFulfillModalOpen(false);
             await fetchOrders();
@@ -69,7 +71,8 @@ const BrandOrdersPage = () => {
     };
 
     const filteredOrders = orders.filter(o => 
-        (o.order_number || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        String(o.order_id || '').includes(searchTerm) ||
+        String(o.id || '').includes(searchTerm) ||
         (o.customer_email || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -103,6 +106,13 @@ const BrandOrdersPage = () => {
                 </div>
             </div>
 
+            {error && (
+                <div role="alert" className="flex items-center justify-between gap-4 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
+                    <span>{error}</span>
+                    <button type="button" onClick={fetchOrders} className="font-semibold underline">Retry</button>
+                </div>
+            )}
+
             {/* Orders Feed */}
             {filteredOrders.length === 0 ? (
                 <div className="p-12 text-center rounded-2xl bg-slate-900/60 border border-slate-800 text-slate-400">
@@ -115,9 +125,10 @@ const BrandOrdersPage = () => {
             ) : (
                 <div className="space-y-4">
                     {filteredOrders.map((o) => {
-                        const isPending = o.fulfillment_status === 'pending';
-                        const isShipped = o.fulfillment_status === 'shipped';
-                        const isDelivered = o.fulfillment_status === 'delivered';
+                        const status = o.status || 'unfulfilled';
+                        const isPending = status === 'pending' || status === 'unfulfilled' || status === 'processing';
+                        const isShipped = status === 'shipped';
+                        const isDelivered = status === 'delivered';
 
                         return (
                             <div 
@@ -133,7 +144,7 @@ const BrandOrdersPage = () => {
                                         <div>
                                             <div className="flex items-center gap-2">
                                                 <span className="font-bold text-white text-sm">
-                                                    Order #{o.order_number || `ORD-${o.id}`}
+                                                    Order #{o.order_id || o.id}
                                                 </span>
                                                 <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md uppercase tracking-wider ${
                                                     isDelivered
@@ -143,7 +154,7 @@ const BrandOrdersPage = () => {
                                                         : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
                                                 }`}>
                                                     {isDelivered || isShipped ? <Truck size={11} /> : <Clock size={11} />}
-                                                    {o.fulfillment_status}
+                                                    {status}
                                                 </span>
                                             </div>
                                             <span className="text-xs text-slate-400 mt-0.5 flex items-center gap-1.5">
@@ -156,7 +167,7 @@ const BrandOrdersPage = () => {
                                         <div>
                                             <span className="text-xs text-slate-400 block">Brand Net Payout</span>
                                             <span className="text-base font-black text-amber-400">
-                                                ₹{Number(o.net_payout || o.subtotal).toLocaleString('en-IN')}
+                                                ₹{Number(o.seller_net_earnings ?? o.subtotal ?? 0).toLocaleString('en-IN')}
                                             </span>
                                         </div>
                                         {isPending && (
@@ -184,7 +195,7 @@ const BrandOrdersPage = () => {
                                         <User size={14} className="text-amber-400 shrink-0 mt-0.5" />
                                         <div>
                                             <span className="font-semibold text-white block">
-                                                {o.customer_first_name} {o.customer_last_name}
+                                                {o.customer_name || 'Customer'}
                                             </span>
                                             <span className="text-slate-400">{o.customer_email}</span>
                                         </div>
@@ -195,7 +206,7 @@ const BrandOrdersPage = () => {
                                             <span className="text-slate-400 block">Delivery Address:</span>
                                             <span className="text-white">
                                                 {typeof o.shipping_address === 'object' 
-                                                    ? `${o.shipping_address?.street || ''}, ${o.shipping_address?.city || ''} ${o.shipping_address?.pincode || ''}`
+                                                    ? Object.values(o.shipping_address || {}).filter(Boolean).join(', ')
                                                     : o.shipping_address || 'Address provided on customer file'}
                                             </span>
                                         </div>
@@ -207,7 +218,7 @@ const BrandOrdersPage = () => {
                                     <div className="flex items-center gap-3 text-xs bg-blue-950/20 border border-blue-500/30 text-blue-300 px-3.5 py-2 rounded-xl">
                                         <Truck size={14} className="text-blue-400" />
                                         <span>
-                                            Carrier: <strong>{o.carrier || 'Express Courier'}</strong> • Tracking AWB: <strong>{o.tracking_number}</strong>
+                                            Carrier: <strong>{o.shipping_carrier || 'Express Courier'}</strong> • Tracking AWB: <strong>{o.tracking_number}</strong>
                                         </span>
                                     </div>
                                 )}
@@ -220,11 +231,11 @@ const BrandOrdersPage = () => {
                                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                                         {o.items?.map((item) => (
                                             <div 
-                                                key={item.id} 
+                                                key={item.order_item_id} 
                                                 className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center gap-3 text-xs"
                                             >
                                                 <img 
-                                                    src={item.images?.[0] || 'https://via.placeholder.com/60'} 
+                                                    src={item.image_urls?.[0] || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=80&q=80'} 
                                                     alt={item.product_name}
                                                     className="w-10 h-12 rounded-lg object-cover bg-slate-800 shrink-0"
                                                 />
@@ -234,7 +245,7 @@ const BrandOrdersPage = () => {
                                                         Size: {item.size || 'M'} • {item.color || 'Standard'}
                                                     </div>
                                                     <div className="text-amber-400 font-semibold mt-0.5">
-                                                        Qty {item.quantity} × ₹{item.unit_price}
+                                                        Qty {item.quantity} × ₹{item.price_at_purchase}
                                                     </div>
                                                 </div>
                                             </div>
@@ -253,7 +264,7 @@ const BrandOrdersPage = () => {
                     <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-5">
                         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                             <h3 className="text-base font-bold text-white flex items-center gap-2">
-                                <Truck size={18} className="text-amber-400" /> Dispatch Order #{selectedOrder.order_number}
+                                <Truck size={18} className="text-amber-400" /> Dispatch Order #{selectedOrder.order_id || selectedOrder.id}
                             </h3>
                             <button
                                 onClick={() => setIsFulfillModalOpen(false)}

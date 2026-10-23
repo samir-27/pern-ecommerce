@@ -15,6 +15,7 @@ import {
     Image as ImageIcon
 } from 'lucide-react';
 import api from '@api';
+import { buildProductPayload, getSellerErrorMessage, normalizeSellerProduct } from '../services/sellerData';
 
 const BrandProductsPage = () => {
     const [products, setProducts] = useState([]);
@@ -24,6 +25,8 @@ const BrandProductsPage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
     const [submitting, setSubmitting] = useState(false);
+    const [imageFiles, setImageFiles] = useState([]);
+    const [error, setError] = useState('');
 
     // Initial form state
     const initialFormState = {
@@ -37,7 +40,6 @@ const BrandProductsPage = () => {
         pattern: 'Solid',
         season: 'All-Season',
         care_instructions: 'Machine wash cold with like colors. Tumble dry low.',
-        images: ['https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800'],
         variants: [
             { size: 'S', color: 'Black', sku: '', price: '', stock_quantity: 10, low_stock_threshold: 3 },
             { size: 'M', color: 'Black', sku: '', price: '', stock_quantity: 15, low_stock_threshold: 5 },
@@ -51,16 +53,18 @@ const BrandProductsPage = () => {
         try {
             setLoading(true);
             const [prodRes, catRes] = await Promise.all([
-                api.get('/brand/products'),
+                api.get('/seller/products'),
                 api.get('/products/categories')
             ]);
-            setProducts(prodRes.data || []);
+            setProducts((prodRes.data || []).map(normalizeSellerProduct));
             setCategories(catRes.data || []);
+            setError('');
             if (catRes.data?.length > 0 && !formData.category_id) {
                 setFormData(prev => ({ ...prev, category_id: catRes.data[0].id }));
             }
         } catch (err) {
             console.error('Error fetching brand catalog:', err);
+            setError(getSellerErrorMessage(err, 'Unable to load your catalog. Please try again.'));
         } finally {
             setLoading(false);
         }
@@ -72,6 +76,7 @@ const BrandProductsPage = () => {
 
     const openAddModal = () => {
         setEditingProduct(null);
+        setImageFiles([]);
         setFormData({
             ...initialFormState,
             category_id: categories[0]?.id || ''
@@ -92,11 +97,11 @@ const BrandProductsPage = () => {
             pattern: product.pattern || '',
             season: product.season || '',
             care_instructions: product.care_instructions || '',
-            images: product.images || [],
             variants: product.variants?.length > 0 ? product.variants : [
                 { size: 'Standard', color: 'Default', sku: '', price: product.price, stock_quantity: 10, low_stock_threshold: 3 }
             ]
         });
+        setImageFiles([]);
         setIsModalOpen(true);
     };
 
@@ -130,28 +135,29 @@ const BrandProductsPage = () => {
         }));
     };
 
-    const handleImageChange = (index, value) => {
-        setFormData(prev => {
-            const nextImages = [...prev.images];
-            nextImages[index] = value;
-            return { ...prev, images: nextImages };
-        });
-    };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSubmitting(true);
         try {
+            const payload = buildProductPayload(formData, categories);
             if (editingProduct) {
-                await api.put(`/brand/products/${editingProduct.id}`, formData);
+                await api.put(`/products/${editingProduct.id}`, payload);
             } else {
-                await api.post('/brand/products', formData);
+                const uploadData = new FormData();
+                Object.entries(payload).forEach(([key, value]) => uploadData.append(key, value));
+                uploadData.append('variantImageCounts', JSON.stringify([
+                    imageFiles.length,
+                    ...formData.variants.slice(1).map(() => 0),
+                ]));
+                imageFiles.forEach((file) => uploadData.append('images', file));
+                await api.post('/products', uploadData);
             }
+            setError('');
             setIsModalOpen(false);
             await fetchCatalog();
         } catch (err) {
             console.error('Failed to save brand garment:', err);
-            alert(err.response?.data?.error || 'Failed to save product');
+            setError(getSellerErrorMessage(err, 'Failed to save product.'));
         } finally {
             setSubmitting(false);
         }
@@ -160,11 +166,11 @@ const BrandProductsPage = () => {
     const handleDelete = async (productId) => {
         if (!window.confirm('Are you sure you want to delete this clothing item from your catalog?')) return;
         try {
-            await api.delete(`/brand/products/${productId}`);
+            await api.delete(`/products/${productId}`);
             setProducts(prev => prev.filter(p => p.id !== productId));
         } catch (err) {
             console.error('Failed to delete garment:', err);
-            alert('Failed to delete product');
+            setError(getSellerErrorMessage(err, 'Failed to delete product.'));
         }
     };
 
@@ -179,6 +185,12 @@ const BrandProductsPage = () => {
     return (
         <div className="space-y-6">
             {/* Header */}
+            {error && (
+                <div role="alert" className="flex items-center justify-between gap-4 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
+                    <span>{error}</span>
+                    <button type="button" onClick={fetchCatalog} className="font-semibold underline">Retry</button>
+                </div>
+            )}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl md:text-3xl font-black text-white">Brand Garment Catalog</h1>
@@ -235,7 +247,7 @@ const BrandProductsPage = () => {
                                                 <td className="p-4">
                                                     <div className="flex items-center gap-3">
                                                         <img
-                                                            src={p.images?.[0] || 'https://via.placeholder.com/80'}
+                                                            src={p.images?.[0] || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=100&q=80'}
                                                             alt={p.name}
                                                             className="w-12 h-14 rounded-lg object-cover bg-slate-800 shrink-0 border border-slate-700/60"
                                                         />
@@ -260,7 +272,7 @@ const BrandProductsPage = () => {
 
                                                 {/* Price */}
                                                 <td className="p-4 font-bold text-amber-400">
-                                                    ₹{Number(p.price).toLocaleString('en-IN')}
+                                                    ₹{Number(p.base_price || p.price || 0).toLocaleString('en-IN')}
                                                 </td>
 
                                                 {/* Variant & Stock */}
@@ -336,7 +348,7 @@ const BrandProductsPage = () => {
                                                                     </div>
                                                                     <div className="text-slate-400 text-[11px] truncate">SKU: {v.sku}</div>
                                                                     <div className="mt-2 flex items-center justify-between">
-                                                                        <span className="font-bold text-amber-400">₹{v.price}</span>
+                                                                        <span className="font-bold text-amber-400">₹{Number(v.price || p.base_price || 0).toLocaleString('en-IN')}</span>
                                                                         <span className={`font-semibold ${
                                                                             v.stock_quantity <= v.low_stock_threshold ? 'text-amber-400' : 'text-slate-300'
                                                                         }`}>
@@ -520,18 +532,25 @@ const BrandProductsPage = () => {
                                 />
                             </div>
 
-                            {/* Image URLs */}
+                            {/* Product Image */}
                             <div>
                                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
-                                    Primary Image URL
+                                    {editingProduct ? 'Product Image' : 'Product Images'}
                                 </label>
-                                <input
-                                    type="text"
-                                    value={formData.images[0] || ''}
-                                    onChange={(e) => handleImageChange(0, e.target.value)}
-                                    placeholder="https://images.unsplash.com/..."
-                                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:border-amber-500"
-                                />
+                                {editingProduct ? (
+                                    <div className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-950/50 p-3 text-xs text-slate-400">
+                                        <img src={editingProduct.images?.[0]} alt="" className="h-14 w-12 rounded object-cover" />
+                                        Product images can be selected when creating a new listing.
+                                    </div>
+                                ) : (
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        multiple
+                                        onChange={(e) => setImageFiles(Array.from(e.target.files || []))}
+                                        className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3.5 py-2.5 text-sm text-white file:mr-3 file:rounded-lg file:border-0 file:bg-amber-500 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-slate-950"
+                                    />
+                                )}
                             </div>
 
                             {/* Variants Table in Form */}
@@ -575,7 +594,7 @@ const BrandProductsPage = () => {
                                             />
                                             <input
                                                 type="number"
-                                                value={v.price || formData.price}
+                                                value={v.price ?? v.price_override ?? ''}
                                                 onChange={(e) => handleVariantChange(idx, 'price', e.target.value)}
                                                 placeholder="Price ₹"
                                                 className="w-24 px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white"

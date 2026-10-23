@@ -7,6 +7,7 @@ const SuperAdminProductsPage = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [error, setError] = useState('');
 
     const fetchProducts = async () => {
         try {
@@ -15,6 +16,7 @@ const SuperAdminProductsPage = () => {
             setProducts(res.data || []);
         } catch (err) {
             console.error('Error fetching admin products:', err);
+            setError(err.response?.data?.error || 'Unable to load products. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -33,10 +35,11 @@ const SuperAdminProductsPage = () => {
                 status,
                 moderationNote: note
             });
+            setError('');
             await fetchProducts();
         } catch (err) {
             console.error('Error moderating product:', err);
-            alert('Failed to moderate product');
+            setError(err.response?.data?.error || 'Failed to moderate product.');
         }
     };
 
@@ -90,6 +93,13 @@ const SuperAdminProductsPage = () => {
                 </div>
             </div>
 
+            {error && (
+                <div role="alert" className="flex items-center justify-between gap-4 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
+                    <span>{error}</span>
+                    <button type="button" onClick={fetchProducts} className="font-semibold underline">Retry</button>
+                </div>
+            )}
+
             <div className="rounded-2xl bg-slate-900/80 border border-slate-800 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse text-sm">
@@ -103,12 +113,18 @@ const SuperAdminProductsPage = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-800/60">
-                            {filteredProducts.map((p) => (
+                            {filteredProducts.length === 0 ? (
+                                <tr>
+                                    <td colSpan={5} className="p-8 text-center text-sm text-slate-400">
+                                        No products match the selected filters.
+                                    </td>
+                                </tr>
+                            ) : filteredProducts.map((p) => (
                                 <tr key={p.id} className="hover:bg-slate-800/30 transition-colors">
                                     <td className="p-4">
                                         <div className="flex items-center gap-3">
                                             <img
-                                                src={p.images?.[0] || 'https://via.placeholder.com/60'}
+                                                src={p.main_image || p.variants?.find((variant) => variant.image_urls?.length)?.image_urls[0] || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=80&q=80'}
                                                 alt={p.name}
                                                 className="w-10 h-12 rounded-lg object-cover bg-slate-800 shrink-0"
                                             />
@@ -126,7 +142,7 @@ const SuperAdminProductsPage = () => {
 
                                     <td className="p-4 text-xs">
                                         <span className="text-slate-300 font-medium block">{p.category_name || 'Apparel'}</span>
-                                        <span className="text-white font-bold">₹{Number(p.price).toLocaleString('en-IN')}</span>
+                                        <span className="text-white font-bold">₹{Number(p.base_price || 0).toLocaleString('en-IN')}</span>
                                     </td>
 
                                     <td className="p-4">

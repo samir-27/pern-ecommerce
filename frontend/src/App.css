@@ -1,28 +1,4 @@
-/* Global Transitions & Animations */
-body {
-  transition: background-color 0.25s ease, color 0.25s ease;
-}
-
-/* Smooth Scrolling */
+/* App-wide global utility overrides */
 html {
   scroll-behavior: smooth;
-}
-
-/* Custom Scrollbars */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(100, 116, 139, 0.3);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(100, 116, 139, 0.5);
 }

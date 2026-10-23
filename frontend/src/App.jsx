@@ -1,29 +1,30 @@
-import { useState } from 'react';
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import './App.css';
-import Navbar from './components/Navbar';
-import Home from './pages/Home';
-import ProductsPage from './pages/Products';
-import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom';
-import ProductDetailsPage from './components/ProductDetail';
-import AuthPage from './pages/AuthPage';
-import { CartProvider } from './context/CartContext';
-import { useCart } from './context/useCart';
-import { CartDrawer } from './components/Cart';
-import ProfilePage from './pages/ProfilePage';
-import CheckoutPage from './components/Checkout';
-import StorefrontPage from './pages/StorefrontPage';
-import StoresDirectoryPage from './pages/StoresDirectoryPage';
-import AIFashionAssistant from './components/AIFashionAssistant';
 
-// Dedicated Brand Seller Application
+// 1. BUYER APPLICATION (from apps/buyer-web)
+import { 
+  CartProvider, 
+  BuyerLayout, 
+  HomePage, 
+  ShopPage, 
+  ProductDetailPage, 
+  BrandsDirectoryPage, 
+  BrandProfilePage, 
+  CheckoutPage, 
+  ProfilePage, 
+  AuthPage 
+} from '../../apps/buyer-web/src';
+
+// 2. BRAND SELLER APPLICATION (from apps/brand-seller-web)
 import BrandSellerLayout from '../../apps/brand-seller-web/src/layouts/BrandSellerLayout';
 import BrandOverviewPage from '../../apps/brand-seller-web/src/pages/BrandOverviewPage';
-import BrandProfilePage from '../../apps/brand-seller-web/src/pages/BrandProfilePage';
+import BrandProfilePage2 from '../../apps/brand-seller-web/src/pages/BrandProfilePage';
 import BrandProductsPage from '../../apps/brand-seller-web/src/pages/BrandProductsPage';
 import BrandOrdersPage from '../../apps/brand-seller-web/src/pages/BrandOrdersPage';
 import BrandAnalyticsPage from '../../apps/brand-seller-web/src/pages/BrandAnalyticsPage';
 
-// Standalone Super Admin Application
+// 3. STANDALONE SUPER ADMIN APPLICATION (from apps/super-admin-web)
 import SuperAdminLayout from '../../apps/super-admin-web/src/layouts/SuperAdminLayout';
 import SuperAdminLoginPage from '../../apps/super-admin-web/src/pages/SuperAdminLoginPage';
 import SuperAdminOverviewPage from '../../apps/super-admin-web/src/pages/SuperAdminOverviewPage';
@@ -33,9 +34,23 @@ import SuperAdminProductsPage from '../../apps/super-admin-web/src/pages/SuperAd
 import SuperAdminOrdersPage from '../../apps/super-admin-web/src/pages/SuperAdminOrdersPage';
 import SuperAdminAuditPage from '../../apps/super-admin-web/src/pages/SuperAdminAuditPage';
 
-const ProtectedRoute = () => {
+// Auth Route Guards
+const ProtectedBuyerRoute = () => {
   const token = localStorage.getItem('token');
   return token ? <Outlet /> : <Navigate to="/login" replace />;
+};
+
+const SellerRoute = () => {
+  const token = localStorage.getItem('token');
+  const role = localStorage.getItem('userRole');
+
+  if (!token) {
+    return <Navigate to="/login?mode=seller" replace />;
+  }
+
+  return (role === 'seller' || role === 'brand' || role === 'admin' || role === 'super_admin') 
+    ? <Outlet /> 
+    : <Navigate to="/login?mode=seller" replace />;
 };
 
 const AdminRoute = () => {
@@ -46,78 +61,53 @@ const AdminRoute = () => {
     return <Navigate to="/admin/login" replace />;
   }
 
-  return (role === 'admin' || role === 'super_admin') ? <Outlet /> : <Navigate to="/admin/login" replace />;
-};
-
-const SellerRoute = () => {
-  const token = localStorage.getItem('token');
-  const role = localStorage.getItem('userRole');
-
-  if (!token) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return (role === 'seller' || role === 'brand' || role === 'admin' || role === 'super_admin') 
+  return (role === 'admin' || role === 'super_admin') 
     ? <Outlet /> 
-    : <Navigate to="/login" replace />;
-};
-
-const MainLayout = ({ onCartClick, onOpenAiStylist }) => {
-    const { cartItems } = useCart();
-    
-    return (
-        <div className="min-h-screen bg-dominant text-secondary flex flex-col antialiased w-full">
-            <Navbar cartItemCount={cartItems.length} onCartClick={onCartClick} onOpenAiStylist={onOpenAiStylist} />
-            <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-                <Outlet />
-            </main>
-        </div>
-    );
+    : <Navigate to="/admin/login" replace />;
 };
 
 function App() {
-  const [isCartOpen, setIsCartOpen] = useState(false);
-  const [isAiStylistOpen, setIsAiStylistOpen] = useState(false);
-
   return (
     <CartProvider>
       <BrowserRouter>
         <Routes>
           {/* ============================================================== */}
-          {/* 1. BUYER APPLICATION (Storefront, Cart, Checkout, Profile)     */}
+          {/* 1. BUYER APPLICATION (Modern Fashion E-Commerce Storefront)    */}
           {/* ============================================================== */}
-          <Route path="/login" element={<AuthPage type="login" />} />
-          <Route path="/register" element={<AuthPage type="register" />} />
+          <Route path="/login" element={<AuthPage initialMode="login" />} />
+          <Route path="/register" element={<AuthPage initialMode="register" />} />
 
-          <Route element={<MainLayout onCartClick={() => setIsCartOpen(true)} onOpenAiStylist={() => setIsAiStylistOpen(true)} />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/products" element={<ProductsPage />} />
-            <Route path="/product/:id" element={<ProductDetailsPage />} />
-            <Route path="/stores" element={<StoresDirectoryPage />} />
-            <Route path="/stores/:slug" element={<StorefrontPage />} />
-            <Route path="/brands" element={<StoresDirectoryPage />} />
-            <Route path="/brands/:slug" element={<StorefrontPage />} />
+          <Route element={<BuyerLayout />}>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/products" element={<ShopPage />} />
+            <Route path="/product/:id" element={<ProductDetailPage />} />
+            <Route path="/brands" element={<BrandsDirectoryPage />} />
+            <Route path="/brands/:slug" element={<BrandProfilePage />} />
             
-            {/* Authenticated Customer Routes */}
-            <Route element={<ProtectedRoute />}>
+            {/* Backward-compatible store aliases redirect to brand routes */}
+            <Route path="/stores" element={<Navigate to="/brands" replace />} />
+            <Route path="/stores/:slug" element={<Navigate to="/brands" replace />} />
+
+            {/* Authenticated Buyer Flow */}
+            <Route element={<ProtectedBuyerRoute />}>
               <Route path="/checkout" element={<CheckoutPage />} />
               <Route path="/profile" element={<ProfilePage />} />
             </Route>
           </Route>
 
           {/* ============================================================== */}
-          {/* 2. DEDICATED BRAND SELLER APPLICATION (Brand Studio Portal)     */}
+          {/* 2. DEDICATED BRAND SELLER APPLICATION (Brand Operations Studio)*/}
           {/* ============================================================== */}
           <Route element={<SellerRoute />}>
             <Route path="/seller" element={<BrandSellerLayout><BrandOverviewPage /></BrandSellerLayout>} />
-            <Route path="/seller/profile" element={<BrandSellerLayout><BrandProfilePage /></BrandSellerLayout>} />
             <Route path="/seller/products" element={<BrandSellerLayout><BrandProductsPage /></BrandSellerLayout>} />
             <Route path="/seller/orders" element={<BrandSellerLayout><BrandOrdersPage /></BrandSellerLayout>} />
             <Route path="/seller/analytics" element={<BrandSellerLayout><BrandAnalyticsPage /></BrandSellerLayout>} />
+            <Route path="/seller/profile" element={<BrandSellerLayout><BrandProfilePage2 /></BrandSellerLayout>} />
           </Route>
 
           {/* ============================================================== */}
-          {/* 3. STANDALONE SUPER ADMIN APPLICATION (Governance Console)      */}
+          {/* 3. STANDALONE SUPER ADMIN APPLICATION (Governance Console)     */}
           {/* ============================================================== */}
           <Route path="/admin/login" element={<SuperAdminLoginPage />} />
           
@@ -130,12 +120,9 @@ function App() {
             <Route path="/admin/audit-logs" element={<SuperAdminLayout><SuperAdminAuditPage /></SuperAdminLayout>} />
           </Route>
 
+          {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-        
-        {/* Buyer Drawers */}
-        <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
-        <AIFashionAssistant isOpen={isAiStylistOpen} onClose={() => setIsAiStylistOpen(false)} />
       </BrowserRouter>
     </CartProvider>
   );

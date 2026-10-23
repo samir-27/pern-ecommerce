@@ -21,8 +21,21 @@ const BrandOverviewPage = () => {
     useEffect(() => {
         const fetchOverview = async () => {
             try {
-                const res = await api.get('/brand/overview');
-                setData(res.data);
+                const [overviewRes, storeRes] = await Promise.all([
+                    api.get('/seller/overview'),
+                    api.get('/seller/store'),
+                ]);
+                setData({
+                    brand: storeRes.data,
+                    products: { total_products: overviewRes.data.totalProducts },
+                    orders: {
+                        total_orders: overviewRes.data.totalOrders,
+                        gross_sales: overviewRes.data.totalEarnings,
+                        net_earnings: overviewRes.data.totalEarnings,
+                        pending_fulfillment: overviewRes.data.pendingFulfillment,
+                    },
+                    inventory: { low_stock_count: overviewRes.data.lowStockCount },
+                });
             } catch (err) {
                 console.error('Error loading brand overview:', err);
             } finally {
@@ -111,8 +124,8 @@ const BrandOverviewPage = () => {
                             <Shirt size={18} />
                         </div>
                     </div>
-                    <div className="text-2xl font-black text-white">{products?.approved_products || 0}</div>
-                    <p className="text-xs text-slate-400 mt-1">{products?.total_products || 0} total clothing products</p>
+                    <div className="text-2xl font-black text-white">{products?.total_products || 0}</div>
+                    <p className="text-xs text-slate-400 mt-1">Products in your catalog</p>
                 </div>
 
                 {/* Pending Dispatch */}

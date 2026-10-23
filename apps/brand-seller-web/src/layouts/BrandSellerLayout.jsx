@@ -27,10 +27,13 @@ const BrandSellerLayout = ({ children }) => {
     useEffect(() => {
         const fetchBrand = async () => {
             try {
-                const res = await api.get('/brand/profile');
+                const res = await api.get('/brand/profile').catch(() => api.get('/seller/store'));
                 setBrand(res.data);
             } catch (err) {
                 console.error('Failed to load brand context:', err);
+                if (err.response?.status === 401 || err.response?.status === 403) {
+                    navigate('/login', { replace: true });
+                }
             } finally {
                 setLoading(false);
             }
@@ -159,7 +162,7 @@ const BrandSellerLayout = ({ children }) => {
                         </Link>
                         <div className="h-4 w-px bg-slate-800" />
                         <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300">
-                            Commission: {brand?.commission_rate || '10'}%
+                            Commission: {brand?.commission_rate ?? '10'}%
                         </span>
                     </div>
                 </header>

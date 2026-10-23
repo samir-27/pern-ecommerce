@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
     Save, 
-    Globe, 
-    Mail, 
-    Phone, 
-    FileText, 
     Truck, 
     RotateCcw, 
     Check, 
@@ -17,15 +13,10 @@ const BrandProfilePage = () => {
     const [formData, setFormData] = useState({
         name: '',
         bio: '',
-        website: '',
-        contact_email: '',
-        contact_phone: '',
-        business_registration_number: '',
-        tax_id: '',
-        logo_url: '',
-        banner_url: '',
-        policy_return: '',
-        policy_shipping: ''
+        logoUrl: '',
+        bannerUrl: '',
+        policyReturn: '',
+        policyShipping: ''
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -34,20 +25,15 @@ const BrandProfilePage = () => {
     useEffect(() => {
         const fetchBrand = async () => {
             try {
-                const res = await api.get('/brand/profile');
+                const res = await api.get('/brand/profile').catch(() => api.get('/seller/store'));
                 if (res.data) {
                     setFormData({
                         name: res.data.name || '',
-                        bio: res.data.bio || '',
-                        website: res.data.website || '',
-                        contact_email: res.data.contact_email || '',
-                        contact_phone: res.data.contact_phone || '',
-                        business_registration_number: res.data.business_registration_number || '',
-                        tax_id: res.data.tax_id || '',
-                        logo_url: res.data.logo_url || '',
-                        banner_url: res.data.banner_url || '',
-                        policy_return: res.data.policy_return || '',
-                        policy_shipping: res.data.policy_shipping || ''
+                        bio: res.data.bio || res.data.description || '',
+                        logoUrl: res.data.logo_url || '',
+                        bannerUrl: res.data.banner_url || '',
+                        policyReturn: res.data.policy_return || '',
+                        policyShipping: res.data.policy_shipping || ''
                     });
                 }
             } catch (err) {
@@ -70,7 +56,7 @@ const BrandProfilePage = () => {
         setStatusMsg({ type: '', text: '' });
 
         try {
-            await api.put('/brand/profile', formData);
+            await api.put('/brand/profile', formData).catch(() => api.put('/seller/store', formData));
             setStatusMsg({ type: 'success', text: 'Brand profile and policies updated successfully.' });
             setTimeout(() => setStatusMsg({ type: '', text: '' }), 4000);
         } catch (err) {
@@ -95,9 +81,9 @@ const BrandProfilePage = () => {
     return (
         <div className="max-w-4xl mx-auto space-y-8">
             <div>
-                <h1 className="text-2xl md:text-3xl font-black text-white">Brand Profile & Business Settings</h1>
+                <h1 className="text-2xl md:text-3xl font-black text-white">Store Profile & Settings</h1>
                 <p className="text-slate-400 text-sm mt-1">
-                    Manage your brand identity, official business credentials, and fulfillment policies across the marketplace.
+                    Manage the store details and fulfillment policies shown to marketplace customers.
                 </p>
             </div>
 
@@ -134,19 +120,6 @@ const BrandProfilePage = () => {
                             />
                         </div>
 
-                        <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2 flex items-center gap-1.5">
-                                <Globe size={13} /> Official Website
-                            </label>
-                            <input
-                                type="url"
-                                name="website"
-                                value={formData.website}
-                                onChange={handleChange}
-                                placeholder="https://yourbrand.com"
-                                className="w-full px-4 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white focus:outline-none focus:border-amber-500 transition-colors text-sm"
-                            />
-                        </div>
                     </div>
 
                     <div>
@@ -170,8 +143,8 @@ const BrandProfilePage = () => {
                             </label>
                             <input
                                 type="text"
-                                name="logo_url"
-                                value={formData.logo_url}
+                                name="logoUrl"
+                                value={formData.logoUrl}
                                 onChange={handleChange}
                                 placeholder="https://images.unsplash.com/..."
                                 className="w-full px-4 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white focus:outline-none focus:border-amber-500 transition-colors text-sm"
@@ -183,75 +156,10 @@ const BrandProfilePage = () => {
                             </label>
                             <input
                                 type="text"
-                                name="banner_url"
-                                value={formData.banner_url}
+                                name="bannerUrl"
+                                value={formData.bannerUrl}
                                 onChange={handleChange}
                                 placeholder="https://images.unsplash.com/..."
-                                className="w-full px-4 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white focus:outline-none focus:border-amber-500 transition-colors text-sm"
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Business Registration Details */}
-                <div className="p-6 md:p-8 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-5">
-                    <h2 className="text-lg font-bold text-white border-b border-slate-800 pb-3 flex items-center gap-2">
-                        <FileText size={18} className="text-amber-400" /> Business Credentials & Support
-                    </h2>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2 flex items-center gap-1.5">
-                                <Mail size={13} /> Support Contact Email
-                            </label>
-                            <input
-                                type="email"
-                                name="contact_email"
-                                value={formData.contact_email}
-                                onChange={handleChange}
-                                placeholder="support@brand.com"
-                                className="w-full px-4 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white focus:outline-none focus:border-amber-500 transition-colors text-sm"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2 flex items-center gap-1.5">
-                                <Phone size={13} /> Support Phone
-                            </label>
-                            <input
-                                type="text"
-                                name="contact_phone"
-                                value={formData.contact_phone}
-                                onChange={handleChange}
-                                placeholder="+91 98765 43210"
-                                className="w-full px-4 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white focus:outline-none focus:border-amber-500 transition-colors text-sm"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-                                Business Registration / CIN
-                            </label>
-                            <input
-                                type="text"
-                                name="business_registration_number"
-                                value={formData.business_registration_number}
-                                onChange={handleChange}
-                                placeholder="e.g. U74999MH2024PTC123456"
-                                className="w-full px-4 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white focus:outline-none focus:border-amber-500 transition-colors text-sm"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-                                GSTIN / Tax ID
-                            </label>
-                            <input
-                                type="text"
-                                name="tax_id"
-                                value={formData.tax_id}
-                                onChange={handleChange}
-                                placeholder="27AAAAA0000A1Z5"
                                 className="w-full px-4 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white focus:outline-none focus:border-amber-500 transition-colors text-sm"
                             />
                         </div>
@@ -270,8 +178,8 @@ const BrandProfilePage = () => {
                                 <RotateCcw size={14} className="text-amber-400" /> Return Policy
                             </label>
                             <textarea
-                                name="policy_return"
-                                value={formData.policy_return}
+                                name="policyReturn"
+                                value={formData.policyReturn}
                                 onChange={handleChange}
                                 rows={2}
                                 className="w-full px-4 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white focus:outline-none focus:border-amber-500 transition-colors text-sm resize-none"
@@ -283,8 +191,8 @@ const BrandProfilePage = () => {
                                 <Truck size={14} className="text-amber-400" /> Shipping & Dispatch Policy
                             </label>
                             <textarea
-                                name="policy_shipping"
-                                value={formData.policy_shipping}
+                                name="policyShipping"
+                                value={formData.policyShipping}
                                 onChange={handleChange}
                                 rows={2}
                                 className="w-full px-4 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700 text-white focus:outline-none focus:border-amber-500 transition-colors text-sm resize-none"
