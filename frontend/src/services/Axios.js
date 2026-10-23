@@ -30,8 +30,10 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem("token");
 
-      if (window.location.pathname !== "/login" && window.location.pathname !== "/register") {
-        window.location.href = "/login";
+      const pathname = window.location.pathname;
+      const isAuthPage = pathname === "/login" || pathname === "/register" || pathname === "/admin/login";
+      if (!isAuthPage) {
+        window.location.href = pathname.startsWith("/admin") ? "/admin/login" : "/login";
       }
     }
 

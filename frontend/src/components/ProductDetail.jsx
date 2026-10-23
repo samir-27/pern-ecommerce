@@ -9,7 +9,7 @@ import {
     Star,
 } from 'lucide-react';
 import { createProductReview, getProductById, getProductReviews } from '../services/ProductService';
-import { useCart } from '../context/CartContext';
+import { useCart } from '../context/useCart';
 import { formatCurrency } from '../services/Currency';
 
 const getDeduplicatedImages = (productData, color) => Array.from(

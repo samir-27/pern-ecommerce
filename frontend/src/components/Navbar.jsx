@@ -20,7 +20,7 @@ const Navbar = ({ cartItemCount = 0, onCartClick, onOpenAiStylist }) => {
   };
 
   return (
-    <nav className="bg-dominant sticky top-0 z-40 border-b border-secondary/10">
+    <nav className="bg-dominant/95 backdrop-blur-md sticky top-0 z-40 border-b border-secondary/10 w-full transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           {/* Logo */}

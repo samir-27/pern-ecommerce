@@ -13,13 +13,17 @@ import {
     ChevronRight,
     Menu, 
     X,
-    Lock
+    Lock,
+    Moon,
+    Sun
 } from 'lucide-react';
+import { useSuperAdminTheme } from '../hooks/useSuperAdminTheme';
 
 const SuperAdminLayout = ({ children }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const [isMobileOpen, setIsMobileOpen] = useState(false);
+    const { theme, toggleTheme } = useSuperAdminTheme();
 
     const handleLogout = () => {
         localStorage.removeItem('token');
@@ -37,7 +41,7 @@ const SuperAdminLayout = ({ children }) => {
     ];
 
     return (
-        <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col md:flex-row antialiased font-sans">
+        <div data-admin-theme={theme} className="super-admin-theme min-h-screen bg-slate-950 text-slate-100 flex flex-col md:flex-row antialiased font-sans">
             {/* Sidebar Desktop */}
             <aside className="w-full md:w-64 bg-slate-900/95 border-r border-slate-800 flex flex-col justify-between shrink-0">
                 <div>
@@ -129,6 +133,15 @@ const SuperAdminLayout = ({ children }) => {
                     </div>
 
                     <div className="flex items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={toggleTheme}
+                            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+                            title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+                            className="rounded-lg border border-slate-700 bg-slate-800 p-2 text-slate-300 transition hover:text-white"
+                        >
+                            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+                        </button>
                         <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-xs text-slate-300">
                             <span className="w-2 h-2 rounded-full bg-indigo-400" />
                             <span>Super Admin Mode</span>

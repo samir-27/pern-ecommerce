@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, CreditCard, ShieldCheck, Truck, CheckCircle2, Loader2 } from 'lucide-react';
-import { useCart } from '../context/CartContext';
+import { useCart } from '../context/useCart';
 import { createPaymentOrder, verifyPayment } from '../services/Order';
 import { formatCurrency } from '../services/Currency';
 

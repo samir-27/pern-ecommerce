@@ -6,7 +6,8 @@ import ProductsPage from './pages/Products';
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import ProductDetailsPage from './components/ProductDetail';
 import AuthPage from './pages/AuthPage';
-import { CartProvider, useCart } from './context/CartContext';
+import { CartProvider } from './context/CartContext';
+import { useCart } from './context/useCart';
 import { CartDrawer } from './components/Cart';
 import ProfilePage from './pages/ProfilePage';
 import CheckoutPage from './components/Checkout';
@@ -65,9 +66,11 @@ const MainLayout = ({ onCartClick, onOpenAiStylist }) => {
     const { cartItems } = useCart();
     
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-dominant text-secondary flex flex-col antialiased w-full">
             <Navbar cartItemCount={cartItems.length} onCartClick={onCartClick} onOpenAiStylist={onOpenAiStylist} />
-            <Outlet />
+            <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                <Outlet />
+            </main>
         </div>
     );
 };

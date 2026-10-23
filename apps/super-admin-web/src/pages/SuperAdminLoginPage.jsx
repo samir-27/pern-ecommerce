@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ShieldAlert, Lock, Mail, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
+import { ShieldAlert, Lock, Mail, ArrowRight, AlertCircle, Loader2, Moon, Sun } from 'lucide-react';
 import api from '@api';
+import { useSuperAdminTheme } from '../hooks/useSuperAdminTheme';
 
 const SuperAdminLoginPage = () => {
     const navigate = useNavigate();
+    const { theme, toggleTheme } = useSuperAdminTheme();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -30,8 +32,10 @@ const SuperAdminLoginPage = () => {
         } catch (err) {
             console.error('Super admin login error:', err);
             setError(
-                err.response?.data?.error || 
-                'Access denied: Invalid administrator credentials.'
+                err.response?.data?.error ||
+                (err.request
+                    ? 'Unable to reach the server. Check that the backend is running and try again.'
+                    : 'Access denied: Invalid administrator credentials.')
             );
         } finally {
             setLoading(false);
@@ -39,7 +43,16 @@ const SuperAdminLoginPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6 antialiased font-sans">
+        <div data-admin-theme={theme} className="super-admin-theme min-h-screen bg-slate-950 flex items-center justify-center p-6 antialiased font-sans">
+            <button
+                type="button"
+                onClick={toggleTheme}
+                aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+                title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+                className="absolute right-6 top-6 rounded-xl border border-slate-700 bg-slate-900 p-2.5 text-slate-300 transition hover:text-white"
+            >
+                {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
             <div className="w-full max-w-md space-y-6">
                 {/* Brand / Title */}
                 <div className="text-center space-y-2">

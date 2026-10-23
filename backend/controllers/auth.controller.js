@@ -200,9 +200,13 @@ export const loginUser = async (req, res) => {
         });
 
     } catch (err) {
-        console.error('Error during login:', err);
-        const errDetail = err?.stack || err?.message || String(err);
-        res.status(500).json({ error: 'Server error during login: ' + errDetail });
+        console.error('Error during login:', err.message);
+        if (err.code === 'ECONNREFUSED') {
+            return res.status(503).json({
+                error: 'The database is unavailable. Start PostgreSQL and try again.'
+            });
+        }
+        res.status(500).json({ error: 'Server error during login. Please try again later.' });
     }
 };
 
