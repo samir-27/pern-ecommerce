@@ -39,7 +39,9 @@ export const buildProductPayload = (formData, categories) => {
             color: variant.color,
             stock_quantity: Number(variant.stock_quantity),
             low_stock_threshold: Number(variant.low_stock_threshold ?? 5),
-            price_override: variant.price === '' ? null : Number(variant.price),
+            price_override: (variant.price !== '' && variant.price !== null && variant.price !== undefined) 
+                ? Number(variant.price) 
+                : Number(formData.price),
         }))),
     };
 };

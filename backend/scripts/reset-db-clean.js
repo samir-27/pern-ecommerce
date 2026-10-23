@@ -40,10 +40,31 @@ async function resetDatabase() {
       RETURNING id, email, role;
     `, [adminEmail, passwordHash]);
 
+    // 4. Seed Standard Marketplace Categories
+    console.log('Seeding standard fashion categories...');
+    const defaultCategories = [
+      { name: 'Tops', description: 'Shirts, T-shirts, Polos, Blouses, Knit Tops' },
+      { name: 'Bottoms', description: 'Trousers, Chinos, Denim, Skirts, Tailored Pants' },
+      { name: 'Outerwear', description: 'Coats, Blazers, Trench Coats, Jackets' },
+      { name: 'Dresses', description: 'Cocktail dresses, Evening gowns, Sundresses' },
+      { name: 'Knitwear', description: 'Cashmere sweaters, Cardigans, Wool pullovers' },
+      { name: 'Footwear', description: 'Loafers, Chelsea boots, Minimalist sneakers, Derbies' },
+      { name: 'Accessories', description: 'Belts, Leather bags, Scarves, Fine jewelry' },
+    ];
+
+    for (const cat of defaultCategories) {
+      await client.query(`
+        INSERT INTO categories (name, description)
+        VALUES ($1, $2)
+        ON CONFLICT (name) DO NOTHING;
+      `, [cat.name, cat.description]);
+    }
+
     await client.query('COMMIT');
     console.log('\n=============================================');
-    console.log('DATABASE PURGE COMPLETE!');
+    console.log('DATABASE RESET COMPLETE!');
     console.log('Every table was emptied and sequence IDs reset.');
+    console.log('Categories seeded: 7 standard apparel categories.');
     console.log('Single account preserved:');
     console.log('Email:    admin@minimal.com');
     console.log('Password: Admin@12345');

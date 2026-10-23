@@ -41,9 +41,9 @@ const BrandProductsPage = () => {
         season: 'All-Season',
         care_instructions: 'Machine wash cold with like colors. Tumble dry low.',
         variants: [
-            { size: 'S', color: 'Black', sku: '', price: '', stock_quantity: 10, low_stock_threshold: 3 },
-            { size: 'M', color: 'Black', sku: '', price: '', stock_quantity: 15, low_stock_threshold: 5 },
-            { size: 'L', color: 'Black', sku: '', price: '', stock_quantity: 12, low_stock_threshold: 5 }
+            { size: 'S', color: 'Black', sku: '', price: '', stock_quantity: 10, low_stock_threshold: 3, isCustomPrice: false },
+            { size: 'M', color: 'Black', sku: '', price: '', stock_quantity: 15, low_stock_threshold: 5, isCustomPrice: false },
+            { size: 'L', color: 'Black', sku: '', price: '', stock_quantity: 12, low_stock_threshold: 5, isCustomPrice: false }
         ]
     };
 
@@ -107,13 +107,29 @@ const BrandProductsPage = () => {
 
     const handleFormChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setFormData(prev => {
+            const updated = { ...prev, [name]: value };
+            if (name === 'price') {
+                // When base price is updated, automatically default it into all variants that don't have a custom override
+                updated.variants = prev.variants.map(v => {
+                    if (!v.isCustomPrice) {
+                        return { ...v, price: value };
+                    }
+                    return v;
+                });
+            }
+            return updated;
+        });
     };
 
     const handleVariantChange = (index, field, value) => {
         setFormData(prev => {
             const nextVariants = [...prev.variants];
-            nextVariants[index] = { ...nextVariants[index], [field]: value };
+            nextVariants[index] = { 
+                ...nextVariants[index], 
+                [field]: value,
+                ...(field === 'price' ? { isCustomPrice: value !== '' && value !== prev.price } : {})
+            };
             return { ...prev, variants: nextVariants };
         });
     };
@@ -123,7 +139,7 @@ const BrandProductsPage = () => {
             ...prev,
             variants: [
                 ...prev.variants,
-                { size: 'M', color: 'White', sku: '', price: prev.price || 999, stock_quantity: 10, low_stock_threshold: 5 }
+                { size: 'M', color: 'Black', sku: '', price: prev.price || '', stock_quantity: 10, low_stock_threshold: 5, isCustomPrice: false }
             ]
         }));
     };
@@ -555,17 +571,40 @@ const BrandProductsPage = () => {
 
                             {/* Variants Table in Form */}
                             <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
-                                        Garment Variants (Sizes & Colors)
-                                    </span>
-                                    <button
-                                        type="button"
-                                        onClick={addVariantRow}
-                                        className="text-xs font-semibold text-amber-400 hover:text-amber-300 flex items-center gap-1"
-                                    >
-                                        <Plus size={14} /> Add Size Variant
-                                    </button>
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
+                                            Garment Variants (Sizes & Colors)
+                                        </span>
+                                        {formData.price && (
+                                            <span className="text-[11px] text-slate-400 font-medium">
+                                                (Defaulting to Base Price: ₹{formData.price})
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        {formData.price && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        variants: prev.variants.map(v => ({ ...v, price: prev.price, isCustomPrice: false }))
+                                                    }));
+                                                }}
+                                                className="text-[11px] text-amber-400/80 hover:text-amber-300 underline font-medium"
+                                            >
+                                                Apply Base Price to All
+                                            </button>
+                                        )}
+                                        <button
+                                            type="button"
+                                            onClick={addVariantRow}
+                                            className="text-xs font-semibold text-amber-400 hover:text-amber-300 flex items-center gap-1"
+                                        >
+                                            <Plus size={14} /> Add Size Variant
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div className="space-y-2">
@@ -594,10 +633,11 @@ const BrandProductsPage = () => {
                                             />
                                             <input
                                                 type="number"
-                                                value={v.price ?? v.price_override ?? ''}
+                                                value={v.price !== undefined && v.price !== null && v.price !== '' ? v.price : (formData.price || '')}
                                                 onChange={(e) => handleVariantChange(idx, 'price', e.target.value)}
-                                                placeholder="Price ₹"
-                                                className="w-24 px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white"
+                                                placeholder={formData.price ? `₹${formData.price}` : "Price ₹"}
+                                                title="Variant Price (defaults to Base Price)"
+                                                className="w-28 px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white"
                                             />
                                             {formData.variants.length > 1 && (
                                                 <button
