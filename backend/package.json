@@ -9,6 +9,7 @@
     "predev": "node scripts/ensure-db.js",
     "dev": "nodemon server.js",
     "migrate": "node migrations/migrate.js",
+    "db:purge": "node scripts/reset-db-clean.js",
     "test": "node --test tests/marketplace.test.js"
   },
   "dependencies": {
