@@ -62,7 +62,7 @@ const getOrderPricing = async (client, orderItems) => {
         const variantResult = await client.query(
             `SELECT pv.id AS variant_id, pv.stock_quantity, pv.price_override, 
                     p.id AS product_id, p.name AS product_name, p.base_price, 
-                    p.category_id, p.seller_id, p.store_id
+                    p.category_id, p.seller_id, p.store_id, p.brand_id
              FROM product_variants pv
              JOIN products p ON pv.product_id = p.id
              WHERE pv.id = $1 FOR UPDATE`,
@@ -84,6 +84,7 @@ const getOrderPricing = async (client, orderItems) => {
 
         const sellerId = variant.seller_id || 1; // Default to admin seller 1 if legacy
         const storeId = variant.store_id;
+        const brandId = variant.brand_id || variant.store_id;
 
         const commissionRate = await getEffectiveCommissionRate(client, sellerId, variant.category_id);
         const commissionAmount = Number(((itemTotal * commissionRate) / 100).toFixed(2));
@@ -95,18 +96,18 @@ const getOrderPricing = async (client, orderItems) => {
             price_at_purchase: truePrice,
             seller_id: sellerId,
             store_id: storeId,
+            brand_id: brandId,
             commission_rate: commissionRate,
             commission_amount: commissionAmount,
             seller_net_amount: sellerNetAmount,
         };
-
-        validOrderItems.push(validItem);
 
         // Group by seller for multi-vendor order fulfillment
         if (!sellerGroups[sellerId]) {
             sellerGroups[sellerId] = {
                 sellerId,
                 storeId,
+                brandId,
                 subtotal: 0,
                 commissionAmount: 0,
                 sellerNetEarnings: 0,
@@ -142,15 +143,16 @@ const saveOrder = async (client, userId, shippingAddress, pricing, razorpayPayme
         const group = pricing.sellerGroups[sellerIdStr];
         const sellerOrderRes = await client.query(
             `INSERT INTO seller_orders (
-                order_id, seller_id, store_id, subtotal, shipping_fee,
+                order_id, seller_id, store_id, brand_id, subtotal, shipping_fee,
                 commission_amount, seller_net_earnings, status
             )
-             VALUES ($1, $2, $3, $4, $5, $6, $7, 'unfulfilled')
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'unfulfilled')
              RETURNING id, seller_id`,
             [
                 newOrder.id,
                 group.sellerId,
                 group.storeId,
+                group.brandId,
                 group.subtotal,
                 0, // Platform covers shipping, or apportion as configured
                 group.commissionAmount,

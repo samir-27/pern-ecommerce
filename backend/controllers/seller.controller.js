@@ -194,7 +194,7 @@ export const getSellerOrders = async (req, res) => {
             SELECT so.id, so.order_id, so.subtotal, so.shipping_fee, so.commission_amount,
                    so.seller_net_earnings, so.status, so.tracking_number, so.shipping_carrier,
                    so.shipped_at, so.delivered_at, so.created_at,
-                   o.shipping_address, o.payment_status,
+                   o.shipping_address, o.status AS payment_status,
                    u.email AS customer_email,
                    COALESCE(NULLIF(TRIM(u.first_name || ' ' || u.last_name), ''), u.email) AS customer_name,
                    COALESCE(
@@ -219,7 +219,7 @@ export const getSellerOrders = async (req, res) => {
             LEFT JOIN product_variants pv ON pv.id = oi.variant_id
             LEFT JOIN products p ON p.id = pv.product_id
             WHERE so.seller_id = $1
-            GROUP BY so.id, o.shipping_address, o.payment_status, u.email, u.first_name, u.last_name
+            GROUP BY so.id, o.shipping_address, o.status, u.email, u.first_name, u.last_name
             ORDER BY so.created_at DESC
         `, [userId]);
 

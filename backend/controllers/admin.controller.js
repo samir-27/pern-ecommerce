@@ -554,7 +554,7 @@ export const getBrandSellers = async (req, res) => {
                    COUNT(DISTINCT so.id) as total_orders,
                    COALESCE(SUM(so.subtotal), 0) as gross_volume,
                    COALESCE(SUM(so.commission_amount), 0) as platform_commission,
-                   COALESCE(SUM(so.net_payout), 0) as net_payout
+                   COALESCE(SUM(so.seller_net_earnings), 0) as net_payout
             FROM brands b
             JOIN users u ON b.user_id = u.id
             LEFT JOIN products p ON b.id = p.brand_id

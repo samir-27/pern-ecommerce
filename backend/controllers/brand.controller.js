@@ -429,37 +429,35 @@ export const getBrandOrders = async (req, res) => {
         const ordersRes = await pool.query(
             `SELECT 
                 so.*,
-                o.order_number,
-                o.created_at as parent_order_date,
+                o.id AS order_number,
+                o.created_at AS parent_order_date,
                 o.shipping_address,
-                u.email as customer_email,
-                u.first_name as customer_first_name,
-                u.last_name as customer_last_name,
+                u.email AS customer_email,
+                u.first_name AS customer_first_name,
+                u.last_name AS customer_last_name,
                 COALESCE(
                     json_agg(
                         json_build_object(
                             'id', oi.id,
-                            'product_id', oi.product_id,
+                            'variant_id', oi.variant_id,
                             'product_name', p.name,
                             'images', p.images,
                             'quantity', oi.quantity,
-                            'unit_price', oi.unit_price,
-                            'total_price', oi.total_price,
+                            'price_at_purchase', oi.price_at_purchase,
                             'size', pv.size,
                             'color', pv.color
                         )
                     ) FILTER (WHERE oi.id IS NOT NULL),
-                    '[]'
-                ) as items
+                    '[]'::json
+                ) AS items
              FROM seller_orders so
              JOIN orders o ON so.order_id = o.id
              JOIN users u ON o.user_id = u.id
-             LEFT JOIN order_items oi ON oi.order_id = o.id AND (oi.seller_id = req_brand_user.user_id OR oi.brand_id = so.brand_id)
-             LEFT JOIN products p ON oi.product_id = p.id
+             LEFT JOIN order_items oi ON oi.seller_order_id = so.id
              LEFT JOIN product_variants pv ON oi.variant_id = pv.id
-             CROSS JOIN (SELECT user_id FROM brands WHERE id = $1) req_brand_user
-             WHERE so.brand_id = $1
-             GROUP BY so.id, o.order_number, o.created_at, o.shipping_address, u.email, u.first_name, u.last_name
+             LEFT JOIN products p ON pv.product_id = p.id
+             WHERE so.brand_id = $1 OR so.seller_id = (SELECT user_id FROM brands WHERE id = $1)
+             GROUP BY so.id, o.id, o.created_at, o.shipping_address, u.email, u.first_name, u.last_name
              ORDER BY so.created_at DESC`,
             [req.brand.id]
         );

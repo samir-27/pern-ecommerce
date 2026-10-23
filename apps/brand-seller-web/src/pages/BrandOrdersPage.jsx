@@ -29,8 +29,9 @@ const BrandOrdersPage = () => {
     const fetchOrders = async () => {
         try {
             setLoading(true);
-            const res = await api.get('/seller/orders');
+            const res = await api.get('/brand/orders').catch(() => api.get('/seller/orders'));
             setOrders(res.data || []);
+            setError('');
         } catch (err) {
             console.error('Error fetching brand orders:', err);
             setError(err.response?.data?.error || 'Unable to load orders. Please try again.');
