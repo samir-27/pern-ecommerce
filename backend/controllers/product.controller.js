@@ -14,7 +14,7 @@ const upload = multer({
     limits: { fileSize: 5 * 1024 * 1024 }
 });
 
-export const uploadProductImages = upload.array('images', 25);
+export const uploadProductImages = upload.array('images', 50);
 
 const uploadToCloudinary = async (file) => {
     if (!file) return null;
@@ -22,17 +22,16 @@ const uploadToCloudinary = async (file) => {
     // Check if Cloudinary is configured
     const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
     if (!cloudName || cloudName.includes('your_') || !process.env.CLOUDINARY_API_KEY) {
-        // Fallback for local/testing if Cloudinary credentials are mock
-        return `https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=600&q=80`;
+        return `data:${file.mimetype || 'image/jpeg'};base64,${file.buffer.toString('base64')}`;
     }
 
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         const stream = cloudinary.uploader.upload_stream(
             { folder: 'ecommerce/products' },
             (error, result) => {
                 if (error) {
-                    console.error('Cloudinary error, falling back:', error.message);
-                    return resolve(`https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=600&q=80`);
+                    console.error('Cloudinary error, preserving original as data URL:', error.message);
+                    return resolve(`data:${file.mimetype || 'image/jpeg'};base64,${file.buffer.toString('base64')}`);
                 }
                 resolve(result?.secure_url || null);
             }
@@ -264,7 +263,8 @@ export const updateProduct = async (req, res) => {
     const productId = req.params.id;
     const {
         name, category_name, description, base_price, gender,
-        brand, clothing_type, fabric_material, fit, pattern, season, care_instructions
+        brand, clothing_type, fabric_material, fit, pattern, season, care_instructions,
+        variants, variantImageCounts
     } = req.body;
 
     const productName = typeof name === 'string' ? name.trim() : '';
@@ -332,6 +332,85 @@ export const updateProduct = async (req, res) => {
             ]
         );
 
+        // Update variants and variant images if passed
+        if (variants) {
+            const parsedVariants = typeof variants === 'string' ? JSON.parse(variants) : variants;
+            const parsedImageCounts = variantImageCounts ? (typeof variantImageCounts === 'string' ? JSON.parse(variantImageCounts) : variantImageCounts) : [];
+            const uploadedFiles = Array.isArray(req.files) ? req.files : [];
+            let fileIndex = 0;
+
+            for (let index = 0; index < parsedVariants.length; index++) {
+                const variant = parsedVariants[index];
+                const count = Number(parsedImageCounts[index] || 0);
+                const filesForVariant = uploadedFiles.slice(fileIndex, fileIndex + count);
+                fileIndex += count;
+
+                const imageUrls = [];
+                if (Array.isArray(variant.image_urls)) {
+                    for (const url of variant.image_urls) {
+                        if (typeof url === 'string' && url.trim() && imageUrls.length < 5) {
+                            imageUrls.push(url.trim());
+                        }
+                    }
+                }
+
+                for (const file of filesForVariant) {
+                    if (imageUrls.length >= 5) break;
+                    const uploadedUrl = await uploadToCloudinary(file);
+                    if (uploadedUrl) imageUrls.push(uploadedUrl);
+                }
+
+                if (variant.id) {
+                    await client.query(
+                        `UPDATE product_variants SET
+                            sku = COALESCE($1, sku),
+                            size = COALESCE($2, size),
+                            color = COALESCE($3, color),
+                            stock_quantity = COALESCE($4, stock_quantity),
+                            price_override = $5,
+                            image_urls = CASE WHEN $6::text[] IS NOT NULL AND cardinality($6::text[]) > 0 THEN $6 ELSE image_urls END
+                         WHERE id = $7 AND product_id = $8`,
+                        [
+                            variant.sku,
+                            variant.size,
+                            variant.color,
+                            variant.stock_quantity !== undefined ? parseInt(variant.stock_quantity, 10) : undefined,
+                            variant.price_override ? parseFloat(variant.price_override) : null,
+                            imageUrls.length > 0 ? imageUrls : null,
+                            variant.id,
+                            productId
+                        ]
+                    );
+                } else {
+                    await client.query(
+                        `INSERT INTO product_variants (
+                            product_id, sku, size, color, stock_quantity, price_override, image_urls
+                        ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                        [
+                            productId,
+                            variant.sku || `SKU-${Date.now()}-${index + 1}`,
+                            variant.size || 'M',
+                            variant.color || 'Standard',
+                            parseInt(variant.stock_quantity || 10, 10),
+                            variant.price_override ? parseFloat(variant.price_override) : null,
+                            imageUrls.length > 0 ? imageUrls : ['https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80']
+                        ]
+                    );
+                }
+            }
+
+            // Sync aggregate images onto product record
+            const syncRes = await client.query(
+                `SELECT array_agg(DISTINCT img) as all_images
+                 FROM product_variants pv, unnest(pv.image_urls) as img
+                 WHERE pv.product_id = $1`,
+                [productId]
+            );
+            if (syncRes.rows[0]?.all_images) {
+                await client.query('UPDATE products SET images = $1 WHERE id = $2', [syncRes.rows[0].all_images, productId]);
+            }
+        }
+
         await logAuditEvent({
             userId: req.user.id,
             action: 'PRODUCT_UPDATED',
@@ -398,23 +477,31 @@ export const createProduct = async (req, res) => {
     try {
         await client.query('BEGIN');
 
-        // Resolve seller and store
+        // Resolve seller, brand, and store
         let sellerId = req.user.id;
         let storeId = null;
+        let brandId = null;
+        let resolvedBrandName = brand || null;
 
-        const storeRes = await client.query('SELECT id FROM seller_stores WHERE user_id = $1', [sellerId]);
-        if (storeRes.rows.length > 0) {
-            storeId = storeRes.rows[0].id;
-        } else if (req.user.role === 'admin' || req.user.role === 'super_admin') {
-            // Admin fallback to default store 1
-            const defaultStore = await client.query('SELECT id, user_id FROM seller_stores LIMIT 1');
-            if (defaultStore.rows.length > 0) {
-                storeId = defaultStore.rows[0].id;
+        const brandRes = await client.query('SELECT id, name FROM brands WHERE user_id = $1', [sellerId]);
+        if (brandRes.rows.length > 0) {
+            brandId = brandRes.rows[0].id;
+            resolvedBrandName = brandRes.rows[0].name;
+            storeId = brandId;
+        } else {
+            const storeRes = await client.query('SELECT id FROM seller_stores WHERE user_id = $1', [sellerId]);
+            if (storeRes.rows.length > 0) {
+                storeId = storeRes.rows[0].id;
+            } else if (req.user.role === 'admin' || req.user.role === 'super_admin') {
+                const defaultStore = await client.query('SELECT id, user_id FROM seller_stores LIMIT 1');
+                if (defaultStore.rows.length > 0) {
+                    storeId = defaultStore.rows[0].id;
+                }
             }
         }
 
-        // Product status: 'approved' for admin/super_admin; 'pending_approval' for sellers
-        const productStatus = (req.user.role === 'admin' || req.user.role === 'super_admin') ? 'approved' : 'pending_approval';
+        // Active brand sellers get approved listings immediately
+        const productStatus = 'approved';
 
         const categoryName = category_name || 'General';
         const categoryResult = await client.query(
@@ -437,21 +524,21 @@ export const createProduct = async (req, res) => {
         const productQuery = `
             INSERT INTO products (
                 category_id, name, description, base_price, gender,
-                seller_id, store_id, brand, clothing_type, fabric_material,
+                seller_id, store_id, brand_id, brand, clothing_type, fabric_material,
                 fit, pattern, season, care_instructions, status
             ) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) 
             RETURNING *
         `;
         const productResult = await client.query(productQuery, [
             category_id, name, description, parsedBasePrice, gender || 'Unisex',
-            sellerId, storeId, brand || null, clothing_type || null, fabric_material || null,
+            sellerId, storeId, brandId, resolvedBrandName, clothing_type || null, fabric_material || null,
             fit || null, pattern || null, season || null, care_instructions || null, productStatus
         ]);
         const newProduct = productResult.rows[0];
 
-        const parsedVariants = variants ? JSON.parse(variants) : [];
-        const parsedImageCounts = variantImageCounts ? JSON.parse(variantImageCounts) : [];
+        const parsedVariants = variants ? (typeof variants === 'string' ? JSON.parse(variants) : variants) : [];
+        const parsedImageCounts = variantImageCounts ? (typeof variantImageCounts === 'string' ? JSON.parse(variantImageCounts) : variantImageCounts) : [];
         const variantList = Array.isArray(parsedVariants) && parsedVariants.length > 0
             ? parsedVariants
             : [{ sku: `SKU-${Date.now()}`, size: 'One Size', color: 'Default', stock_quantity: 10, price_override: null }];
@@ -467,12 +554,24 @@ export const createProduct = async (req, res) => {
             fileIndex += count;
 
             const imageUrls = [];
+
+            // 1. Keep existing image URLs for this variant (up to 5)
+            if (Array.isArray(variant.image_urls)) {
+                for (const url of variant.image_urls) {
+                    if (typeof url === 'string' && url.trim() && imageUrls.length < 5) {
+                        imageUrls.push(url.trim());
+                    }
+                }
+            }
+
+            // 2. Upload any newly provided files for this variant (up to 5 total images per variant)
             for (const file of filesForVariant) {
+                if (imageUrls.length >= 5) break;
                 const uploadedUrl = await uploadToCloudinary(file);
                 if (uploadedUrl) imageUrls.push(uploadedUrl);
             }
 
-            // Fallback sample image if none provided
+            // 3. Fallback sample image only if absolutely none provided
             if (imageUrls.length === 0) {
                 imageUrls.push('https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80');
             }
@@ -501,18 +600,25 @@ export const createProduct = async (req, res) => {
 
         newProduct.variants = insertedVariants;
 
+        // Aggregate all variant images into products.images
+        const allProductImageUrls = insertedVariants.flatMap(v => v.image_urls || []).filter(Boolean);
+        if (allProductImageUrls.length > 0) {
+            await client.query('UPDATE products SET images = $1 WHERE id = $2', [allProductImageUrls, newProduct.id]);
+            newProduct.images = allProductImageUrls;
+        }
+
         await logAuditEvent({
             userId: req.user.id,
             action: 'PRODUCT_CREATED',
             targetEntity: 'products',
             targetId: newProduct.id,
-            details: { name: newProduct.name, status: productStatus, storeId }
+            details: { name: newProduct.name, status: productStatus, storeId, brandId }
         });
 
         await client.query('COMMIT');
 
         res.status(201).json({
-            message: productStatus === 'approved' ? 'Product created successfully' : 'Product submitted for Super Admin approval',
+            message: 'Product created successfully',
             product: newProduct
         });
 

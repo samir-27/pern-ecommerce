@@ -146,9 +146,17 @@ const ProductDetailPage = () => {
     );
   }
 
-  const images = (product.images && product.images.length > 0)
-    ? product.images
-    : [product.image_url || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80'];
+  useEffect(() => {
+    setActiveImageIndex(0);
+  }, [selectedVariant?.id, selectedColor]);
+
+  const variantImages = (selectedVariant?.image_urls && selectedVariant.image_urls.length > 0)
+    ? selectedVariant.image_urls
+    : null;
+
+  const images = variantImages
+    || (product.images && product.images.length > 0 ? product.images : null)
+    || [product.main_image || product.image_url || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80'];
 
   const price = selectedVariant?.price_override 
     ? parseFloat(selectedVariant.price_override) 

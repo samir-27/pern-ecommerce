@@ -27,13 +27,19 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Only clear token and redirect when a verified token expiry/unauthorized occurs on protected route
     if (error.response?.status === 401) {
-      localStorage.removeItem("token");
-
+      const errMsg = String(error.response?.data?.error || '').toLowerCase();
       const pathname = window.location.pathname;
       const isAuthPage = pathname === "/login" || pathname === "/register" || pathname === "/admin/login";
-      if (!isAuthPage) {
-        window.location.href = pathname.startsWith("/admin") ? "/admin/login" : "/login";
+
+      if (errMsg.includes('expired') || errMsg.includes('token') || errMsg.includes('no longer exists')) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("userRole");
+
+        if (!isAuthPage) {
+          window.location.href = pathname.startsWith("/admin") ? "/admin/login" : "/login";
+        }
       }
     }
 

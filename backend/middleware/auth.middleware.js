@@ -7,7 +7,12 @@ export const protectRoute = async (req, res, next) => {
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         try {
             token = req.headers.authorization.split(' ')[1];
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            let decoded;
+            try {
+                decoded = jwt.verify(token, process.env.JWT_SECRET);
+            } catch (jwtErr) {
+                return res.status(401).json({ error: 'Session expired. Please sign in again.' });
+            }
 
             // Fetch live user status to ensure revoked or changed roles are reflected immediately
             const userRes = await pool.query(
@@ -16,14 +21,14 @@ export const protectRoute = async (req, res, next) => {
             );
 
             if (userRes.rows.length === 0) {
-                return res.status(401).json({ error: 'User no longer exists' });
+                return res.status(401).json({ error: 'User account no longer exists' });
             }
 
             req.user = userRes.rows[0];
             next();
         } catch (error) {
-            console.error('Not authorized, token failed:', error.message);
-            return res.status(401).json({ error: 'Not authorized, token failed' });
+            console.error('Server error during auth check:', error.message);
+            return res.status(500).json({ error: 'Authentication service temporarily busy. Please retry.' });
         }
     } else {
         return res.status(401).json({ error: 'Not authorized, no token' });

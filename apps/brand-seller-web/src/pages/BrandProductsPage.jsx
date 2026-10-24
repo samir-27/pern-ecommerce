@@ -12,7 +12,8 @@ import {
     Loader2, 
     Layers,
     Tag,
-    Image as ImageIcon
+    Image as ImageIcon,
+    Upload
 } from 'lucide-react';
 import api from '@api';
 import { buildProductPayload, getSellerErrorMessage, normalizeSellerProduct } from '../services/sellerData';
@@ -25,7 +26,6 @@ const BrandProductsPage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
     const [submitting, setSubmitting] = useState(false);
-    const [imageFiles, setImageFiles] = useState([]);
     const [error, setError] = useState('');
 
     // Initial form state
@@ -41,9 +41,9 @@ const BrandProductsPage = () => {
         season: 'All-Season',
         care_instructions: 'Machine wash cold with like colors. Tumble dry low.',
         variants: [
-            { size: 'S', color: 'Black', sku: '', price: '', stock_quantity: 10, low_stock_threshold: 3, isCustomPrice: false },
-            { size: 'M', color: 'Black', sku: '', price: '', stock_quantity: 15, low_stock_threshold: 5, isCustomPrice: false },
-            { size: 'L', color: 'Black', sku: '', price: '', stock_quantity: 12, low_stock_threshold: 5, isCustomPrice: false }
+            { size: 'S', color: 'Black', sku: '', price: '', stock_quantity: 10, low_stock_threshold: 3, isCustomPrice: false, image_urls: [], imagePreviews: [], imageFiles: [] },
+            { size: 'M', color: 'Black', sku: '', price: '', stock_quantity: 15, low_stock_threshold: 5, isCustomPrice: false, image_urls: [], imagePreviews: [], imageFiles: [] },
+            { size: 'M', color: 'White', sku: '', price: '', stock_quantity: 15, low_stock_threshold: 5, isCustomPrice: false, image_urls: [], imagePreviews: [], imageFiles: [] }
         ]
     };
 
@@ -76,10 +76,14 @@ const BrandProductsPage = () => {
 
     const openAddModal = () => {
         setEditingProduct(null);
-        setImageFiles([]);
         setFormData({
             ...initialFormState,
-            category_id: categories[0]?.id || ''
+            category_id: categories[0]?.id || '',
+            variants: [
+                { size: 'S', color: 'Black', sku: '', price: '', stock_quantity: 10, low_stock_threshold: 3, isCustomPrice: false, image_urls: [], imagePreviews: [], imageFiles: [] },
+                { size: 'M', color: 'Black', sku: '', price: '', stock_quantity: 15, low_stock_threshold: 5, isCustomPrice: false, image_urls: [], imagePreviews: [], imageFiles: [] },
+                { size: 'M', color: 'White', sku: '', price: '', stock_quantity: 15, low_stock_threshold: 5, isCustomPrice: false, image_urls: [], imagePreviews: [], imageFiles: [] }
+            ]
         });
         setIsModalOpen(true);
     };
@@ -97,11 +101,15 @@ const BrandProductsPage = () => {
             pattern: product.pattern || '',
             season: product.season || '',
             care_instructions: product.care_instructions || '',
-            variants: product.variants?.length > 0 ? product.variants : [
-                { size: 'Standard', color: 'Default', sku: '', price: product.price, stock_quantity: 10, low_stock_threshold: 3 }
+            variants: product.variants?.length > 0 ? product.variants.map(v => ({
+                ...v,
+                image_urls: Array.isArray(v.image_urls) ? v.image_urls : [],
+                imagePreviews: Array.isArray(v.image_urls) ? [...v.image_urls] : [],
+                imageFiles: []
+            })) : [
+                { size: 'Standard', color: 'Default', sku: '', price: product.price, stock_quantity: 10, low_stock_threshold: 3, image_urls: [], imagePreviews: [], imageFiles: [] }
             ]
         });
-        setImageFiles([]);
         setIsModalOpen(true);
     };
 
@@ -110,7 +118,6 @@ const BrandProductsPage = () => {
         setFormData(prev => {
             const updated = { ...prev, [name]: value };
             if (name === 'price') {
-                // When base price is updated, automatically default it into all variants that don't have a custom override
                 updated.variants = prev.variants.map(v => {
                     if (!v.isCustomPrice) {
                         return { ...v, price: value };
@@ -134,12 +141,64 @@ const BrandProductsPage = () => {
         });
     };
 
+    const handleVariantImagesAdd = (index, files) => {
+        const fileList = Array.from(files || []);
+        if (fileList.length === 0) return;
+
+        setFormData(prev => {
+            const nextVariants = [...prev.variants];
+            const currentVar = nextVariants[index];
+            const existingFiles = currentVar.imageFiles || [];
+            const existingUrls = currentVar.image_urls || [];
+            
+            const totalCurrent = existingFiles.length + existingUrls.length;
+            const remainingSlots = Math.max(0, 5 - totalCurrent);
+            if (remainingSlots <= 0) return prev;
+
+            const filesToAdd = fileList.slice(0, remainingSlots);
+            const newPreviews = filesToAdd.map(f => URL.createObjectURL(f));
+
+            nextVariants[index] = {
+                ...currentVar,
+                imageFiles: [...existingFiles, ...filesToAdd],
+                imagePreviews: [...(currentVar.imagePreviews || existingUrls), ...newPreviews]
+            };
+            return { ...prev, variants: nextVariants };
+        });
+    };
+
+    const handleVariantImageRemove = (variantIndex, imageIndex) => {
+        setFormData(prev => {
+            const nextVariants = [...prev.variants];
+            const currentVar = nextVariants[variantIndex];
+            const nextUrls = [...(currentVar.image_urls || [])];
+            const nextFiles = [...(currentVar.imageFiles || [])];
+            const nextPreviews = [...(currentVar.imagePreviews || [])];
+
+            if (imageIndex < nextUrls.length) {
+                nextUrls.splice(imageIndex, 1);
+            } else {
+                const fileIdx = imageIndex - nextUrls.length;
+                nextFiles.splice(fileIdx, 1);
+            }
+            nextPreviews.splice(imageIndex, 1);
+
+            nextVariants[variantIndex] = {
+                ...currentVar,
+                image_urls: nextUrls,
+                imageFiles: nextFiles,
+                imagePreviews: nextPreviews
+            };
+            return { ...prev, variants: nextVariants };
+        });
+    };
+
     const addVariantRow = () => {
         setFormData(prev => ({
             ...prev,
             variants: [
                 ...prev.variants,
-                { size: 'M', color: 'Black', sku: '', price: prev.price || '', stock_quantity: 10, low_stock_threshold: 5, isCustomPrice: false }
+                { size: 'M', color: 'Navy', sku: '', price: prev.price || '', stock_quantity: 10, low_stock_threshold: 5, isCustomPrice: false, image_urls: [], imagePreviews: [], imageFiles: [] }
             ]
         }));
     };
@@ -156,16 +215,21 @@ const BrandProductsPage = () => {
         setSubmitting(true);
         try {
             const payload = buildProductPayload(formData, categories);
+            const uploadData = new FormData();
+            Object.entries(payload).forEach(([key, value]) => uploadData.append(key, value));
+
+            // Append files mapped to each variant in order, tracking count per variant
+            const variantImageCounts = [];
+            formData.variants.forEach((v) => {
+                const files = v.imageFiles || [];
+                variantImageCounts.push(files.length);
+                files.forEach((file) => uploadData.append('images', file));
+            });
+            uploadData.append('variantImageCounts', JSON.stringify(variantImageCounts));
+
             if (editingProduct) {
-                await api.put(`/products/${editingProduct.id}`, payload);
+                await api.put(`/products/${editingProduct.id}`, uploadData);
             } else {
-                const uploadData = new FormData();
-                Object.entries(payload).forEach(([key, value]) => uploadData.append(key, value));
-                uploadData.append('variantImageCounts', JSON.stringify([
-                    imageFiles.length,
-                    ...formData.variants.slice(1).map(() => 0),
-                ]));
-                imageFiles.forEach((file) => uploadData.append('images', file));
                 await api.post('/products', uploadData);
             }
             setError('');
@@ -211,7 +275,7 @@ const BrandProductsPage = () => {
                 <div>
                     <h1 className="text-2xl md:text-3xl font-black text-white">Brand Garment Catalog</h1>
                     <p className="text-slate-400 text-sm mt-1">
-                        Create apparel collections, configure size/color variants, and oversee real-time inventory.
+                        Create apparel collections, configure size/color variants with up to 5 photos each, and oversee real-time inventory.
                     </p>
                 </div>
                 <button
@@ -228,13 +292,13 @@ const BrandProductsPage = () => {
                     <Shirt className="mx-auto text-slate-600 mb-3" size={40} />
                     <h3 className="text-base font-bold text-white">No products created yet</h3>
                     <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-                        Add your first designer piece to start selling across the marketplace.
+                        Add clothing garments to your brand catalogue with tailored colorway images, size charts, and stock numbers.
                     </p>
                     <button
                         onClick={openAddModal}
-                        className="mt-4 px-4 py-2 rounded-xl bg-amber-500 text-slate-950 text-xs font-bold"
+                        className="mt-4 px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs inline-flex items-center gap-1.5"
                     >
-                        Create Garment
+                        <Plus size={14} /> Add First Garment
                     </button>
                 </div>
             ) : (
@@ -255,6 +319,7 @@ const BrandProductsPage = () => {
                                 {products.map((p) => {
                                     const isExpanded = expandedProductId === p.id;
                                     const hasLowStock = p.variants?.some(v => v.stock_quantity <= v.low_stock_threshold);
+                                    const mainImg = p.images?.[0] || p.main_image || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=100&q=80';
 
                                     return (
                                         <React.Fragment key={p.id}>
@@ -263,7 +328,7 @@ const BrandProductsPage = () => {
                                                 <td className="p-4">
                                                     <div className="flex items-center gap-3">
                                                         <img
-                                                            src={p.images?.[0] || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=100&q=80'}
+                                                            src={mainImg}
                                                             alt={p.name}
                                                             className="w-12 h-14 rounded-lg object-cover bg-slate-800 shrink-0 border border-slate-700/60"
                                                         />
@@ -346,31 +411,53 @@ const BrandProductsPage = () => {
                                                 <tr className="bg-slate-950/80">
                                                     <td colSpan={6} className="p-4 pl-12 border-b border-slate-800">
                                                         <div className="text-xs font-bold uppercase tracking-wider text-amber-400 mb-2">
-                                                            Variant Inventory Breakdown
+                                                            Variant Inventory Breakdown & Photos
                                                         </div>
-                                                        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                                                             {p.variants?.map((v) => (
                                                                 <div 
                                                                     key={v.id} 
-                                                                    className={`p-3 rounded-xl border text-xs ${
+                                                                    className={`p-3 rounded-xl border text-xs flex flex-col justify-between ${
                                                                         v.stock_quantity <= v.low_stock_threshold
                                                                             ? 'bg-amber-950/20 border-amber-500/40'
                                                                             : 'bg-slate-900 border-slate-800'
                                                                     }`}
                                                                 >
-                                                                    <div className="flex items-center justify-between font-bold text-white mb-1">
-                                                                        <span>Size {v.size}</span>
-                                                                        <span className="text-slate-400">{v.color}</span>
+                                                                    <div>
+                                                                        <div className="flex items-center justify-between font-bold text-white mb-1">
+                                                                            <span>Size {v.size}</span>
+                                                                            <span className="text-amber-400 font-semibold">{v.color}</span>
+                                                                        </div>
+                                                                        <div className="text-slate-400 text-[11px] truncate">SKU: {v.sku}</div>
+                                                                        <div className="mt-2 flex items-center justify-between">
+                                                                            <span className="font-bold text-white">₹{Number(v.price || p.base_price || 0).toLocaleString('en-IN')}</span>
+                                                                            <span className={`font-semibold ${
+                                                                                v.stock_quantity <= v.low_stock_threshold ? 'text-amber-400' : 'text-slate-300'
+                                                                            }`}>
+                                                                                Stock: {v.stock_quantity}
+                                                                            </span>
+                                                                        </div>
                                                                     </div>
-                                                                    <div className="text-slate-400 text-[11px] truncate">SKU: {v.sku}</div>
-                                                                    <div className="mt-2 flex items-center justify-between">
-                                                                        <span className="font-bold text-amber-400">₹{Number(v.price || p.base_price || 0).toLocaleString('en-IN')}</span>
-                                                                        <span className={`font-semibold ${
-                                                                            v.stock_quantity <= v.low_stock_threshold ? 'text-amber-400' : 'text-slate-300'
-                                                                        }`}>
-                                                                            Stock: {v.stock_quantity}
-                                                                        </span>
-                                                                    </div>
+
+                                                                    {/* Colorway Photos Strip */}
+                                                                    {v.image_urls && v.image_urls.length > 0 && (
+                                                                        <div className="mt-2.5 pt-2 border-t border-slate-800/80">
+                                                                            <div className="flex items-center justify-between text-[10px] text-slate-400 font-semibold mb-1.5">
+                                                                                <span>Colorway Photos</span>
+                                                                                <span className="text-amber-400 font-bold">{v.image_urls.length}/5</span>
+                                                                            </div>
+                                                                            <div className="flex gap-1.5 overflow-x-auto pb-1">
+                                                                                {v.image_urls.slice(0, 5).map((imgUrl, imgIdx) => (
+                                                                                    <img
+                                                                                        key={imgIdx}
+                                                                                        src={imgUrl}
+                                                                                        alt={`${v.color} - ${imgIdx + 1}`}
+                                                                                        className="w-10 h-12 rounded object-cover border border-slate-700/80 shrink-0 bg-slate-950"
+                                                                                    />
+                                                                                ))}
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -389,14 +476,14 @@ const BrandProductsPage = () => {
             {/* Modal: Add / Edit Product */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-3xl my-8 p-6 md:p-8 space-y-6 max-h-[90vh] overflow-y-auto">
+                    <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl my-8 p-6 md:p-8 space-y-6 max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between border-b border-slate-800 pb-4">
                             <div>
                                 <h2 className="text-xl font-bold text-white">
                                     {editingProduct ? 'Edit Garment Details' : 'Add New Designer Garment'}
                                 </h2>
                                 <p className="text-xs text-slate-400 mt-0.5">
-                                    Configure clothing specifications, pricing, and variant inventory.
+                                    Configure clothing specifications, pricing, and variant photos (up to 5 photos per colorway).
                                 </p>
                             </div>
                             <button
@@ -548,39 +635,23 @@ const BrandProductsPage = () => {
                                 />
                             </div>
 
-                            {/* Product Image */}
-                            <div>
-                                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
-                                    {editingProduct ? 'Product Image' : 'Product Images'}
-                                </label>
-                                {editingProduct ? (
-                                    <div className="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-950/50 p-3 text-xs text-slate-400">
-                                        <img src={editingProduct.images?.[0]} alt="" className="h-14 w-12 rounded object-cover" />
-                                        Product images can be selected when creating a new listing.
-                                    </div>
-                                ) : (
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        multiple
-                                        onChange={(e) => setImageFiles(Array.from(e.target.files || []))}
-                                        className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3.5 py-2.5 text-sm text-white file:mr-3 file:rounded-lg file:border-0 file:bg-amber-500 file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-slate-950"
-                                    />
-                                )}
-                            </div>
-
-                            {/* Variants Table in Form */}
-                            <div className="space-y-3">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
-                                            Garment Variants (Sizes & Colors)
-                                        </span>
-                                        {formData.price && (
-                                            <span className="text-[11px] text-slate-400 font-medium">
-                                                (Defaulting to Base Price: ₹{formData.price})
+                            {/* Variants & Multi-Image per Variant Section */}
+                            <div className="space-y-4">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-2">
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
+                                                Garment Colorways & Size Variants
                                             </span>
-                                        )}
+                                            {formData.price && (
+                                                <span className="text-[11px] text-slate-400 font-medium">
+                                                    (Base Price: ₹{formData.price})
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-[11px] text-slate-400 mt-0.5">
+                                            Each variant supports up to 5 photos (e.g. 5 black photos for Black, 5 white photos for White).
+                                        </p>
                                     </div>
                                     <div className="flex items-center gap-3">
                                         {formData.price && (
@@ -600,56 +671,142 @@ const BrandProductsPage = () => {
                                         <button
                                             type="button"
                                             onClick={addVariantRow}
-                                            className="text-xs font-semibold text-amber-400 hover:text-amber-300 flex items-center gap-1"
+                                            className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-amber-400 hover:text-amber-300 flex items-center gap-1 border border-slate-700"
                                         >
-                                            <Plus size={14} /> Add Size Variant
+                                            <Plus size={14} /> Add Color / Size Variant
                                         </button>
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                    {formData.variants.map((v, idx) => (
-                                        <div key={idx} className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center gap-3">
-                                            <input
-                                                type="text"
-                                                value={v.size}
-                                                onChange={(e) => handleVariantChange(idx, 'size', e.target.value)}
-                                                placeholder="Size (S, M, L)"
-                                                className="w-20 px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white"
-                                            />
-                                            <input
-                                                type="text"
-                                                value={v.color}
-                                                onChange={(e) => handleVariantChange(idx, 'color', e.target.value)}
-                                                placeholder="Color"
-                                                className="w-24 px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white"
-                                            />
-                                            <input
-                                                type="number"
-                                                value={v.stock_quantity}
-                                                onChange={(e) => handleVariantChange(idx, 'stock_quantity', e.target.value)}
-                                                placeholder="Stock"
-                                                className="w-20 px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white"
-                                            />
-                                            <input
-                                                type="number"
-                                                value={v.price !== undefined && v.price !== null && v.price !== '' ? v.price : (formData.price || '')}
-                                                onChange={(e) => handleVariantChange(idx, 'price', e.target.value)}
-                                                placeholder={formData.price ? `₹${formData.price}` : "Price ₹"}
-                                                title="Variant Price (defaults to Base Price)"
-                                                className="w-28 px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-white"
-                                            />
-                                            {formData.variants.length > 1 && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeVariantRow(idx)}
-                                                    className="text-slate-500 hover:text-red-400 p-1"
-                                                >
-                                                    <X size={16} />
-                                                </button>
-                                            )}
-                                        </div>
-                                    ))}
+                                <div className="space-y-4">
+                                    {formData.variants.map((v, idx) => {
+                                        const currentPhotosCount = v.imagePreviews?.length || 0;
+                                        return (
+                                            <div key={idx} className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3.5">
+                                                {/* Variant Inputs Row */}
+                                                <div className="flex flex-wrap items-center gap-3">
+                                                    <div className="w-24">
+                                                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Size</label>
+                                                        <input
+                                                            type="text"
+                                                            value={v.size}
+                                                            onChange={(e) => handleVariantChange(idx, 'size', e.target.value)}
+                                                            placeholder="S, M, L"
+                                                            className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+                                                        />
+                                                    </div>
+                                                    <div className="flex-1 min-w-[140px]">
+                                                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Color / Colorway</label>
+                                                        <input
+                                                            type="text"
+                                                            value={v.color}
+                                                            onChange={(e) => handleVariantChange(idx, 'color', e.target.value)}
+                                                            placeholder="e.g. Black, White, Oatmeal"
+                                                            className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white font-semibold"
+                                                        />
+                                                    </div>
+                                                    <div className="w-24">
+                                                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Stock</label>
+                                                        <input
+                                                            type="number"
+                                                            value={v.stock_quantity}
+                                                            onChange={(e) => handleVariantChange(idx, 'stock_quantity', e.target.value)}
+                                                            placeholder="10"
+                                                            className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+                                                        />
+                                                    </div>
+                                                    <div className="w-28">
+                                                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Price (₹)</label>
+                                                        <input
+                                                            type="number"
+                                                            value={v.price !== undefined && v.price !== null && v.price !== '' ? v.price : (formData.price || '')}
+                                                            onChange={(e) => handleVariantChange(idx, 'price', e.target.value)}
+                                                            placeholder={formData.price ? `₹${formData.price}` : "Price ₹"}
+                                                            title="Variant Price (defaults to Base Price)"
+                                                            className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
+                                                        />
+                                                    </div>
+                                                    {formData.variants.length > 1 && (
+                                                        <div className="pt-5">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => removeVariantRow(idx)}
+                                                                className="p-1.5 rounded-lg bg-slate-900 hover:bg-red-500/20 text-slate-500 hover:text-red-400 transition-colors"
+                                                                title="Remove Variant"
+                                                            >
+                                                                <Trash2 size={15} />
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Variant Images: Up to 5 images per variant */}
+                                                <div className="pt-2 border-t border-slate-800/80">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <ImageIcon size={14} className="text-amber-400" />
+                                                            <span className="text-xs font-bold text-slate-200">
+                                                                Photos for {v.color || `Variant #${idx + 1}`}
+                                                            </span>
+                                                            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md ${
+                                                                currentPhotosCount >= 5 
+                                                                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' 
+                                                                    : 'bg-slate-800 text-slate-400'
+                                                            }`}>
+                                                                {currentPhotosCount} / 5 photos
+                                                            </span>
+                                                        </div>
+                                                        {currentPhotosCount < 5 && (
+                                                            <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition-colors shadow-sm">
+                                                                <Upload size={12} />
+                                                                <span>Upload {v.color || 'Variant'} Photos</span>
+                                                                <input
+                                                                    type="file"
+                                                                    accept="image/*"
+                                                                    multiple
+                                                                    className="hidden"
+                                                                    onChange={(e) => {
+                                                                        handleVariantImagesAdd(idx, e.target.files);
+                                                                        e.target.value = '';
+                                                                    }}
+                                                                />
+                                                            </label>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Previews Reel */}
+                                                    {v.imagePreviews && v.imagePreviews.length > 0 ? (
+                                                        <div className="flex flex-wrap gap-2.5 pt-1">
+                                                            {v.imagePreviews.map((previewUrl, imgIdx) => (
+                                                                <div key={imgIdx} className="relative group w-16 h-20 rounded-xl overflow-hidden border border-slate-700 bg-slate-900 shrink-0">
+                                                                    <img
+                                                                        src={previewUrl}
+                                                                        alt={`Photo ${imgIdx + 1}`}
+                                                                        className="w-full h-full object-cover"
+                                                                    />
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleVariantImageRemove(idx, imgIdx)}
+                                                                        className="absolute top-1 right-1 p-1 rounded-full bg-slate-950/80 text-white hover:bg-red-600 transition-colors opacity-90 group-hover:opacity-100"
+                                                                        title="Remove photo"
+                                                                    >
+                                                                        <X size={10} />
+                                                                    </button>
+                                                                    <span className="absolute bottom-1 left-1 px-1 rounded bg-black/70 text-[9px] font-bold text-white">
+                                                                        #{imgIdx + 1}
+                                                                    </span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="py-2.5 px-3 rounded-xl border border-dashed border-slate-800 text-center text-xs text-slate-500">
+                                                            No photos uploaded yet for this colorway. Click above to add up to 5 photos (e.g. front, back, detail, zoom).
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
@@ -666,7 +823,7 @@ const BrandProductsPage = () => {
                                     disabled={submitting}
                                     className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition-all shadow-lg shadow-amber-500/20 active:scale-95 disabled:opacity-50"
                                 >
-                                    {submitting ? 'Saving Garment...' : 'Save Garment'}
+                                    {submitting ? 'Saving Garment & Photos...' : 'Save Garment'}
                                 </button>
                             </div>
                         </form>

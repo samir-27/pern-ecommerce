@@ -15,7 +15,7 @@ const GarmentCard = ({ product }) => {
     : null;
 
   const fallbackImage = 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=700&q=80';
-  const displayImage = product.image_url || (product.images && product.images[0]) || fallbackImage;
+  const displayImage = product.main_image || (product.images && product.images[0]) || product.image_url || fallbackImage;
 
   const handleQuickAdd = (e) => {
     e.preventDefault();
