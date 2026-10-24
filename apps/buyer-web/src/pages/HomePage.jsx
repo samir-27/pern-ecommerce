@@ -99,8 +99,8 @@ const HomePage = () => {
               <span className="text-zinc-400 font-medium">Doorstep Returns Guarantee</span>
             </div>
             <div>
-              <span className="block text-2xl font-black text-amber-300">AI</span>
-              <span className="text-zinc-400 font-medium">Personal Stylist Assistant</span>
+              <span className="block text-2xl font-black text-amber-300">24/7</span>
+              <span className="text-zinc-400 font-medium">Dedicated Customer Support</span>
             </div>
           </div>
         </div>
@@ -193,19 +193,19 @@ const HomePage = () => {
           </Link>
 
           <Link
-            to="/products?category=Footwear"
+            to="/products?category=Suits%20%26%20Blazers"
             className="group relative h-96 rounded-3xl overflow-hidden bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm"
           >
             <img
-              src="https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=700&q=80"
-              alt="Artisanal Footwear"
+              src="https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=700&q=80"
+              alt="Tailored Suits and Blazers"
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-80"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
             <div className="absolute bottom-6 left-6 right-6 text-white">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-amber-300 block mb-1">Handcrafted</span>
-              <h3 className="text-xl font-black uppercase">Artisanal Leather Shoes</h3>
-              <p className="text-xs text-zinc-300 mt-1">Derbies, Chelsea boots & minimalist sneakers.</p>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-amber-300 block mb-1">Bespoke Atelier</span>
+              <h3 className="text-xl font-black uppercase">Tailored Suits & Blazers</h3>
+              <p className="text-xs text-zinc-300 mt-1">Structured silhouettes, fine wool, & double-breasted cuts.</p>
             </div>
           </Link>
         </div>

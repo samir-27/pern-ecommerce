@@ -27,13 +27,14 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Only clear token and redirect when a verified token expiry/unauthorized occurs on protected route
+    // Only clear token and redirect when a verified token expiry occurs
     if (error.response?.status === 401) {
-      const errMsg = String(error.response?.data?.error || '').toLowerCase();
+      const errMsg = String(error.response?.data?.error || error.response?.data?.message || '').toLowerCase();
       const pathname = window.location.pathname;
       const isAuthPage = pathname === "/login" || pathname === "/register" || pathname === "/admin/login";
 
-      if (errMsg.includes('expired') || errMsg.includes('token') || errMsg.includes('no longer exists')) {
+      // Purge only when the authentication token has genuinely expired or user was deleted
+      if (errMsg.includes('session expired') || errMsg.includes('jwt expired') || errMsg.includes('no longer exists')) {
         localStorage.removeItem("token");
         localStorage.removeItem("userRole");
 

@@ -13,7 +13,7 @@ import {
     CheckCircle2, 
     Menu, 
     X,
-    Sparkles
+    Percent
 } from 'lucide-react';
 import api from '@api';
 
@@ -23,6 +23,26 @@ const BrandSellerLayout = ({ children }) => {
     const [brand, setBrand] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [commissionActionLoading, setCommissionActionLoading] = useState(false);
+
+    const handleCommissionResponse = async (accept) => {
+        try {
+            setCommissionActionLoading(true);
+            const res = await api.post('/brand/commission-response', { accept });
+            alert(res.data?.message || (accept ? 'Commission rate accepted' : 'Commission rate declined'));
+            setBrand(prev => ({
+                ...prev,
+                commission_rate: res.data?.commission_rate || prev.commission_rate,
+                proposed_commission_rate: null,
+                commission_status: res.data?.commission_status || (accept ? 'approved' : 'rejected')
+            }));
+        } catch (err) {
+            console.error('Error handling commission response:', err);
+            alert(err.response?.data?.error || 'Failed to submit response');
+        } finally {
+            setCommissionActionLoading(false);
+        }
+    };
 
     useEffect(() => {
         const fetchBrand = async () => {
@@ -31,8 +51,16 @@ const BrandSellerLayout = ({ children }) => {
                 setBrand(res.data);
             } catch (err) {
                 console.error('Failed to load brand context:', err);
-                if (err.response?.status === 401 || err.response?.status === 403) {
-                    navigate('/login', { replace: true });
+                const hasToken = localStorage.getItem('token');
+                if (!hasToken) {
+                    navigate('/login?mode=seller', { replace: true });
+                } else {
+                    // Keep authenticated seller inside the portal with fallback profile context
+                    setBrand({
+                        name: 'Brand Atelier',
+                        status: 'active',
+                        bio: 'Independent Fashion Label'
+                    });
                 }
             } finally {
                 setLoading(false);
@@ -89,7 +117,7 @@ const BrandSellerLayout = ({ children }) => {
                                     : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
                             }`}>
                                 {brand.status === 'active' ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
-                                {brand.status}
+                                {brand.status === 'pending' ? 'Pending Review' : brand.status}
                             </span>
                         </div>
                     )}
@@ -166,6 +194,55 @@ const BrandSellerLayout = ({ children }) => {
                         </span>
                     </div>
                 </header>
+
+                {/* Verification Pending Banner */}
+                {brand?.status === 'pending' && (
+                    <div className="bg-amber-500/15 border-b border-amber-500/30 px-6 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-300">
+                        <div className="flex items-center gap-2.5">
+                            <AlertCircle size={18} className="text-amber-400 shrink-0" />
+                            <div>
+                                <strong className="text-white font-bold block">Brand Account Verification Pending:</strong>
+                                <span>Your atelier registration is awaiting Super Admin verification. You will be able to list garments for sale once approved.</span>
+                            </div>
+                        </div>
+                        <span className="px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 font-bold text-[10px] uppercase tracking-wider shrink-0 border border-amber-500/40 self-start sm:self-auto">
+                            Awaiting Approval
+                        </span>
+                    </div>
+                )}
+
+                {/* Proposed Commission Rate Consent Card */}
+                {brand?.commission_status === 'pending_brand_approval' && brand?.proposed_commission_rate && (
+                    <div className="bg-indigo-950/70 border-b border-indigo-500/40 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs text-indigo-200">
+                        <div className="flex items-start gap-3">
+                            <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 shrink-0 mt-0.5">
+                                <Percent size={18} />
+                            </div>
+                            <div>
+                                <strong className="text-white font-bold text-sm block">Commission Rate Adjustment Request</strong>
+                                <p className="text-indigo-300 mt-0.5 max-w-2xl leading-relaxed">
+                                    The platform administrator has proposed updating your commission rate from <strong>{brand.commission_rate}%</strong> to <strong className="text-amber-400 font-bold">{brand.proposed_commission_rate}%</strong>. Per platform governance rules, this change requires your consent before taking effect.
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                            <button
+                                onClick={() => handleCommissionResponse(false)}
+                                disabled={commissionActionLoading}
+                                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition-colors disabled:opacity-50"
+                            >
+                                Decline
+                            </button>
+                            <button
+                                onClick={() => handleCommissionResponse(true)}
+                                disabled={commissionActionLoading}
+                                className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md transition-colors disabled:opacity-50"
+                            >
+                                Accept ({brand.proposed_commission_rate}%)
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Viewport Content */}
                 <div className="flex-1 p-6 md:p-8 max-w-7xl mx-auto w-full">

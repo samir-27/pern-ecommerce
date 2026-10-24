@@ -20,9 +20,23 @@ const ShopPage = () => {
   const priceRangeParam = searchParams.get('priceRange') || '';
   const sizeParam = searchParams.get('size') || '';
 
-  const categories = ['Tops', 'Bottoms', 'Outerwear', 'Footwear', 'Accessories', 'Dresses'];
+  const defaultClothingCategories = [
+    'Shirts & Tops', 
+    'T-Shirts & Polos', 
+    'Trousers & Pants', 
+    'Jeans & Denim', 
+    'Suits & Blazers', 
+    'Dresses & Gowns', 
+    'Jackets & Outerwear', 
+    'Sweaters & Knitwear', 
+    'Activewear & Loungewear', 
+    'Ethnic & Traditional', 
+    'Accessories'
+  ];
+
+  const [categories, setCategories] = useState(defaultClothingCategories);
   const genders = ['Mens', 'Womens', 'Kids', 'Unisex'];
-  const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+  const sizes = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', 'Free Size', '28', '30', '32', '34', '36', '38', '40'];
   const priceRanges = [
     { label: 'Under ₹2,000', value: '0-2000' },
     { label: '₹2,000 - ₹5,000', value: '2000-5000' },
@@ -39,16 +53,32 @@ const ShopPage = () => {
         if (genderParam) queryObj.gender = genderParam;
         if (brandParam) queryObj.brand = brandParam;
         if (searchParam) queryObj.search = searchParam;
+        if (sizeParam) queryObj.size = sizeParam;
+        if (priceRangeParam) {
+          const [min, max] = priceRangeParam.split('-');
+          if (min) queryObj.minPrice = min;
+          if (max) queryObj.maxPrice = max;
+        }
+        if (sortParam && sortParam !== 'newest') {
+          if (sortParam === 'price_low') queryObj.sort = 'price_asc';
+          else if (sortParam === 'price_high') queryObj.sort = 'price_desc';
+          else queryObj.sort = sortParam;
+        }
 
         const queryString = new URLSearchParams(queryObj).toString();
-        const [prodRes, brandsRes] = await Promise.all([
+        const [prodRes, brandsRes, catRes] = await Promise.all([
           api.get(`/products?${queryString}`).catch(() => ({ data: { products: [] } })),
-          api.get('/brand/public/all').catch(() => ({ data: [] }))
+          api.get('/brand/public/all').catch(() => ({ data: [] })),
+          api.get('/products/categories').catch(() => ({ data: [] }))
         ]);
 
         const fetched = prodRes.data?.products || (Array.isArray(prodRes.data) ? prodRes.data : []);
         setProducts(fetched);
         setBrands(Array.isArray(brandsRes.data) ? brandsRes.data : []);
+        
+        if (Array.isArray(catRes.data) && catRes.data.length > 0) {
+          setCategories(catRes.data.map(c => c.name));
+        }
       } catch (err) {
         console.error('Failed to fetch shop products:', err);
       } finally {
@@ -57,7 +87,7 @@ const ShopPage = () => {
     };
 
     fetchData();
-  }, [categoryParam, genderParam, brandParam, searchParam]);
+  }, [categoryParam, genderParam, brandParam, searchParam, sizeParam, priceRangeParam, sortParam]);
 
   const updateParam = (key, value) => {
     const newParams = new URLSearchParams(searchParams);

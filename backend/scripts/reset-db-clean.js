@@ -43,13 +43,17 @@ async function resetDatabase() {
     // 4. Seed Standard Marketplace Categories
     console.log('Seeding standard fashion categories...');
     const defaultCategories = [
-      { name: 'Tops', description: 'Shirts, T-shirts, Polos, Blouses, Knit Tops' },
-      { name: 'Bottoms', description: 'Trousers, Chinos, Denim, Skirts, Tailored Pants' },
-      { name: 'Outerwear', description: 'Coats, Blazers, Trench Coats, Jackets' },
-      { name: 'Dresses', description: 'Cocktail dresses, Evening gowns, Sundresses' },
-      { name: 'Knitwear', description: 'Cashmere sweaters, Cardigans, Wool pullovers' },
-      { name: 'Footwear', description: 'Loafers, Chelsea boots, Minimalist sneakers, Derbies' },
-      { name: 'Accessories', description: 'Belts, Leather bags, Scarves, Fine jewelry' },
+      { name: 'Shirts & Tops', description: 'Tailored shirts, casual button-downs, formal shirts, and silk blouses' },
+      { name: 'T-Shirts & Polos', description: 'Heavyweight tees, pima cotton crewnecks, textured polos, and henleys' },
+      { name: 'Trousers & Pants', description: 'Tailored trousers, pleated chinos, relaxed slacks, and linen pants' },
+      { name: 'Jeans & Denim', description: 'Raw selvedge denim, slim taper, straight leg, and vintage washes' },
+      { name: 'Suits & Blazers', description: 'Structured blazers, tuxedos, peak-lapel jackets, and tailored suit sets' },
+      { name: 'Dresses & Gowns', description: 'Evening gowns, slip dresses, cocktail wear, and draped silk silhouettes' },
+      { name: 'Jackets & Outerwear', description: 'Overcoats, wool trench coats, bomber jackets, and winter outerwear' },
+      { name: 'Sweaters & Knitwear', description: 'Fine merino knitwear, cashmere cardigans, pullovers, and turtlenecks' },
+      { name: 'Activewear & Loungewear', description: 'Lounge sets, French terry hoodies, joggers, and athletic wear' },
+      { name: 'Ethnic & Traditional', description: 'Handcrafted kurtas, bandhgalas, sherwanis, and festive apparel' },
+      { name: 'Accessories', description: 'Silk neckties, leather belts, scarves, pocket squares, and cuff links' },
     ];
 
     for (const cat of defaultCategories) {

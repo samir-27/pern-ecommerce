@@ -10,7 +10,9 @@ import {
   Sparkles, 
   Building2, 
   CheckCircle2, 
-  AlertCircle 
+  AlertCircle,
+  Percent,
+  ShieldCheck 
 } from 'lucide-react';
 import api from '@api';
 
@@ -229,6 +231,20 @@ const AuthPage = ({ initialMode = 'login' }) => {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             
+            {/* If Registering Brand: Default Commission & Verification Notice */}
+            {isRegister && roleMode === 'seller' && (
+              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-800 dark:text-amber-300 text-xs space-y-1.5">
+                <div className="flex items-center gap-1.5 font-bold text-amber-900 dark:text-amber-200 text-xs">
+                  <Percent size={14} className="text-amber-500" /> Default Platform Commission: 10.00%
+                </div>
+                <ul className="text-[11px] text-zinc-600 dark:text-zinc-400 space-y-1 list-disc pl-4 leading-relaxed">
+                  <li>Standard platform fee is <strong>10.00%</strong> deducted only upon completed apparel orders.</li>
+                  <li>New brand accounts require Super Admin verification before garments can be listed or sold.</li>
+                  <li>Commission rates cannot be modified by administration without your explicit authorization.</li>
+                </ul>
+              </div>
+            )}
+
             {/* If Registering Brand: Brand Name */}
             {isRegister && roleMode === 'seller' && (
               <div>

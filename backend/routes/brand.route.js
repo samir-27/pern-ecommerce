@@ -3,6 +3,7 @@ import { protectRoute, brandRoute } from '../middleware/auth.middleware.js';
 import {
     getBrandProfile,
     updateBrandProfile,
+    uploadBrandAssets,
     getBrandOverview,
     getBrandProducts,
     createBrandProduct,
@@ -12,7 +13,8 @@ import {
     updateOrderFulfillment,
     getBrandAnalytics,
     getPublicBrands,
-    getPublicBrandBySlug
+    getPublicBrandBySlug,
+    respondToCommissionProposal
 } from '../controllers/brand.controller.js';
 
 const router = express.Router();
@@ -24,7 +26,8 @@ router.get('/directory', getPublicBrands);
 
 // Authenticated Brand Seller portal routes (strict brand isolation)
 router.get('/profile', protectRoute, brandRoute, getBrandProfile);
-router.put('/profile', protectRoute, brandRoute, updateBrandProfile);
+router.put('/profile', protectRoute, brandRoute, uploadBrandAssets, updateBrandProfile);
+router.post('/commission-response', protectRoute, brandRoute, respondToCommissionProposal);
 router.get('/overview', protectRoute, brandRoute, getBrandOverview);
 router.get('/products', protectRoute, brandRoute, getBrandProducts);
 router.post('/products', protectRoute, brandRoute, createBrandProduct);

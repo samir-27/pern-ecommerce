@@ -70,9 +70,17 @@ export const getApplicationStatus = async (req, res) => {
 // Get current seller store details
 export const getMyStore = async (req, res) => {
     try {
-        const storeRes = await pool.query('SELECT * FROM seller_stores WHERE user_id = $1', [req.user.id]);
+        let storeRes = await pool.query('SELECT * FROM seller_stores WHERE user_id = $1', [req.user.id]);
         if (storeRes.rows.length === 0) {
-            return res.status(404).json({ error: 'Store not found' });
+            const brandRes = await pool.query('SELECT * FROM brands WHERE user_id = $1', [req.user.id]);
+            if (brandRes.rows.length > 0) {
+                return res.json(brandRes.rows[0]);
+            }
+            return res.json({
+                name: req.user?.first_name ? `${req.user.first_name}'s Atelier` : 'Brand Atelier',
+                status: 'active',
+                bio: 'Independent Fashion Label'
+            });
         }
         res.json(storeRes.rows[0]);
     } catch (err) {
@@ -83,9 +91,9 @@ export const getMyStore = async (req, res) => {
 
 // Update store details
 export const updateMyStore = async (req, res) => {
-    const { name, bio, logoUrl, bannerUrl, policyReturn, policyShipping } = req.body;
+    const { name, bio, logoUrl, bannerUrl, policyReturn, policyShipping } = req.body || {};
     try {
-        const updated = await pool.query(
+        let updated = await pool.query(
             `UPDATE seller_stores
              SET name = COALESCE($1, name),
                  bio = COALESCE($2, bio),
@@ -99,10 +107,25 @@ export const updateMyStore = async (req, res) => {
         );
 
         if (updated.rows.length === 0) {
-            return res.status(404).json({ error: 'Store not found' });
+            // Also update brands table if seller_stores had no row
+            const brandUpdate = await pool.query(
+                `UPDATE brands
+                 SET name = COALESCE($1, name),
+                     bio = COALESCE($2, bio),
+                     logo_url = COALESCE($3, logo_url),
+                     banner_url = COALESCE($4, banner_url),
+                     policy_return = COALESCE($5, policy_return),
+                     policy_shipping = COALESCE($6, policy_shipping)
+                 WHERE user_id = $7
+                 RETURNING *`,
+                [name, bio, logoUrl, bannerUrl, policyReturn, policyShipping, req.user.id]
+            );
+            if (brandUpdate.rows.length > 0) {
+                return res.json({ message: 'Store profile updated', store: brandUpdate.rows[0] });
+            }
         }
 
-        res.json({ message: 'Store profile updated', store: updated.rows[0] });
+        res.json({ message: 'Store profile updated', store: updated.rows[0] || {} });
     } catch (err) {
         console.error('Error updating store:', err.message);
         res.status(500).json({ error: 'Server error updating store' });
@@ -233,48 +256,78 @@ export const getSellerOrders = async (req, res) => {
 // Update fulfillment tracking for a seller order
 export const updateOrderFulfillment = async (req, res) => {
     const { id } = req.params; // seller_order id
-    const { status, trackingNumber, shippingCarrier } = req.body;
+    const { status, trackingNumber, shippingCarrier, carrier, tracking_number, fulfillment_status } = req.body;
+    const resolvedStatus = fulfillment_status || status;
+    const resolvedTracking = tracking_number || trackingNumber;
+    const resolvedCarrier = carrier || shippingCarrier;
     const userId = req.user.id;
+    const isAdmin = req.user.role === 'admin' || req.user.role === 'super_admin';
 
     try {
-        // Verify ownership
+        // Verify ownership (allow seller user_id, brand owner, or admin)
         const orderCheck = await pool.query(
-            'SELECT * FROM seller_orders WHERE id = $1 AND seller_id = $2',
-            [id, userId]
+            `SELECT so.* FROM seller_orders so
+             LEFT JOIN brands b ON so.brand_id = b.id
+             WHERE so.id = $1 AND (so.seller_id = $2 OR b.user_id = $2 OR $3 = true)`,
+            [id, userId, isAdmin]
         );
 
-        if (orderCheck.rows.length === 0 && req.user.role !== 'admin' && req.user.role !== 'super_admin') {
+        if (orderCheck.rows.length === 0) {
             return res.status(403).json({ error: 'Not authorized to fulfill this order' });
         }
 
-        const validStatuses = ['unfulfilled', 'processing', 'shipped', 'delivered', 'cancelled'];
-        if (status && !validStatuses.includes(status)) {
+        const validStatuses = ['unfulfilled', 'pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+        if (resolvedStatus && !validStatuses.includes(resolvedStatus)) {
             return res.status(400).json({ error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
         }
 
         let shippedAt = null;
         let deliveredAt = null;
-        if (status === 'shipped') shippedAt = new Date();
-        if (status === 'delivered') deliveredAt = new Date();
+        if (resolvedStatus === 'shipped') shippedAt = new Date();
+        if (resolvedStatus === 'delivered') deliveredAt = new Date();
 
         const updated = await pool.query(
             `UPDATE seller_orders
              SET status = COALESCE($1, status),
+                 fulfillment_status = COALESCE($1, fulfillment_status),
                  tracking_number = COALESCE($2, tracking_number),
                  shipping_carrier = COALESCE($3, shipping_carrier),
+                 carrier = COALESCE($3, carrier),
                  shipped_at = COALESCE($4, shipped_at),
-                 delivered_at = COALESCE($5, delivered_at)
+                 delivered_at = COALESCE($5, delivered_at),
+                 updated_at = NOW()
              WHERE id = $6
              RETURNING *`,
-            [status, trackingNumber, shippingCarrier, shippedAt, deliveredAt, id]
+            [resolvedStatus, resolvedTracking, resolvedCarrier, shippedAt, deliveredAt, id]
         );
 
+        const updatedOrder = updated.rows[0];
+        const parentOrderId = updatedOrder?.order_id;
+
         // Update corresponding order items fulfillment status
-        if (status) {
+        if (resolvedStatus) {
             await pool.query(
                 'UPDATE order_items SET fulfillment_status = $1 WHERE seller_order_id = $2',
-                [status, id]
+                [resolvedStatus, id]
             );
+        }
+
+        // Dynamically recalculate and update parent order status
+        if (parentOrderId) {
+            const allSubOrders = await pool.query(
+                'SELECT status, fulfillment_status FROM seller_orders WHERE order_id = $1',
+                [parentOrderId]
+            );
+            const statuses = allSubOrders.rows.map(r => (r.fulfillment_status || r.status || '').toLowerCase());
+            let parentStatus = 'processing';
+            if (statuses.length > 0 && statuses.every(s => s === 'delivered')) {
+                parentStatus = 'delivered';
+            } else if (statuses.some(s => s === 'shipped' || s === 'in_transit')) {
+                parentStatus = 'shipped';
+            } else if (statuses.length > 0 && statuses.every(s => s === 'cancelled')) {
+                parentStatus = 'cancelled';
+            }
+            await pool.query('UPDATE orders SET status = $1 WHERE id = $2', [parentStatus, parentOrderId]);
         }
 
         await logAuditEvent({

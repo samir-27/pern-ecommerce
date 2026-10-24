@@ -26,7 +26,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/seller', sellerRoutes);
 app.use('/api/brand', brandRoutes);
-app.use('/api/ai', aiRoutes);
+// app.use('/api/ai', aiRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

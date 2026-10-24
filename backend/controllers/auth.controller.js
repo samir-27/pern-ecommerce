@@ -93,8 +93,8 @@ export const registerBrandSeller = async (req, res) => {
         const brandRes = await client.query(
             `INSERT INTO brands (
                 user_id, name, slug, bio, website, contact_email, contact_phone, 
-                business_registration_number, policy_return, policy_shipping, status
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'active')
+                business_registration_number, policy_return, policy_shipping, status, commission_rate
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending', 10.00)
             RETURNING *`,
             [
                 user.id,
@@ -111,10 +111,10 @@ export const registerBrandSeller = async (req, res) => {
         );
         const brand = brandRes.rows[0];
 
-        // Also populate backward-compatible seller_stores
+        // Also populate backward-compatible seller_stores (inactive until verified)
         await client.query(
             `INSERT INTO seller_stores (id, user_id, name, slug, bio, is_active)
-             VALUES ($1, $2, $3, $4, $5, true)
+             VALUES ($1, $2, $3, $4, $5, false)
              ON CONFLICT (id) DO NOTHING`,
             [brand.id, user.id, brand.name, brand.slug, brand.bio]
         );
@@ -153,6 +153,13 @@ export const loginUser = async (req, res) => {
         }
 
         const user = userResult.rows[0];
+
+        if (user.is_blocked) {
+            return res.status(403).json({ 
+                error: 'Your account has been suspended by the platform administrator.',
+                code: 'USER_BLOCKED'
+            });
+        }
 
         const validPassword = await bcrypt.compare(password, user.password_hash);
         if (!validPassword) {
@@ -217,7 +224,7 @@ export const loginUser = async (req, res) => {
 export const getUserProfile = async (req, res) => {
     try {
         const userResult = await pool.query(
-            'SELECT id, email, first_name, last_name, created_at FROM users WHERE id = $1', 
+            'SELECT id, email, first_name, last_name, phone, role, created_at FROM users WHERE id = $1', 
             [req.user.id]
         );
 
@@ -225,7 +232,19 @@ export const getUserProfile = async (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        res.json(userResult.rows[0]);
+        const user = userResult.rows[0];
+
+        // Fetch user default address
+        const addrRes = await pool.query(
+            'SELECT * FROM user_addresses WHERE user_id = $1 ORDER BY is_default DESC, created_at DESC LIMIT 1',
+            [req.user.id]
+        );
+
+        res.json({
+            ...user,
+            name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.first_name || 'Client',
+            default_address: addrRes.rows[0] || null
+        });
     } catch (err) {
         console.error('Error fetching user profile:', err.message);
         res.status(500).json({ error: 'Server error fetching profile' });
@@ -233,11 +252,13 @@ export const getUserProfile = async (req, res) => {
 };
 
 export const updateUserProfile = async (req, res) => {
-    const { first_name, last_name, email } = req.body;
+    const { first_name, last_name, name, email, phone } = req.body;
     const userId = req.user.id;
 
+    const resolvedFirst = first_name || (name ? name.trim().split(' ')[0] : undefined);
+    const resolvedLast = last_name || (name ? name.trim().split(' ').slice(1).join(' ') : undefined);
+
     try {
-        // 1. If changing email, check if the new email is already in use by someone else
         if (email) {
             const emailCheck = await pool.query(
                 'SELECT id FROM users WHERE email = $1 AND id != $2',
@@ -249,34 +270,113 @@ export const updateUserProfile = async (req, res) => {
             }
         }
 
-        // 2. Fetch current user data to use as fallback if fields are empty
-        const currentUser = await pool.query('SELECT first_name, last_name, email FROM users WHERE id = $1', [userId]);
-        const currentData = currentUser.rows[0];
+        const currentUser = await pool.query('SELECT first_name, last_name, email, phone FROM users WHERE id = $1', [userId]);
+        const currentData = currentUser.rows[0] || {};
 
-        // 3. Update the database
         const updatedUser = await pool.query(
             `UPDATE users 
              SET first_name = COALESCE($1, first_name), 
                  last_name = COALESCE($2, last_name), 
-                 email = COALESCE($3, email) 
-             WHERE id = $4 
-             RETURNING id, email, first_name, last_name, role`,
+                 email = COALESCE($3, email),
+                 phone = COALESCE($4, phone),
+                 updated_at = NOW()
+             WHERE id = $5 
+             RETURNING id, email, first_name, last_name, phone, role`,
             [
-                first_name || currentData.first_name, 
-                last_name || currentData.last_name, 
+                resolvedFirst ?? currentData.first_name, 
+                resolvedLast ?? currentData.last_name, 
                 email || currentData.email, 
+                phone !== undefined ? phone : currentData.phone,
                 userId
             ]
         );
 
+        const updated = updatedUser.rows[0];
         res.json({
             message: 'Profile updated successfully',
-            user: updatedUser.rows[0]
+            user: {
+                ...updated,
+                name: `${updated.first_name || ''} ${updated.last_name || ''}`.trim() || updated.first_name
+            }
         });
 
     } catch (err) {
         console.error('Error updating profile:', err.message);
         res.status(500).json({ error: 'Server error while updating profile' });
+    }
+};
+
+export const getUserAddresses = async (req, res) => {
+    try {
+        const result = await pool.query(
+            'SELECT * FROM user_addresses WHERE user_id = $1 ORDER BY is_default DESC, created_at DESC',
+            [req.user.id]
+        );
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Error fetching addresses:', err.message);
+        res.status(500).json({ error: 'Failed to fetch saved addresses' });
+    }
+};
+
+export const createUserAddress = async (req, res) => {
+    const fullName = (req.body.fullName || req.body.full_name || '').trim();
+    const phone = (req.body.phone || '').trim();
+    const address = (req.body.address || req.body.addressLine || req.body.address_line || '').trim();
+    const city = (req.body.city || '').trim();
+    const state = (req.body.state || '').trim();
+    const pincode = (req.body.pincode || req.body.zip || '').trim();
+    const isDefault = req.body.isDefault !== undefined ? req.body.isDefault : req.body.is_default;
+
+    if (!fullName || !phone || !address || !city || !pincode) {
+        return res.status(400).json({ error: 'Recipient name, phone, address, city, and pincode are required.' });
+    }
+
+    try {
+        const count = await pool.query('SELECT COUNT(*)::int as c FROM user_addresses WHERE user_id = $1', [req.user.id]);
+        const shouldBeDefault = Boolean(isDefault) || count.rows[0].c === 0;
+
+        if (shouldBeDefault) {
+            await pool.query('UPDATE user_addresses SET is_default = false WHERE user_id = $1', [req.user.id]);
+        }
+
+        const result = await pool.query(
+            `INSERT INTO user_addresses (user_id, full_name, phone, address_line, city, state, pincode, is_default)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+             RETURNING *`,
+            [req.user.id, fullName, phone, address, city, state, pincode, shouldBeDefault]
+        );
+
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        console.error('Error saving address:', err.message);
+        res.status(500).json({ error: 'Failed to save address' });
+    }
+};
+
+export const deleteUserAddress = async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.query('DELETE FROM user_addresses WHERE id = $1 AND user_id = $2', [id, req.user.id]);
+        res.json({ message: 'Address removed successfully' });
+    } catch (err) {
+        console.error('Error deleting address:', err.message);
+        res.status(500).json({ error: 'Failed to delete address' });
+    }
+};
+
+export const setDefaultUserAddress = async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.query('UPDATE user_addresses SET is_default = false WHERE user_id = $1', [req.user.id]);
+        const result = await pool.query(
+            'UPDATE user_addresses SET is_default = true WHERE id = $1 AND user_id = $2 RETURNING *',
+            [id, req.user.id]
+        );
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error('Error setting default address:', err.message);
+        res.status(500).json({ error: 'Failed to set default address' });
     }
 };
 

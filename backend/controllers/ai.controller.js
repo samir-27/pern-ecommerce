@@ -421,3 +421,474 @@ Respond politely and accurately as MINIMAL. Support. If referring to orders, ref
         res.status(500).json({ error: 'Customer support assistant unavailable' });
     }
 };
+
+// Feature F: Brand Seller AI Sales & Merchandising Intelligence
+export const sellerSalesAnalysis = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        // Determine brand ID for this seller
+        const brandRes = await pool.query('SELECT id, name FROM brands WHERE user_id = $1', [userId]);
+        const brandId = brandRes.rows[0]?.id;
+        const brandName = brandRes.rows[0]?.name || 'Your Brand';
+
+        // 1. Get recent orders and overall metrics
+        const ordersRes = await pool.query(`
+            SELECT so.id, so.order_id, so.subtotal, so.commission_amount, so.seller_net_earnings,
+                   so.status, so.created_at
+            FROM seller_orders so
+            WHERE so.seller_id = $1 OR so.brand_id = $2
+            ORDER BY so.created_at ASC
+        `, [userId, brandId || 0]);
+
+        const orders = ordersRes.rows;
+        const totalSales = orders.reduce((sum, o) => sum + Number(o.subtotal || 0), 0);
+        const netEarnings = orders.reduce((sum, o) => sum + Number(o.seller_net_earnings || 0), 0);
+        const commissionPaid = orders.reduce((sum, o) => sum + Number(o.commission_amount || 0), 0);
+        const ordersCount = orders.length;
+        const aov = ordersCount > 0 ? Math.round(totalSales / ordersCount) : 0;
+
+        // 2. Build 14-day daily timeline chart series
+        const chartMap = new Map();
+        for (let i = 13; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dateStr = d.toISOString().slice(0, 10);
+            const label = d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
+            chartMap.set(dateStr, { date: dateStr, label, sales: 0, earnings: 0, orders: 0 });
+        }
+
+        orders.forEach(o => {
+            const dateStr = new Date(o.created_at).toISOString().slice(0, 10);
+            if (chartMap.has(dateStr)) {
+                const entry = chartMap.get(dateStr);
+                entry.sales += Number(o.subtotal || 0);
+                entry.earnings += Number(o.seller_net_earnings || 0);
+                entry.orders += 1;
+            }
+        });
+        const chartData = Array.from(chartMap.values());
+
+        // 3. Top selling garments breakdown
+        const itemsRes = await pool.query(`
+            SELECT p.name AS product_name, pv.size, pv.color,
+                   SUM(oi.quantity)::int AS units_sold,
+                   SUM(oi.price_at_purchase * oi.quantity)::numeric(12,2) AS total_revenue
+            FROM order_items oi
+            JOIN product_variants pv ON oi.variant_id = pv.id
+            JOIN products p ON pv.product_id = p.id
+            WHERE oi.seller_id = $1 OR p.brand_id = $2
+            GROUP BY p.name, pv.size, pv.color
+            ORDER BY total_revenue DESC
+            LIMIT 10
+        `, [userId, brandId || 0]);
+
+        const topGarments = itemsRes.rows;
+
+        // 4. Run AI Intelligence model via executePrompt
+        const prompt = `
+Analyze sales and commercial performance for clothing brand "${brandName}":
+- Total Sales: ₹${totalSales}
+- Net Earnings: ₹${netEarnings}
+- Total Orders: ${ordersCount}
+- Average Order Value (AOV): ₹${aov}
+- Top Performing Products: ${JSON.stringify(topGarments)}
+- Recent Daily Revenue Trend: ${JSON.stringify(chartData.filter(c => c.sales > 0))}
+
+Provide an executive JSON analysis with the following fields:
+- healthScore: number (0 to 100)
+- salesVelocity: string (e.g. "Rapid Expansion", "Steady", "Accelerating")
+- executiveSummary: concise string (2-3 sentences)
+- topPerformerInsight: concise string analyzing top garment demand
+- inventoryForecast: concise string with runout & restock recommendations
+- pricingStrategy: concise string on price points and margins
+- actionableSteps: array of 3-4 specific high-impact recommendations for the fashion designer / brand owner.
+`;
+
+        const aiAnalysis = await executePrompt({
+            prompt,
+            systemInstruction: 'You are an elite haute-couture fashion commerce analyst and merchandising advisor for luxury and contemporary apparel brands. Return strictly valid JSON.',
+            jsonMode: true,
+            userId,
+            feature: 'brand_sales_analysis'
+        });
+
+        res.json({
+            brandName,
+            metrics: {
+                totalSales,
+                netEarnings,
+                commissionPaid,
+                ordersCount,
+                aov
+            },
+            chartData,
+            topGarments,
+            aiAnalysis
+        });
+
+    } catch (err) {
+        console.error('Error generating seller sales analysis:', err);
+        res.status(500).json({ error: 'Failed to generate AI sales analysis' });
+    }
+};
+
+// Feature G: Super Admin Platform-Wide AI Sales & Marketplace Analysis
+export const adminSalesAnalysis = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        // 1. Overall platform numbers
+        const [ordersRes, brandDistRes, categoryRes] = await Promise.all([
+            pool.query(`
+                SELECT id, total_amount, status, created_at
+                FROM orders
+                ORDER BY created_at ASC
+            `),
+            pool.query(`
+                SELECT b.name AS brand_name,
+                       COUNT(so.id)::int AS orders_count,
+                       COALESCE(SUM(so.subtotal), 0)::numeric(12,2) AS gross_sales,
+                       COALESCE(SUM(so.commission_amount), 0)::numeric(12,2) AS platform_commission
+                FROM brands b
+                LEFT JOIN seller_orders so ON so.brand_id = b.id
+                GROUP BY b.id, b.name
+                ORDER BY gross_sales DESC
+            `),
+            pool.query(`
+                SELECT COALESCE(c.name, 'Apparel') AS category_name,
+                       COUNT(oi.id)::int AS units_sold,
+                       COALESCE(SUM(oi.price_at_purchase * oi.quantity), 0)::numeric(12,2) AS revenue
+                FROM order_items oi
+                JOIN product_variants pv ON oi.variant_id = pv.id
+                JOIN products p ON pv.product_id = p.id
+                LEFT JOIN categories c ON p.category_id = c.id
+                GROUP BY c.name
+                ORDER BY revenue DESC
+            `)
+        ]);
+
+        const allOrders = ordersRes.rows;
+        const totalGmv = allOrders.reduce((sum, o) => sum + Number(o.total_amount || 0), 0);
+        const totalCommission = brandDistRes.rows.reduce((sum, b) => sum + Number(b.platform_commission || 0), 0);
+        const ordersCount = allOrders.length;
+        const aov = ordersCount > 0 ? Math.round(totalGmv / ordersCount) : 0;
+
+        // 2. Build 14-day timeline chart data
+        const chartMap = new Map();
+        for (let i = 13; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dateStr = d.toISOString().slice(0, 10);
+            const label = d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
+            chartMap.set(dateStr, { date: dateStr, label, gmv: 0, commission: 0, orders: 0 });
+        }
+
+        allOrders.forEach(o => {
+            const dateStr = new Date(o.created_at).toISOString().slice(0, 10);
+            if (chartMap.has(dateStr)) {
+                const entry = chartMap.get(dateStr);
+                entry.gmv += Number(o.total_amount || 0);
+                entry.commission += Number((Number(o.total_amount || 0) * 0.1).toFixed(2));
+                entry.orders += 1;
+            }
+        });
+        const chartData = Array.from(chartMap.values());
+
+        const brandDistribution = brandDistRes.rows.map(b => ({
+            ...b,
+            share: totalGmv > 0 ? Number(((Number(b.gross_sales) / totalGmv) * 100).toFixed(1)) : 0
+        }));
+
+        const categoryBreakdown = categoryRes.rows.map(c => ({
+            ...c,
+            share: totalGmv > 0 ? Number(((Number(c.revenue) / totalGmv) * 100).toFixed(1)) : 0
+        }));
+
+        // 3. AI Intelligence prompt
+        const prompt = `
+Analyze platform-wide e-commerce sales and marketplace growth:
+- Total Gross Merchandise Value (GMV): ₹${totalGmv}
+- Total Platform Commission Earned: ₹${totalCommission}
+- Total Buyer Orders: ${ordersCount}
+- Average Order Value: ₹${aov}
+- Brand Sales Distribution: ${JSON.stringify(brandDistribution)}
+- Category Sales Performance: ${JSON.stringify(categoryBreakdown)}
+- 14-Day GMV Trajectory: ${JSON.stringify(chartData.filter(c => c.gmv > 0))}
+
+Provide an executive strategic JSON analysis for the Super Administrator with the following fields:
+- healthScore: number (0 to 100)
+- marketplaceVelocity: string (e.g. "Rapid Expansion", "High Momentum")
+- executiveSummary: concise string (2-3 sentences)
+- growthDrivers: concise string explaining key revenue drivers
+- vendorConcentrationRisk: concise assessment of brand seller concentration & diversification
+- takeRateOptimization: analysis of platform commission rate (10%)
+- strategicActionPlan: array of 3-5 high-priority initiatives for marketplace management.
+`;
+
+        const aiAnalysis = await executePrompt({
+            prompt,
+            systemInstruction: 'You are the Chief Strategy Officer and Marketplace Analytics AI for an elite contemporary fashion marketplace. Return strictly valid JSON.',
+            jsonMode: true,
+            userId,
+            feature: 'admin_sales_analysis'
+        });
+
+        res.json({
+            metrics: {
+                totalGmv,
+                totalCommission,
+                ordersCount,
+                aov,
+                activeBrandsCount: brandDistribution.filter(b => Number(b.gross_sales) > 0).length
+            },
+            chartData,
+            brandDistribution,
+            categoryBreakdown,
+            aiAnalysis
+        });
+
+    } catch (err) {
+        console.error('Error generating admin sales analysis:', err);
+        res.status(500).json({ error: 'Failed to generate admin sales analysis' });
+    }
+};
+
+// Feature H: Brand Seller AI Analytical Chat Assistant
+export const sellerChatAssistant = async (req, res) => {
+    const { message, history = [] } = req.body;
+    if (!message || typeof message !== 'string') {
+        return res.status(400).json({ error: 'Please provide a message' });
+    }
+
+    try {
+        const userId = req.user.id;
+
+        // Get brand info
+        const brandRes = await pool.query(
+            'SELECT id, name, commission_rate FROM brands WHERE user_id = $1',
+            [userId]
+        );
+        const brand = brandRes.rows[0];
+        const brandId = brand?.id;
+        const brandName = brand?.name || 'Independent Atelier';
+        const commissionRate = Number(brand?.commission_rate || 10.00);
+
+        // Fetch brand real metrics
+        const [ordersRes, itemsRes, inventoryRes] = await Promise.all([
+            pool.query(`
+                SELECT id, subtotal, commission_amount, seller_net_earnings, status
+                FROM seller_orders
+                WHERE brand_id = $1 OR seller_id = $2
+            `, [brandId || 0, userId]),
+            pool.query(`
+                SELECT p.name AS product_name, pv.size, pv.color,
+                       SUM(oi.quantity)::int AS units_sold,
+                       SUM(oi.price_at_purchase * oi.quantity)::numeric(12,2) AS total_revenue
+                FROM order_items oi
+                JOIN product_variants pv ON oi.variant_id = pv.id
+                JOIN products p ON pv.product_id = p.id
+                WHERE oi.seller_id = $1 OR p.brand_id = $2
+                GROUP BY p.name, pv.size, pv.color
+                ORDER BY total_revenue DESC
+                LIMIT 5
+            `, [userId, brandId || 0]),
+            pool.query(`
+                SELECT p.name, pv.size, pv.color, pv.stock_quantity
+                FROM product_variants pv
+                JOIN products p ON pv.product_id = p.id
+                WHERE p.brand_id = $1 OR p.seller_id = $2
+                ORDER BY pv.stock_quantity ASC
+                LIMIT 8
+            `, [brandId || 0, userId])
+        ]);
+
+        const totalOrders = ordersRes.rows.length;
+        const grossSales = ordersRes.rows.reduce((sum, o) => sum + Number(o.subtotal || 0), 0);
+        const commissionPaid = ordersRes.rows.reduce((sum, o) => sum + Number(o.commission_amount || 0), 0);
+        const netPayout = ordersRes.rows.reduce((sum, o) => sum + Number(o.seller_net_earnings || (Number(o.subtotal || 0) - Number(o.commission_amount || 0))), 0);
+        const pendingShipments = ordersRes.rows.filter(o => ['pending', 'processing', 'order_placed', 'confirmed'].includes(o.status)).length;
+
+        const topProducts = itemsRes.rows.map(r => ({
+            name: `${r.product_name} (${r.size}/${r.color})`,
+            quantity: r.units_sold,
+            revenue: Number(r.total_revenue)
+        }));
+
+        const lowStockVariants = inventoryRes.rows.map(r => ({
+            name: r.name,
+            size: r.size,
+            color: r.color,
+            stock: r.stock_quantity
+        }));
+
+        const contextData = {
+            brandName,
+            grossSales,
+            netPayout,
+            commissionRate,
+            totalOrders,
+            pendingShipments,
+            topProducts,
+            lowStockVariants
+        };
+
+        const chatPrompt = `
+You are an expert AI fashion merchandising advisor and sales analyst for brand "${brandName}".
+You have direct access to real, verified platform metrics for this brand:
+- Gross Sales: ₹${grossSales.toLocaleString('en-IN')}
+- Platform Commission Rate: ${commissionRate}%
+- Total Commission Paid: ₹${commissionPaid.toLocaleString('en-IN')}
+- Estimated Net Payout: ₹${netPayout.toLocaleString('en-IN')}
+- Total Customer Purchases: ${totalOrders} orders
+- Pending Fulfillment / Shipments: ${pendingShipments} orders
+- Top Performing Products: ${JSON.stringify(topProducts)}
+- Inventory Stock Levels: ${JSON.stringify(lowStockVariants)}
+
+Recent Conversation History:
+${history.slice(-4).map(h => `${h.role === 'user' ? 'Seller' : 'AI'}: ${h.content}`).join('\n')}
+
+Seller Question: "${message}"
+
+Instructions:
+1. Answer clearly, accurately, and professionally using the verified brand figures above.
+2. Format answers with clean markdown headings, bullet points, and highlight currency figures in ₹ (INR).
+3. If they ask about sales, revenue, orders, inventory, margins, pricing, or product demand, cite these exact figures.
+4. Keep answers concise, actionable, and focused on growing apparel revenue and fulfillment performance.
+`;
+
+        const reply = await executePrompt({
+            prompt: chatPrompt,
+            systemInstruction: 'You are an elite fashion brand business advisor and merchandising AI. Return high-quality, formatted Markdown.',
+            jsonMode: false,
+            userId,
+            feature: 'seller_chat',
+            contextData
+        });
+
+        res.json({
+            reply,
+            metrics: {
+                brandName,
+                grossSales,
+                netPayout,
+                totalOrders,
+                pendingShipments
+            }
+        });
+
+    } catch (err) {
+        console.error('Error in sellerChatAssistant:', err);
+        res.status(500).json({ error: 'Failed to process AI chat question' });
+    }
+};
+
+// Feature I: Super Admin AI Analytical Chat Assistant
+export const adminChatAssistant = async (req, res) => {
+    const { message, history = [] } = req.body;
+    if (!message || typeof message !== 'string') {
+        return res.status(400).json({ error: 'Please provide a message' });
+    }
+
+    try {
+        const userId = req.user.id;
+
+        // Query platform-wide data
+        const [ordersRes, brandsRes, catRes] = await Promise.all([
+            pool.query(`SELECT id, total_amount, status, created_at FROM orders`),
+            pool.query(`
+                SELECT b.name,
+                       COUNT(so.id)::int AS orders_count,
+                       COALESCE(SUM(so.subtotal), 0)::numeric(12,2) AS gross_sales
+                FROM brands b
+                LEFT JOIN seller_orders so ON so.brand_id = b.id
+                GROUP BY b.id, b.name
+                ORDER BY gross_sales DESC
+            `),
+            pool.query(`
+                SELECT COALESCE(c.name, 'Apparel') AS name,
+                       COALESCE(SUM(oi.price_at_purchase * oi.quantity), 0)::numeric(12,2) AS revenue
+                FROM order_items oi
+                JOIN product_variants pv ON oi.variant_id = pv.id
+                JOIN products p ON pv.product_id = p.id
+                LEFT JOIN categories c ON p.category_id = c.id
+                GROUP BY c.name
+                ORDER BY revenue DESC
+            `)
+        ]);
+
+        const totalOrders = ordersRes.rows.length;
+        const totalGmv = ordersRes.rows.reduce((sum, o) => sum + Number(o.total_amount || 0), 0);
+        const totalCommission = Number((totalGmv * 0.1).toFixed(2));
+        const aov = totalOrders > 0 ? Math.round(totalGmv / totalOrders) : 0;
+
+        const topBrands = brandsRes.rows.map(b => ({
+            name: b.name,
+            gross_sales: Number(b.gross_sales),
+            orders_count: b.orders_count,
+            share: totalGmv > 0 ? Number(((Number(b.gross_sales) / totalGmv) * 100).toFixed(1)) : 0
+        }));
+
+        const categories = catRes.rows.map(c => ({
+            name: c.name,
+            revenue: Number(c.revenue),
+            share: totalGmv > 0 ? Number(((Number(c.revenue) / totalGmv) * 100).toFixed(1)) : 0
+        }));
+
+        const contextData = {
+            totalGmv,
+            totalCommission,
+            totalOrders,
+            aov,
+            activeBrandsCount: topBrands.filter(b => b.gross_sales > 0).length,
+            topBrands,
+            categories
+        };
+
+        const chatPrompt = `
+You are the Chief Intelligence and Strategy AI for the Super Administrator of the MINIMAL. Fashion Marketplace.
+You have direct access to real, verified platform-wide data:
+- Platform Gross Merchandise Value (GMV): ₹${totalGmv.toLocaleString('en-IN')}
+- Total Platform Commission Earned: ₹${totalCommission.toLocaleString('en-IN')} (Take-rate: 10%)
+- Total Customer Purchases: ${totalOrders} orders
+- Average Order Value (AOV): ₹${aov.toLocaleString('en-IN')}
+- Active Verified Brands: ${contextData.activeBrandsCount}
+- Brand Sales Breakdown: ${JSON.stringify(topBrands)}
+- Category Sales Breakdown: ${JSON.stringify(categories)}
+
+Recent Conversation History:
+${history.slice(-4).map(h => `${h.role === 'user' ? 'Admin' : 'AI'}: ${h.content}`).join('\n')}
+
+Super Admin Question: "${message}"
+
+Instructions:
+1. Provide an authoritative, executive-grade analysis citing real platform figures above.
+2. Structure answers with clean markdown headings, bullet points, and currency values in ₹ (INR).
+3. If asked about platform revenue, take-rates, brand volume shares, category trends, vendor risks, or scaling strategy, ground your answers in these real metrics.
+4. Keep answers insightful, strategic, and direct.
+`;
+
+        const reply = await executePrompt({
+            prompt: chatPrompt,
+            systemInstruction: 'You are the Chief Strategy Officer and Marketplace Analytics AI for an elite fashion marketplace. Return high-quality, formatted Markdown.',
+            jsonMode: false,
+            userId,
+            feature: 'admin_chat',
+            contextData
+        });
+
+        res.json({
+            reply,
+            metrics: {
+                totalGmv,
+                totalCommission,
+                totalOrders,
+                aov,
+                activeBrandsCount: contextData.activeBrandsCount
+            }
+        });
+
+    } catch (err) {
+        console.error('Error in adminChatAssistant:', err);
+        res.status(500).json({ error: 'Failed to process AI chat question' });
+    }
+};

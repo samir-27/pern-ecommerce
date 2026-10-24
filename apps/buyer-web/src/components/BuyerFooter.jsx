@@ -116,8 +116,8 @@ const BuyerFooter = () => {
               <li><Link to="/products?gender=Mens" className="hover:text-white transition-colors">Men's Apparel</Link></li>
               <li><Link to="/products?gender=Womens" className="hover:text-white transition-colors">Women's Couture</Link></li>
               <li><Link to="/products?gender=Kids" className="hover:text-white transition-colors">Junior Collection</Link></li>
-              <li><Link to="/products?category=Outerwear" className="hover:text-white transition-colors">Tailored Outerwear</Link></li>
-              <li><Link to="/products?category=Footwear" className="hover:text-white transition-colors">Designer Footwear</Link></li>
+              <li><Link to="/products?category=Jackets%20%26%20Outerwear" className="hover:text-white transition-colors">Jackets & Outerwear</Link></li>
+              <li><Link to="/products?category=Suits%20%26%20Blazers" className="hover:text-white transition-colors">Suits & Blazers</Link></li>
               <li><Link to="/brands" className="hover:text-white transition-colors">Partner Brands</Link></li>
             </ul>
           </div>

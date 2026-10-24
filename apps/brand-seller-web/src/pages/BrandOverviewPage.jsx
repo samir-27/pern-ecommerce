@@ -22,19 +22,21 @@ const BrandOverviewPage = () => {
         const fetchOverview = async () => {
             try {
                 const [overviewRes, storeRes] = await Promise.all([
-                    api.get('/seller/overview'),
-                    api.get('/seller/store'),
+                    api.get('/brand/overview').catch(() => api.get('/seller/overview')).catch(() => ({ data: {} })),
+                    api.get('/brand/profile').catch(() => api.get('/seller/store')).catch(() => ({ data: {} })),
                 ]);
+                const ov = overviewRes.data || {};
+                const st = storeRes.data || {};
                 setData({
-                    brand: storeRes.data,
-                    products: { total_products: overviewRes.data.totalProducts },
+                    brand: st,
+                    products: { total_products: ov.totalProducts ?? ov.products?.total_products ?? 0 },
                     orders: {
-                        total_orders: overviewRes.data.totalOrders,
-                        gross_sales: overviewRes.data.totalEarnings,
-                        net_earnings: overviewRes.data.totalEarnings,
-                        pending_fulfillment: overviewRes.data.pendingFulfillment,
+                        total_orders: ov.totalOrders ?? ov.orders?.total_orders ?? 0,
+                        gross_sales: ov.totalEarnings ?? ov.orders?.gross_sales ?? 0,
+                        net_earnings: ov.totalEarnings ?? ov.orders?.net_earnings ?? 0,
+                        pending_fulfillment: ov.pendingFulfillment ?? ov.orders?.pending_fulfillment ?? 0,
                     },
-                    inventory: { low_stock_count: overviewRes.data.lowStockCount },
+                    inventory: { low_stock_count: ov.lowStockCount ?? ov.inventory?.low_stock_count ?? 0 },
                 });
             } catch (err) {
                 console.error('Error loading brand overview:', err);

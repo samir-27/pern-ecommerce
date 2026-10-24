@@ -18,7 +18,9 @@ import {
     getAuditLogs,
     getBuyers,
     getBrandSellers,
-    updateBrandStatus
+    updateBrandStatus,
+    deleteBrand,
+    toggleBlockUser
 } from '../controllers/admin.controller.js';
 
 const router = express.Router();
@@ -36,7 +38,10 @@ router.get('/sellers', protectRoute, superAdminRoute, getAdminSellers);
 router.put('/sellers/:id', protectRoute, superAdminRoute, updateSellerStatus);
 router.get('/brands', protectRoute, superAdminRoute, getBrandSellers);
 router.put('/brands/:id', protectRoute, superAdminRoute, updateBrandStatus);
+router.delete('/brands/:id', protectRoute, superAdminRoute, deleteBrand);
 router.get('/buyers', protectRoute, superAdminRoute, getBuyers);
+router.put('/buyers/:id/block', protectRoute, superAdminRoute, toggleBlockUser);
+router.put('/users/:id/block', protectRoute, superAdminRoute, toggleBlockUser);
 
 // Commission Rules & Payouts
 router.get('/commissions', protectRoute, superAdminRoute, getCommissionRules);

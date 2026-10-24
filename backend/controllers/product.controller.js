@@ -68,20 +68,21 @@ export const getProducts = async (req, res) => {
         let sizeParamIndex = null;
 
         if (category && category !== 'All') {
-            conditions.push(`c.name = $${paramIndex}`);
+            conditions.push(`c.name ILIKE $${paramIndex}`);
             values.push(category);
             paramIndex++;
         }
 
         if (gender && gender !== 'All') {
-            conditions.push(`p.gender = $${paramIndex}`);
-            values.push(gender);
+            const cleanGender = gender.replace(/s$/i, '');
+            conditions.push(`(p.gender ILIKE $${paramIndex} OR p.gender = 'Unisex')`);
+            values.push(`%${cleanGender}%`);
             paramIndex++;
         }
 
         if (brand && brand !== 'All') {
-            conditions.push(`p.brand ILIKE $${paramIndex}`);
-            values.push(brand);
+            conditions.push(`(p.brand ILIKE $${paramIndex} OR b.name ILIKE $${paramIndex} OR b.slug ILIKE $${paramIndex})`);
+            values.push(`%${brand}%`);
             paramIndex++;
         }
 
@@ -133,7 +134,7 @@ export const getProducts = async (req, res) => {
             conditions.push(`EXISTS (
                 SELECT 1 FROM product_variants v
                 WHERE v.product_id = p.id
-                AND LOWER(v.size) = LOWER($${paramIndex})
+                AND LOWER(TRIM(v.size)) = LOWER(TRIM($${paramIndex}))
             )`);
             values.push(size);
             paramIndex++;
@@ -156,33 +157,46 @@ export const getProducts = async (req, res) => {
             SELECT COUNT(p.id)
             FROM products p
             LEFT JOIN categories c ON p.category_id = c.id
-            LEFT JOIN seller_stores s ON p.store_id = s.id
+            LEFT JOIN brands b ON (p.brand_id = b.id OR (p.brand_id IS NULL AND p.seller_id = b.user_id))
+            LEFT JOIN seller_stores s ON (p.store_id = s.id OR (p.store_id IS NULL AND p.seller_id = s.user_id))
             ${whereClause}
         `;
         const countResult = await pool.query(countQuery, values);
         const totalItems = parseInt(countResult.rows[0].count);
         const totalPages = Math.ceil(totalItems / limit);
 
+        let orderBy = 'ORDER BY p.created_at DESC';
+        if (req.query.sort === 'price_asc' || req.query.sort === 'price-asc') {
+            orderBy = 'ORDER BY p.base_price ASC';
+        } else if (req.query.sort === 'price_desc' || req.query.sort === 'price-desc') {
+            orderBy = 'ORDER BY p.base_price DESC';
+        } else if (req.query.sort === 'name') {
+            orderBy = 'ORDER BY p.name ASC';
+        }
+
         const dataQuery = `
             SELECT 
                 p.*,
                 c.name AS category_name,
-                s.name AS store_name,
-                s.slug AS store_slug,
+                COALESCE(b.name, s.name, p.brand, 'MINIMAL Atelier') AS brand_name,
+                COALESCE(b.slug, s.slug) AS brand_slug,
+                COALESCE(b.name, s.name) AS store_name,
+                COALESCE(b.slug, s.slug) AS store_slug,
                 (
                     SELECT v.image_urls[1]
                     FROM product_variants v
                     WHERE v.product_id = p.id
                     ${colorParamIndex ? `AND LOWER(v.color) = LOWER($${colorParamIndex})` : ''}
-                    ${sizeParamIndex ? `AND LOWER(v.size) = LOWER($${sizeParamIndex})` : ''}
+                    ${sizeParamIndex ? `AND LOWER(TRIM(v.size)) = LOWER(TRIM($${sizeParamIndex}))` : ''}
                     ORDER BY v.id ASC
                     LIMIT 1
                 ) AS main_image
             FROM products p
             LEFT JOIN categories c ON p.category_id = c.id
-            LEFT JOIN seller_stores s ON p.store_id = s.id
+            LEFT JOIN brands b ON (p.brand_id = b.id OR (p.brand_id IS NULL AND p.seller_id = b.user_id))
+            LEFT JOIN seller_stores s ON (p.store_id = s.id OR (p.store_id IS NULL AND p.seller_id = s.user_id))
             ${whereClause}
-            ORDER BY p.created_at DESC
+            ${orderBy}
             LIMIT $${paramIndex}
             OFFSET $${paramIndex + 1}
         `;
@@ -360,6 +374,16 @@ export const updateProduct = async (req, res) => {
                     if (uploadedUrl) imageUrls.push(uploadedUrl);
                 }
 
+                if (imageUrls.length === 0) {
+                    const sameColorMatch = parsedVariants.find((v, idx) => 
+                        idx !== index && v.color && v.color.trim().toLowerCase() === (variant.color || '').trim().toLowerCase() && 
+                        Array.isArray(v.image_urls) && v.image_urls.length > 0
+                    );
+                    if (sameColorMatch) {
+                        imageUrls.push(...sameColorMatch.image_urls);
+                    }
+                }
+
                 if (variant.id) {
                     await client.query(
                         `UPDATE product_variants SET
@@ -436,11 +460,18 @@ export const getProductById = async (req, res) => {
     try {
         const productResult = await pool.query(
             `SELECT p.*, c.name as category_name,
-                    s.name as store_name, s.slug as store_slug, s.logo_url as store_logo,
-                    s.policy_return as store_return_policy, s.policy_shipping as store_shipping_policy
+                    COALESCE(b.name, s.name, p.brand, 'MINIMAL Atelier') as brand_name,
+                    COALESCE(b.slug, s.slug) as brand_slug,
+                    COALESCE(b.logo_url, s.logo_url) as brand_logo,
+                    COALESCE(b.name, s.name) as store_name,
+                    COALESCE(b.slug, s.slug) as store_slug,
+                    COALESCE(b.logo_url, s.logo_url) as store_logo,
+                    COALESCE(b.policy_return, s.policy_return, '14-day unworn returns accepted.') as store_return_policy,
+                    COALESCE(b.policy_shipping, s.policy_shipping, 'Complimentary express dispatch.') as store_shipping_policy
              FROM products p
              LEFT JOIN categories c ON p.category_id = c.id
-             LEFT JOIN seller_stores s ON p.store_id = s.id
+             LEFT JOIN brands b ON (p.brand_id = b.id OR (p.brand_id IS NULL AND p.seller_id = b.user_id))
+             LEFT JOIN seller_stores s ON (p.store_id = s.id OR (p.store_id IS NULL AND p.seller_id = s.user_id))
              WHERE p.id = $1`,
             [productId]
         );
@@ -483,8 +514,15 @@ export const createProduct = async (req, res) => {
         let brandId = null;
         let resolvedBrandName = brand || null;
 
-        const brandRes = await client.query('SELECT id, name FROM brands WHERE user_id = $1', [sellerId]);
+        const brandRes = await client.query('SELECT id, name, status FROM brands WHERE user_id = $1', [sellerId]);
         if (brandRes.rows.length > 0) {
+            if (brandRes.rows[0].status !== 'active') {
+                await client.query('ROLLBACK');
+                return res.status(403).json({ 
+                    error: 'Your brand account is pending Super Admin verification. You cannot list or sell garments until verified.',
+                    code: 'BRAND_VERIFICATION_PENDING'
+                });
+            }
             brandId = brandRes.rows[0].id;
             resolvedBrandName = brandRes.rows[0].name;
             storeId = brandId;
@@ -571,9 +609,17 @@ export const createProduct = async (req, res) => {
                 if (uploadedUrl) imageUrls.push(uploadedUrl);
             }
 
-            // 3. Fallback sample image only if absolutely none provided
+            // 3. Fallback sample image only if absolutely none provided, checking same color first
             if (imageUrls.length === 0) {
-                imageUrls.push('https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80');
+                const sameColorMatch = insertedVariants.find(v => 
+                    v.color && v.color.trim().toLowerCase() === (variant.color || '').trim().toLowerCase() && 
+                    Array.isArray(v.image_urls) && v.image_urls.length > 0
+                );
+                if (sameColorMatch) {
+                    imageUrls.push(...sameColorMatch.image_urls);
+                } else {
+                    imageUrls.push('https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=600&q=80');
+                }
             }
 
             const variantResult = await client.query(
@@ -668,16 +714,17 @@ export const getProductReviews = async (req, res) => {
 };
 
 export const createProductReview = async (req, res) => {
-    const { rating, content } = req.body;
-    const numericRating = Number(rating);
-    const trimmedContent = typeof content === 'string' ? content.trim() : '';
+    const rawContent = req.body.content || req.body.comment || '';
+    const rating = req.body.rating;
+    const numericRating = Math.round(Number(rating));
+    const trimmedContent = typeof rawContent === 'string' ? rawContent.trim() : '';
 
     if (!Number.isInteger(numericRating) || numericRating < 1 || numericRating > 5) {
-        return res.status(400).json({ error: 'Rating must be a whole number from 1 to 5' });
+        return res.status(400).json({ error: 'Rating must be a whole number between 1 and 5' });
     }
 
     if (!trimmedContent || trimmedContent.length > 2000) {
-        return res.status(400).json({ error: 'Review content must be between 1 and 2000 characters' });
+        return res.status(400).json({ error: 'Please enter review comments (up to 2000 characters)' });
     }
 
     try {

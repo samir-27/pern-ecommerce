@@ -118,6 +118,7 @@ const getOrderPricing = async (client, orderItems) => {
         sellerGroups[sellerId].commissionAmount += commissionAmount;
         sellerGroups[sellerId].sellerNetEarnings += sellerNetAmount;
         sellerGroups[sellerId].items.push(validItem);
+        validOrderItems.push(validItem);
     }
 
     const shipping = subtotal > 150 ? 0 : 15;

@@ -12,7 +12,10 @@ export const getAdminOverview = async (req, res) => {
             activeSellersRes,
             pendingAppsRes,
             financialsRes,
-            pendingPayoutsRes
+            pendingPayoutsRes,
+            brandDistRes,
+            categoryRes,
+            recentOrdersRes
         ] = await Promise.all([
             pool.query("SELECT COUNT(*)::int AS count FROM products WHERE status = 'approved'"),
             pool.query("SELECT COUNT(*)::int AS count FROM products WHERE status = 'pending_approval'"),
@@ -29,11 +32,68 @@ export const getAdminOverview = async (req, res) => {
                     FROM orders
                 ) o
             `),
-            pool.query("SELECT COALESCE(SUM(amount), 0)::numeric(12,2) AS count FROM seller_payouts WHERE status = 'pending'")
+            pool.query("SELECT COALESCE(SUM(amount), 0)::numeric(12,2) AS count FROM seller_payouts WHERE status = 'pending'"),
+            pool.query(`
+                SELECT b.name AS brand_name,
+                       COUNT(so.id)::int AS orders_count,
+                       COALESCE(SUM(so.subtotal), 0)::numeric(12,2) AS gross_sales,
+                       COALESCE(SUM(so.commission_amount), 0)::numeric(12,2) AS platform_commission
+                FROM brands b
+                LEFT JOIN seller_orders so ON so.brand_id = b.id
+                GROUP BY b.id, b.name
+                ORDER BY gross_sales DESC
+            `),
+            pool.query(`
+                SELECT COALESCE(c.name, 'Apparel') AS category_name,
+                       COUNT(oi.id)::int AS units_sold,
+                       COALESCE(SUM(oi.price_at_purchase * oi.quantity), 0)::numeric(12,2) AS revenue
+                FROM order_items oi
+                JOIN product_variants pv ON oi.variant_id = pv.id
+                JOIN products p ON pv.product_id = p.id
+                LEFT JOIN categories c ON p.category_id = c.id
+                GROUP BY c.name
+                ORDER BY revenue DESC
+            `),
+            pool.query(`
+                SELECT total_amount, created_at FROM orders WHERE created_at >= NOW() - INTERVAL '14 days'
+            `)
         ]);
 
+        const totalGmv = Number(financialsRes.rows[0]?.total_gmv || 0);
+
+        // 14-day timeline
+        const chartMap = new Map();
+        for (let i = 13; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dateStr = d.toISOString().slice(0, 10);
+            const label = d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
+            chartMap.set(dateStr, { date: dateStr, label, gmv: 0, commission: 0, orders: 0 });
+        }
+
+        recentOrdersRes.rows.forEach(o => {
+            const dateStr = new Date(o.created_at).toISOString().slice(0, 10);
+            if (chartMap.has(dateStr)) {
+                const entry = chartMap.get(dateStr);
+                const amt = Number(o.total_amount || 0);
+                entry.gmv += amt;
+                entry.commission += Number((amt * 0.1).toFixed(2));
+                entry.orders += 1;
+            }
+        });
+
+        const brandDistribution = brandDistRes.rows.map(b => ({
+            ...b,
+            share: totalGmv > 0 ? Number(((Number(b.gross_sales) / totalGmv) * 100).toFixed(1)) : 0
+        }));
+
+        const categoryBreakdown = categoryRes.rows.map(c => ({
+            ...c,
+            share: totalGmv > 0 ? Number(((Number(c.revenue) / totalGmv) * 100).toFixed(1)) : 0
+        }));
+
         res.json({
-            gmv: Number(financialsRes.rows[0]?.total_gmv || 0),
+            gmv: totalGmv,
             platformRevenue: Number(financialsRes.rows[0]?.platform_revenue || 0),
             products: productsRes.rows[0]?.count || 0,
             pendingProducts: pendingProductsRes.rows[0]?.count || 0,
@@ -41,7 +101,10 @@ export const getAdminOverview = async (req, res) => {
             users: usersRes.rows[0]?.count || 0,
             activeSellers: activeSellersRes.rows[0]?.count || 0,
             pendingApplications: pendingAppsRes.rows[0]?.count || 0,
-            pendingPayouts: Number(pendingPayoutsRes.rows[0]?.count || 0)
+            pendingPayouts: Number(pendingPayoutsRes.rows[0]?.count || 0),
+            chartData: Array.from(chartMap.values()),
+            brandDistribution,
+            categoryBreakdown
         });
     } catch (err) {
         console.error('Error fetching admin overview:', err.message);
@@ -529,19 +592,54 @@ export const getAuditLogs = async (req, res) => {
 export const getBuyers = async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT u.id, u.email, u.first_name, u.last_name, u.phone, u.created_at,
+            SELECT u.id, u.email, u.first_name, u.last_name, u.phone, u.created_at, u.is_blocked,
                    COUNT(o.id) as total_orders,
                    COALESCE(SUM(o.total_amount), 0) as total_spent
             FROM users u
             LEFT JOIN orders o ON u.id = o.user_id
             WHERE u.role = 'user' OR u.role = 'customer'
-            GROUP BY u.id
+            GROUP BY u.id, u.is_blocked
             ORDER BY u.created_at DESC
         `);
         res.json(result.rows);
     } catch (err) {
         console.error('Error fetching buyers:', err);
         res.status(500).json({ error: 'Server error fetching buyers' });
+    }
+};
+
+// Super Admin Block / Unblock User
+export const toggleBlockUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userRes = await pool.query('SELECT id, email, role, is_blocked FROM users WHERE id = $1', [id]);
+        if (userRes.rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        const user = userRes.rows[0];
+        if (user.role === 'admin' || user.role === 'super_admin') {
+            return res.status(400).json({ error: 'Cannot block administrator accounts.' });
+        }
+
+        const newBlockedState = typeof req.body.is_blocked === 'boolean' ? req.body.is_blocked : !user.is_blocked;
+
+        await pool.query('UPDATE users SET is_blocked = $1 WHERE id = $2', [newBlockedState, id]);
+
+        await logAuditEvent({
+            userId: req.user.id,
+            action: newBlockedState ? 'SUPER_ADMIN_USER_BLOCKED' : 'SUPER_ADMIN_USER_UNBLOCKED',
+            targetType: 'user',
+            targetId: id,
+            details: { email: user.email, is_blocked: newBlockedState }
+        });
+
+        res.json({
+            message: `User ${user.email} has been ${newBlockedState ? 'blocked' : 'unblocked'} successfully.`,
+            is_blocked: newBlockedState
+        });
+    } catch (err) {
+        console.error('Error toggling block user:', err);
+        res.status(500).json({ error: 'Failed to update user block status' });
     }
 };
 
@@ -569,47 +667,133 @@ export const getBrandSellers = async (req, res) => {
     }
 };
 
-// Super Admin Update Brand Status (Approve / Suspend / Reactivate / Commission)
+// Super Admin Update Brand Status (Approve / Suspend / Reactivate / Propose Commission)
 export const updateBrandStatus = async (req, res) => {
     try {
         const { id } = req.params;
-        const { status, commission_rate } = req.body;
+        const { status, commission_rate, note } = req.body;
         const validStatuses = ['active', 'suspended', 'rejected', 'pending'];
         if (status && !validStatuses.includes(status)) {
             return res.status(400).json({ error: 'Invalid brand status' });
         }
 
-        const result = await pool.query(`
-            UPDATE brands SET
-                status = COALESCE($1, status),
-                commission_rate = COALESCE($2, commission_rate),
-                updated_at = NOW()
-            WHERE id = $3
-            RETURNING *
-        `, [status, commission_rate, id]);
-
-        if (result.rows.length === 0) {
+        const currentBrandRes = await pool.query('SELECT * FROM brands WHERE id = $1', [id]);
+        if (currentBrandRes.rows.length === 0) {
             return res.status(404).json({ error: 'Brand not found' });
         }
+        const currentBrand = currentBrandRes.rows[0];
 
+        let commissionMessage = '';
+        // If commission_rate is provided and changed, it requires brand consent
+        if (commission_rate !== undefined && commission_rate !== null) {
+            const proposedRate = Number(commission_rate);
+            const currentRate = Number(currentBrand.commission_rate || 10.00);
+
+            if (proposedRate !== currentRate) {
+                await pool.query(`
+                    UPDATE brands SET
+                        proposed_commission_rate = $1,
+                        commission_status = 'pending_brand_approval',
+                        commission_change_note = $2,
+                        updated_at = NOW()
+                    WHERE id = $3
+                `, [proposedRate, note || 'Proposed by Super Administrator', id]);
+
+                commissionMessage = `Commission update of ${proposedRate}% proposed to brand. It will take effect once the brand allows it.`;
+
+                await logAuditEvent({
+                    userId: req.user.id,
+                    action: 'SUPER_ADMIN_BRAND_COMMISSION_PROPOSED',
+                    targetType: 'brand',
+                    targetId: id,
+                    details: { currentRate, proposedRate }
+                });
+            }
+        }
+
+        // Update status (e.g. approve/verify 'active', or 'suspended')
         if (status) {
+            await pool.query(`
+                UPDATE brands SET status = $1, updated_at = NOW() WHERE id = $2
+            `, [status, id]);
+
             await pool.query(
                 `UPDATE seller_stores SET is_active = $1 WHERE id = $2`,
                 [status === 'active', id]
             );
+
+            await logAuditEvent({
+                userId: req.user.id,
+                action: 'SUPER_ADMIN_BRAND_STATUS_CHANGED',
+                targetType: 'brand',
+                targetId: id,
+                details: { status }
+            });
         }
 
-        await logAuditEvent({
-            userId: req.user.id,
-            action: 'SUPER_ADMIN_BRAND_STATUS_CHANGED',
-            targetType: 'brand',
-            targetId: id,
-            details: { status, commission_rate }
-        });
+        const updatedBrand = await pool.query('SELECT * FROM brands WHERE id = $1', [id]);
 
-        res.json({ message: 'Brand status updated successfully', brand: result.rows[0] });
+        res.json({
+            message: commissionMessage || (status === 'active' ? 'Brand verified and activated successfully' : 'Brand status updated successfully'),
+            brand: updatedBrand.rows[0],
+            commission_proposed: !!commissionMessage
+        });
     } catch (err) {
         console.error('Error updating brand status:', err);
         res.status(500).json({ error: 'Server error updating brand status' });
+    }
+};
+
+// Super Admin Delete Brand
+export const deleteBrand = async (req, res) => {
+    const { id } = req.params;
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        const brandRes = await client.query('SELECT * FROM brands WHERE id = $1', [id]);
+        if (brandRes.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ error: 'Brand not found' });
+        }
+        const brand = brandRes.rows[0];
+
+        // 1. Unlink historical orders & payouts to preserve accounting and buyer history
+        await client.query('UPDATE seller_orders SET brand_id = NULL WHERE brand_id = $1', [id]);
+        await client.query('UPDATE seller_payouts SET brand_id = NULL WHERE brand_id = $1', [id]);
+
+        // 2. Delete product variants and products
+        await client.query(`
+            DELETE FROM product_variants 
+            WHERE product_id IN (SELECT id FROM products WHERE brand_id = $1)
+        `, [id]);
+        await client.query('DELETE FROM products WHERE brand_id = $1', [id]);
+
+        // 3. Remove store entry
+        await client.query('DELETE FROM seller_stores WHERE id = $1', [id]);
+
+        // 4. Delete the brand
+        await client.query('DELETE FROM brands WHERE id = $1', [id]);
+
+        // 5. Demote seller role to user if no other brand exists
+        await client.query(`UPDATE users SET role = 'user' WHERE id = $1`, [brand.user_id]);
+
+        await client.query('COMMIT');
+
+        await logAuditEvent({
+            userId: req.user.id,
+            action: 'SUPER_ADMIN_BRAND_DELETED',
+            targetType: 'brand',
+            targetId: id,
+            details: { name: brand.name, slug: brand.slug }
+        });
+
+        res.json({ message: `Brand "${brand.name}" has been permanently deleted.` });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Error deleting brand:', err);
+        res.status(500).json({ error: 'Failed to delete brand: ' + err.message });
+    } finally {
+        client.release();
     }
 };

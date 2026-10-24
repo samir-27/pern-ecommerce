@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { 
   ShoppingBag, 
   Search, 
@@ -24,6 +24,7 @@ const BuyerNavbar = () => {
   const [userRole, setUserRole] = useState(null);
   const [token, setToken] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -33,7 +34,7 @@ const BuyerNavbar = () => {
   useEffect(() => {
     setToken(localStorage.getItem('token'));
     setUserRole(localStorage.getItem('userRole'));
-  }, []);
+  }, [location.pathname]);
 
   const toggleTheme = () => {
     setTheme(prev => (prev === 'light' ? 'dark' : 'light'));

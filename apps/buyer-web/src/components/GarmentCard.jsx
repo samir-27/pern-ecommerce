@@ -89,7 +89,7 @@ const GarmentCard = ({ product }) => {
           <div className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-wider text-zinc-400 dark:text-zinc-500 mb-1">
             <span>{product.gender || 'Unisex'}</span>
             <span>•</span>
-            <span>{product.category || 'Apparel'}</span>
+            <span>{product.category_name || product.category || 'Apparel'}</span>
           </div>
 
           {/* Garment Title */}

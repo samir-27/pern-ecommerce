@@ -37,13 +37,17 @@ export const CartProvider = ({ children }) => {
         ? parseFloat(selectedVariant.price_override)
         : parseFloat(product.base_price || product.price || 0);
 
+      const variantImage = (selectedVariant?.image_urls && selectedVariant.image_urls.length > 0)
+        ? selectedVariant.image_urls[0]
+        : (selectedVariant?.image_url || product.main_image || (product.images && product.images[0]) || product.image_url || '');
+
       const newItem = {
         cartKey: variantKey,
         id: product.id,
         name: product.name,
         price: itemPrice,
-        image_url: product.image_url || (product.images && product.images[0]) || '',
-        brand_name: product.brand_name || 'MINIMAL Atelier',
+        image_url: variantImage,
+        brand_name: product.brand_name || product.brand || 'MINIMAL Atelier',
         selectedSize: selectedVariant?.size || 'Standard',
         selectedColor: selectedVariant?.color || 'Default',
         variant_id: selectedVariant?.id || null,

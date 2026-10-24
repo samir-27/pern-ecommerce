@@ -22,6 +22,7 @@ const BrandOrdersPage = () => {
     const [isFulfillModalOpen, setIsFulfillModalOpen] = useState(false);
     const [carrier, setCarrier] = useState('BlueDart');
     const [trackingNumber, setTrackingNumber] = useState('');
+    const [fulfillmentStatus, setFulfillmentStatus] = useState('shipped');
     const [submitting, setSubmitting] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [error, setError] = useState('');
@@ -48,6 +49,7 @@ const BrandOrdersPage = () => {
         setSelectedOrder(order);
         setCarrier(order.shipping_carrier || 'BlueDart');
         setTrackingNumber(order.tracking_number || '');
+        setFulfillmentStatus(order.status === 'delivered' ? 'delivered' : 'shipped');
         setIsFulfillModalOpen(true);
     };
 
@@ -56,16 +58,26 @@ const BrandOrdersPage = () => {
         if (!selectedOrder) return;
         setSubmitting(true);
         try {
-            await api.put(`/seller/orders/${selectedOrder.id}/fulfill`, {
-                status: 'shipped',
+            const payload = {
+                status: fulfillmentStatus,
+                fulfillment_status: fulfillmentStatus,
                 shippingCarrier: carrier,
-                trackingNumber
-            });
+                carrier: carrier,
+                trackingNumber,
+                tracking_number: trackingNumber
+            };
+
+            try {
+                await api.put(`/brand/orders/${selectedOrder.id}/fulfill`, payload);
+            } catch (bErr) {
+                await api.put(`/seller/orders/${selectedOrder.id}/fulfill`, payload);
+            }
+
             setIsFulfillModalOpen(false);
             await fetchOrders();
         } catch (err) {
             console.error('Error fulfilling order:', err);
-            alert('Failed to update shipment status');
+            alert(err.response?.data?.error || 'Failed to update shipment status');
         } finally {
             setSubmitting(false);
         }
@@ -182,9 +194,17 @@ const BrandOrdersPage = () => {
                                         {isShipped && (
                                             <button
                                                 onClick={() => openFulfillModal(o)}
-                                                className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+                                                className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm"
                                             >
-                                                Edit Tracking
+                                                <Truck size={13} /> Update / Deliver
+                                            </button>
+                                        )}
+                                        {isDelivered && (
+                                            <button
+                                                onClick={() => openFulfillModal(o)}
+                                                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1.5"
+                                            >
+                                                <CheckCircle2 size={13} className="text-emerald-400" /> Logistics Details
                                             </button>
                                         )}
                                     </div>
@@ -226,32 +246,47 @@ const BrandOrdersPage = () => {
 
                                 {/* Line Items */}
                                 <div className="space-y-2 pt-2">
-                                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
-                                        Garments in this order
-                                    </span>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                                        {o.items?.map((item) => (
-                                            <div 
-                                                key={item.order_item_id} 
-                                                className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center gap-3 text-xs"
-                                            >
-                                                <img 
-                                                    src={item.image_urls?.[0] || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=80&q=80'} 
-                                                    alt={item.product_name}
-                                                    className="w-10 h-12 rounded-lg object-cover bg-slate-800 shrink-0"
-                                                />
-                                                <div className="truncate">
-                                                    <div className="font-bold text-white truncate">{item.product_name}</div>
-                                                    <div className="text-slate-400 text-[11px]">
-                                                        Size: {item.size || 'M'} • {item.color || 'Standard'}
-                                                    </div>
-                                                    <div className="text-amber-400 font-semibold mt-0.5">
-                                                        Qty {item.quantity} × ₹{item.price_at_purchase}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                                            Garments in this order ({o.items?.length || 0})
+                                        </span>
                                     </div>
+
+                                    {(!o.items || o.items.length === 0) ? (
+                                        <div className="p-3 rounded-xl bg-slate-950/40 text-slate-500 text-xs italic">
+                                            Awaiting garment item details
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                                            {o.items.map((item, idx) => {
+                                                const imgSrc = (Array.isArray(item.image_urls) && item.image_urls.length > 0 ? item.image_urls[0] : null) || 
+                                                               (Array.isArray(item.images) && item.images.length > 0 ? item.images[0] : null) || 
+                                                               item.image_url || 
+                                                               'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=80&q=80';
+                                                return (
+                                                    <div 
+                                                        key={item.order_item_id || item.id || idx} 
+                                                        className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center gap-3.5 text-xs hover:border-slate-700 transition-colors"
+                                                    >
+                                                        <img 
+                                                            src={imgSrc} 
+                                                            alt={item.product_name}
+                                                            className="w-12 h-14 rounded-lg object-cover bg-slate-800 shrink-0 border border-slate-700/60"
+                                                        />
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="font-bold text-white truncate text-xs">{item.product_name}</div>
+                                                            <div className="text-slate-400 text-[11px] mt-0.5">
+                                                                Size: <span className="text-white font-medium">{item.size || 'Standard'}</span> • Color: <span className="text-white font-medium">{item.color || 'Standard'}</span>
+                                                            </div>
+                                                            <div className="text-amber-400 font-bold mt-1 font-mono">
+                                                                Qty {item.quantity} × ₹{Number(item.price_at_purchase || 0).toLocaleString('en-IN')}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         );
@@ -276,6 +311,20 @@ const BrandOrdersPage = () => {
                         </div>
 
                         <form onSubmit={handleFulfillSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+                                    Fulfillment Status *
+                                </label>
+                                <select
+                                    value={fulfillmentStatus}
+                                    onChange={(e) => setFulfillmentStatus(e.target.value)}
+                                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-amber-500 font-medium"
+                                >
+                                    <option value="shipped">Dispatched & In Transit (Shipped)</option>
+                                    <option value="delivered">Delivered to Buyer (Completed)</option>
+                                </select>
+                            </div>
+
                             <div>
                                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
                                     Shipping Courier / Carrier *
@@ -321,7 +370,7 @@ const BrandOrdersPage = () => {
                                     disabled={submitting}
                                     className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition-all shadow-md disabled:opacity-50"
                                 >
-                                    {submitting ? 'Confirming...' : 'Confirm Dispatch'}
+                                    {submitting ? 'Updating...' : (fulfillmentStatus === 'delivered' ? 'Confirm Delivery' : 'Confirm Dispatch')}
                                 </button>
                             </div>
                         </form>

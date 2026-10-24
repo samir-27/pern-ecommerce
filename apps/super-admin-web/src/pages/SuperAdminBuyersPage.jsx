@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Search, ShoppingBag, Calendar, Mail, Phone, Loader2 } from 'lucide-react';
+import { Users, Search, ShoppingBag, Calendar, Mail, Phone, Loader2, Ban, CheckCircle2 } from 'lucide-react';
 import api from '@api';
 
 const SuperAdminBuyersPage = () => {
@@ -22,6 +22,19 @@ const SuperAdminBuyersPage = () => {
         fetchBuyers();
     }, []);
 
+    const handleToggleBlock = async (buyerId, buyerEmail, currentBlockedState) => {
+        const actionLabel = currentBlockedState ? 'unblock' : 'block';
+        if (!window.confirm(`Are you sure you want to ${actionLabel} customer "${buyerEmail}"?`)) return;
+
+        try {
+            await api.put(`/admin/buyers/${buyerId}/block`, { is_blocked: !currentBlockedState });
+            setBuyers(prev => prev.map(b => b.id === buyerId ? { ...b, is_blocked: !currentBlockedState } : b));
+        } catch (err) {
+            console.error('Failed to update user block status:', err);
+            alert(err.response?.data?.error || 'Failed to update user status');
+        }
+    };
+
     const filteredBuyers = buyers.filter(b => 
         (b.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (`${b.first_name || ''} ${b.last_name || ''}`).toLowerCase().includes(searchTerm.toLowerCase())
@@ -41,7 +54,7 @@ const SuperAdminBuyersPage = () => {
                 <div>
                     <h1 className="text-2xl md:text-3xl font-black text-white">Platform Buyers Directory</h1>
                     <p className="text-slate-400 text-sm mt-1">
-                        Monitor registered shopper accounts, lifetime purchasing frequency, and customer volume.
+                        Monitor registered shopper accounts, moderation status, lifetime purchasing frequency, and customer volume.
                     </p>
                 </div>
                 <div className="relative">
@@ -65,13 +78,15 @@ const SuperAdminBuyersPage = () => {
                                 <th className="p-4">Contact Details</th>
                                 <th className="p-4">Registered Date</th>
                                 <th className="p-4">Completed Orders</th>
+                                <th className="p-4">Account Status</th>
                                 <th className="p-4 text-right">Lifetime Spend</th>
+                                <th className="p-4 text-right">Moderation</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-800/60">
                             {filteredBuyers.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="p-8 text-center text-slate-500 text-xs">
+                                    <td colSpan={7} className="p-8 text-center text-slate-500 text-xs">
                                         No buyers found.
                                     </td>
                                 </tr>
@@ -114,8 +129,40 @@ const SuperAdminBuyersPage = () => {
                                             </span>
                                         </td>
 
+                                        {/* Status */}
+                                        <td className="p-4 text-xs">
+                                            {b.is_blocked ? (
+                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-red-500/10 text-red-400 border border-red-500/30 font-semibold text-[11px] uppercase tracking-wider">
+                                                    <Ban size={12} /> Blocked
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-semibold text-[11px] uppercase tracking-wider">
+                                                    <CheckCircle2 size={12} /> Active
+                                                </span>
+                                            )}
+                                        </td>
+
                                         <td className="p-4 text-right font-black text-amber-400 text-sm">
                                             ₹{Number(b.total_spent || 0).toLocaleString('en-IN')}
+                                        </td>
+
+                                        {/* Action */}
+                                        <td className="p-4 text-right">
+                                            {b.is_blocked ? (
+                                                <button
+                                                    onClick={() => handleToggleBlock(b.id, b.email, true)}
+                                                    className="px-3 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-semibold border border-emerald-500/30 transition-colors"
+                                                >
+                                                    Unblock
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={() => handleToggleBlock(b.id, b.email, false)}
+                                                    className="px-3 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-semibold border border-red-500/30 transition-colors"
+                                                >
+                                                    Block User
+                                                </button>
+                                            )}
                                         </td>
                                     </tr>
                                 ))

@@ -27,6 +27,14 @@ const BrandProductsPage = () => {
     const [editingProduct, setEditingProduct] = useState(null);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
+    const [brandStatus, setBrandStatus] = useState('active');
+
+    const CLOTHING_SIZES = [
+        'XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', 'Free Size',
+        '28', '30', '32', '34', '36', '38', '40', '42'
+    ];
+
+    const GENDER_OPTIONS = ['Men', 'Women', 'Unisex', 'Kids'];
 
     // Initial form state
     const initialFormState = {
@@ -34,16 +42,11 @@ const BrandProductsPage = () => {
         description: '',
         price: '',
         category_id: '',
-        clothing_type: 'Shirts',
-        fabric_material: '100% Organic Cotton',
-        fit: 'Regular Fit',
-        pattern: 'Solid',
-        season: 'All-Season',
-        care_instructions: 'Machine wash cold with like colors. Tumble dry low.',
+        gender: 'Men',
         variants: [
             { size: 'S', color: 'Black', sku: '', price: '', stock_quantity: 10, low_stock_threshold: 3, isCustomPrice: false, image_urls: [], imagePreviews: [], imageFiles: [] },
             { size: 'M', color: 'Black', sku: '', price: '', stock_quantity: 15, low_stock_threshold: 5, isCustomPrice: false, image_urls: [], imagePreviews: [], imageFiles: [] },
-            { size: 'M', color: 'White', sku: '', price: '', stock_quantity: 15, low_stock_threshold: 5, isCustomPrice: false, image_urls: [], imagePreviews: [], imageFiles: [] }
+            { size: 'L', color: 'Black', sku: '', price: '', stock_quantity: 10, low_stock_threshold: 3, isCustomPrice: false, image_urls: [], imagePreviews: [], imageFiles: [] }
         ]
     };
 
@@ -52,12 +55,16 @@ const BrandProductsPage = () => {
     const fetchCatalog = async () => {
         try {
             setLoading(true);
-            const [prodRes, catRes] = await Promise.all([
+            const [prodRes, catRes, profileRes] = await Promise.all([
                 api.get('/seller/products'),
-                api.get('/products/categories')
+                api.get('/products/categories'),
+                api.get('/brand/profile').catch(() => ({ data: null }))
             ]);
             setProducts((prodRes.data || []).map(normalizeSellerProduct));
             setCategories(catRes.data || []);
+            if (profileRes.data?.status) {
+                setBrandStatus(profileRes.data.status);
+            }
             setError('');
             if (catRes.data?.length > 0 && !formData.category_id) {
                 setFormData(prev => ({ ...prev, category_id: catRes.data[0].id }));
@@ -75,14 +82,19 @@ const BrandProductsPage = () => {
     }, []);
 
     const openAddModal = () => {
+        if (brandStatus === 'pending') {
+            alert('Your brand account is currently pending Super Admin verification. You will be able to create and sell garments once verified by the administrator.');
+            return;
+        }
         setEditingProduct(null);
         setFormData({
             ...initialFormState,
             category_id: categories[0]?.id || '',
+            gender: 'Men',
             variants: [
                 { size: 'S', color: 'Black', sku: '', price: '', stock_quantity: 10, low_stock_threshold: 3, isCustomPrice: false, image_urls: [], imagePreviews: [], imageFiles: [] },
                 { size: 'M', color: 'Black', sku: '', price: '', stock_quantity: 15, low_stock_threshold: 5, isCustomPrice: false, image_urls: [], imagePreviews: [], imageFiles: [] },
-                { size: 'M', color: 'White', sku: '', price: '', stock_quantity: 15, low_stock_threshold: 5, isCustomPrice: false, image_urls: [], imagePreviews: [], imageFiles: [] }
+                { size: 'L', color: 'Black', sku: '', price: '', stock_quantity: 10, low_stock_threshold: 3, isCustomPrice: false, image_urls: [], imagePreviews: [], imageFiles: [] }
             ]
         });
         setIsModalOpen(true);
@@ -93,21 +105,20 @@ const BrandProductsPage = () => {
         setFormData({
             name: product.name || '',
             description: product.description || '',
-            price: product.price || '',
+            price: product.price || product.base_price || '',
             category_id: product.category_id || categories[0]?.id || '',
-            clothing_type: product.clothing_type || 'Apparel',
-            fabric_material: product.fabric_material || '',
-            fit: product.fit || '',
-            pattern: product.pattern || '',
-            season: product.season || '',
-            care_instructions: product.care_instructions || '',
+            gender: product.gender || 'Unisex',
             variants: product.variants?.length > 0 ? product.variants.map(v => ({
                 ...v,
+                size: v.size || 'M',
+                color: v.color || 'Standard',
+                stock_quantity: v.stock_quantity ?? 10,
+                price: v.price ?? v.price_override ?? product.price ?? product.base_price ?? '',
                 image_urls: Array.isArray(v.image_urls) ? v.image_urls : [],
                 imagePreviews: Array.isArray(v.image_urls) ? [...v.image_urls] : [],
                 imageFiles: []
             })) : [
-                { size: 'Standard', color: 'Default', sku: '', price: product.price, stock_quantity: 10, low_stock_threshold: 3, image_urls: [], imagePreviews: [], imageFiles: [] }
+                { size: 'M', color: 'Default', sku: '', price: product.price, stock_quantity: 10, low_stock_threshold: 3, image_urls: [], imagePreviews: [], imageFiles: [] }
             ]
         });
         setIsModalOpen(true);
@@ -157,20 +168,32 @@ const BrandProductsPage = () => {
 
             const filesToAdd = fileList.slice(0, remainingSlots);
             const newPreviews = filesToAdd.map(f => URL.createObjectURL(f));
+            const newFiles = [...existingFiles, ...filesToAdd];
+            const newPreviewsList = [...(currentVar.imagePreviews || existingUrls), ...newPreviews];
 
-            nextVariants[index] = {
-                ...currentVar,
-                imageFiles: [...existingFiles, ...filesToAdd],
-                imagePreviews: [...(currentVar.imagePreviews || existingUrls), ...newPreviews]
+            const currentColor = (currentVar.color || '').trim().toLowerCase();
+
+            // Sync photos across all sizes sharing this exact colorway
+            return {
+                ...prev,
+                variants: nextVariants.map((v, i) => {
+                    if (i === index || (currentColor && (v.color || '').trim().toLowerCase() === currentColor)) {
+                        return {
+                            ...v,
+                            imageFiles: newFiles,
+                            imagePreviews: newPreviewsList,
+                            image_urls: currentVar.image_urls || []
+                        };
+                    }
+                    return v;
+                })
             };
-            return { ...prev, variants: nextVariants };
         });
     };
 
     const handleVariantImageRemove = (variantIndex, imageIndex) => {
         setFormData(prev => {
-            const nextVariants = [...prev.variants];
-            const currentVar = nextVariants[variantIndex];
+            const currentVar = prev.variants[variantIndex];
             const nextUrls = [...(currentVar.image_urls || [])];
             const nextFiles = [...(currentVar.imageFiles || [])];
             const nextPreviews = [...(currentVar.imagePreviews || [])];
@@ -183,13 +206,22 @@ const BrandProductsPage = () => {
             }
             nextPreviews.splice(imageIndex, 1);
 
-            nextVariants[variantIndex] = {
-                ...currentVar,
-                image_urls: nextUrls,
-                imageFiles: nextFiles,
-                imagePreviews: nextPreviews
+            const currentColor = (currentVar.color || '').trim().toLowerCase();
+
+            return {
+                ...prev,
+                variants: prev.variants.map((v, i) => {
+                    if (i === variantIndex || (currentColor && (v.color || '').trim().toLowerCase() === currentColor)) {
+                        return {
+                            ...v,
+                            image_urls: nextUrls,
+                            imageFiles: nextFiles,
+                            imagePreviews: nextPreviews
+                        };
+                    }
+                    return v;
+                })
             };
-            return { ...prev, variants: nextVariants };
         });
     };
 
@@ -198,9 +230,50 @@ const BrandProductsPage = () => {
             ...prev,
             variants: [
                 ...prev.variants,
-                { size: 'M', color: 'Navy', sku: '', price: prev.price || '', stock_quantity: 10, low_stock_threshold: 5, isCustomPrice: false, image_urls: [], imagePreviews: [], imageFiles: [] }
+                { size: 'M', color: 'New Color', sku: '', price: prev.price || '', stock_quantity: 10, low_stock_threshold: 5, isCustomPrice: false, image_urls: [], imagePreviews: [], imageFiles: [] }
             ]
         }));
+    };
+
+    const addSizeToColor = (variantIndex, targetSize) => {
+        setFormData(prev => {
+            const baseVariant = prev.variants[variantIndex];
+            const color = baseVariant?.color || 'Black';
+            const price = baseVariant?.price || prev.price || '';
+            const existingSizesForColor = prev.variants
+                .filter(v => (v.color || '').trim().toLowerCase() === color.trim().toLowerCase())
+                .map(v => v.size);
+
+            let newSize = targetSize;
+            if (!newSize) {
+                newSize = CLOTHING_SIZES.find(s => !existingSizesForColor.includes(s)) || 'XL';
+            }
+
+            const newVariant = {
+                size: newSize,
+                color: color,
+                sku: '',
+                price: price,
+                stock_quantity: 10,
+                low_stock_threshold: baseVariant?.low_stock_threshold || 3,
+                isCustomPrice: baseVariant?.isCustomPrice || false,
+                image_urls: [...(baseVariant?.image_urls || [])],
+                imagePreviews: [...(baseVariant?.imagePreviews || [])],
+                imageFiles: [...(baseVariant?.imageFiles || [])]
+            };
+
+            const nextVariants = [...prev.variants];
+            // Insert right after the last variant of this color
+            let insertPos = variantIndex + 1;
+            for (let i = variantIndex + 1; i < prev.variants.length; i++) {
+                if ((prev.variants[i].color || '').trim().toLowerCase() === color.trim().toLowerCase()) {
+                    insertPos = i + 1;
+                }
+            }
+
+            nextVariants.splice(insertPos, 0, newVariant);
+            return { ...prev, variants: nextVariants };
+        });
     };
 
     const removeVariantRow = (index) => {
@@ -280,9 +353,15 @@ const BrandProductsPage = () => {
                 </div>
                 <button
                     onClick={openAddModal}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm transition-all shadow-lg shadow-amber-500/20 active:scale-95"
+                    disabled={brandStatus === 'pending'}
+                    title={brandStatus === 'pending' ? 'Verification required to list garments' : 'Add new clothing piece'}
+                    className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg active:scale-95 ${
+                        brandStatus === 'pending'
+                            ? 'bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed shadow-none'
+                            : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-500/20'
+                    }`}
                 >
-                    <Plus size={16} /> New Clothing Piece
+                    <Plus size={16} /> {brandStatus === 'pending' ? 'Verification Pending' : 'New Clothing Piece'}
                 </button>
             </div>
 
@@ -308,7 +387,7 @@ const BrandProductsPage = () => {
                             <thead>
                                 <tr className="border-b border-slate-800 bg-slate-950/60 text-slate-400 text-xs font-semibold uppercase tracking-wider">
                                     <th className="p-4">Garment</th>
-                                    <th className="p-4">Attributes</th>
+                                    <th className="p-4">Category & Gender</th>
                                     <th className="p-4">Base Price</th>
                                     <th className="p-4">Variants & Stock</th>
                                     <th className="p-4">Status</th>
@@ -339,14 +418,14 @@ const BrandProductsPage = () => {
                                                     </div>
                                                 </td>
 
-                                                {/* Fashion Attributes */}
+                                                {/* Category & Department */}
                                                 <td className="p-4">
-                                                    <div className="text-xs space-y-0.5">
-                                                        <span className="text-slate-300 font-medium block">
-                                                            {p.clothing_type || 'Apparel'} • {p.fabric_material || 'Cotton'}
+                                                    <div className="text-xs space-y-1">
+                                                        <span className="text-slate-200 font-semibold block">
+                                                            {p.category_name || 'Apparel'}
                                                         </span>
-                                                        <span className="text-slate-500 block">
-                                                            {p.fit || 'Regular'} • {p.season || 'All-Season'}
+                                                        <span className="inline-block px-2 py-0.5 rounded bg-slate-800 text-amber-400 font-bold text-[10px] uppercase tracking-wider border border-slate-700/60">
+                                                            {p.gender || 'Unisex'}
                                                         </span>
                                                     </div>
                                                 </td>
@@ -496,8 +575,8 @@ const BrandProductsPage = () => {
 
                         <form onSubmit={handleSubmit} className="space-y-6">
                             {/* Basic Info */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="md:col-span-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div className="sm:col-span-3">
                                     <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
                                         Garment Title *
                                     </label>
@@ -507,14 +586,14 @@ const BrandProductsPage = () => {
                                         value={formData.name}
                                         onChange={handleFormChange}
                                         required
-                                        placeholder="e.g. Structured Oversized Linen Shirt"
+                                        placeholder="e.g. Structured Tailored Linen Shirt"
                                         className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:border-amber-500"
                                     />
                                 </div>
 
                                 <div>
                                     <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
-                                        Category *
+                                        Clothing Category *
                                     </label>
                                     <select
                                         name="category_id"
@@ -525,6 +604,23 @@ const BrandProductsPage = () => {
                                     >
                                         {categories.map(c => (
                                             <option key={c.id} value={c.id}>{c.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+                                        Department / Gender *
+                                    </label>
+                                    <select
+                                        name="gender"
+                                        value={formData.gender}
+                                        onChange={handleFormChange}
+                                        required
+                                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-amber-400 font-bold text-sm focus:outline-none focus:border-amber-500"
+                                    >
+                                        {GENDER_OPTIONS.map(g => (
+                                            <option key={g} value={g}>{g}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -545,92 +641,17 @@ const BrandProductsPage = () => {
                                 </div>
                             </div>
 
-                            {/* Fashion Attributes */}
-                            <div className="p-4 rounded-xl bg-slate-950/50 border border-slate-800 space-y-4">
-                                <span className="text-xs font-bold uppercase tracking-wider text-amber-400 block">
-                                    Fashion Specifications
-                                </span>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                    <div>
-                                        <label className="block text-[11px] text-slate-400 mb-1">Clothing Type</label>
-                                        <input
-                                            type="text"
-                                            name="clothing_type"
-                                            value={formData.clothing_type}
-                                            onChange={handleFormChange}
-                                            placeholder="Shirts, Jackets, Denim..."
-                                            className="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[11px] text-slate-400 mb-1">Fabric & Material</label>
-                                        <input
-                                            type="text"
-                                            name="fabric_material"
-                                            value={formData.fabric_material}
-                                            onChange={handleFormChange}
-                                            placeholder="100% Linen, French Terry..."
-                                            className="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[11px] text-slate-400 mb-1">Fit</label>
-                                        <input
-                                            type="text"
-                                            name="fit"
-                                            value={formData.fit}
-                                            onChange={handleFormChange}
-                                            placeholder="Oversized, Slim, Tailored..."
-                                            className="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[11px] text-slate-400 mb-1">Pattern</label>
-                                        <input
-                                            type="text"
-                                            name="pattern"
-                                            value={formData.pattern}
-                                            onChange={handleFormChange}
-                                            placeholder="Solid, Striped, Graphic..."
-                                            className="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[11px] text-slate-400 mb-1">Season</label>
-                                        <input
-                                            type="text"
-                                            name="season"
-                                            value={formData.season}
-                                            onChange={handleFormChange}
-                                            placeholder="SS26, Fall/Winter, All..."
-                                            className="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[11px] text-slate-400 mb-1">Care Notes</label>
-                                        <input
-                                            type="text"
-                                            name="care_instructions"
-                                            value={formData.care_instructions}
-                                            onChange={handleFormChange}
-                                            placeholder="Dry clean only..."
-                                            className="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
                             {/* Description */}
                             <div>
                                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
-                                    Description & Editorial Copy
+                                    Description & Editorial Styling Notes
                                 </label>
                                 <textarea
                                     name="description"
                                     value={formData.description}
                                     onChange={handleFormChange}
                                     rows={3}
-                                    placeholder="Editorial details, silhouette description..."
+                                    placeholder="Crafted with precise tailoring, selected fabrics, and premium silhouette drape..."
                                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:border-amber-500 resize-none"
                                 />
                             </div>
@@ -673,7 +694,7 @@ const BrandProductsPage = () => {
                                             onClick={addVariantRow}
                                             className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-amber-400 hover:text-amber-300 flex items-center gap-1 border border-slate-700"
                                         >
-                                            <Plus size={14} /> Add Color / Size Variant
+                                            <Plus size={14} /> Add New Colorway
                                         </button>
                                     </div>
                                 </div>
@@ -685,15 +706,17 @@ const BrandProductsPage = () => {
                                             <div key={idx} className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3.5">
                                                 {/* Variant Inputs Row */}
                                                 <div className="flex flex-wrap items-center gap-3">
-                                                    <div className="w-24">
-                                                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Size</label>
-                                                        <input
-                                                            type="text"
+                                                    <div className="w-28">
+                                                        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Size *</label>
+                                                        <select
                                                             value={v.size}
                                                             onChange={(e) => handleVariantChange(idx, 'size', e.target.value)}
-                                                            placeholder="S, M, L"
-                                                            className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white"
-                                                        />
+                                                            className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs text-white font-bold focus:outline-none focus:border-amber-500 cursor-pointer"
+                                                        >
+                                                            {CLOTHING_SIZES.map(s => (
+                                                                <option key={s} value={s}>{s}</option>
+                                                            ))}
+                                                        </select>
                                                     </div>
                                                     <div className="flex-1 min-w-[140px]">
                                                         <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Color / Colorway</label>
@@ -732,12 +755,43 @@ const BrandProductsPage = () => {
                                                                 type="button"
                                                                 onClick={() => removeVariantRow(idx)}
                                                                 className="p-1.5 rounded-lg bg-slate-900 hover:bg-red-500/20 text-slate-500 hover:text-red-400 transition-colors"
-                                                                title="Remove Variant"
+                                                                title="Remove this size variant"
                                                             >
                                                                 <Trash2 size={15} />
                                                             </button>
                                                         </div>
                                                     )}
+                                                </div>
+
+                                                {/* Multi-Size Quick Selector for Same Colorway */}
+                                                <div className="flex flex-wrap items-center gap-1.5 pt-1 pb-1 border-t border-slate-900">
+                                                    <span className="text-[11px] font-bold text-amber-400 flex items-center gap-1 mr-1">
+                                                        <Plus size={12} /> Add multiple sizes for &ldquo;{v.color || 'this color'}&rdquo;:
+                                                    </span>
+                                                    {CLOTHING_SIZES.filter(s => s !== v.size).slice(0, 10).map(s => {
+                                                        const alreadyAdded = formData.variants.some(
+                                                            other => (other.color || '').trim().toLowerCase() === (v.color || '').trim().toLowerCase() && other.size === s
+                                                        );
+                                                        if (alreadyAdded) return null;
+                                                        return (
+                                                            <button
+                                                                key={s}
+                                                                type="button"
+                                                                onClick={() => addSizeToColor(idx, s)}
+                                                                className="px-2 py-0.5 rounded text-[11px] font-bold bg-slate-900 hover:bg-amber-500/20 text-slate-300 hover:text-amber-400 border border-slate-700 hover:border-amber-500/50 transition-colors shadow-sm"
+                                                                title={`Quick-add size ${s} for ${v.color}`}
+                                                            >
+                                                                +{s}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => addSizeToColor(idx)}
+                                                        className="px-2.5 py-0.5 rounded text-[11px] font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 transition-colors ml-1"
+                                                    >
+                                                        + Next Size
+                                                    </button>
                                                 </div>
 
                                                 {/* Variant Images: Up to 5 images per variant */}

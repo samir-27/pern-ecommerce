@@ -34,22 +34,16 @@ export const buildProductPayload = (formData, categories) => {
 
     return {
         name: formData.name.trim(),
-        description: formData.description,
-        category_name: category?.name || 'General',
+        description: formData.description?.trim() || '',
+        category_name: category?.name || 'Shirts & Tops',
         base_price: Number(formData.price),
-        gender: 'Unisex',
-        clothing_type: formData.clothing_type,
-        fabric_material: formData.fabric_material,
-        fit: formData.fit,
-        pattern: formData.pattern,
-        season: formData.season,
-        care_instructions: formData.care_instructions,
+        gender: formData.gender || 'Unisex',
         variants: JSON.stringify(formData.variants.map((variant) => ({
             id: variant.id,
             sku: variant.sku,
-            size: variant.size,
-            color: variant.color,
-            stock_quantity: Number(variant.stock_quantity),
+            size: variant.size || 'M',
+            color: variant.color || 'Standard',
+            stock_quantity: Number(variant.stock_quantity || 10),
             low_stock_threshold: Number(variant.low_stock_threshold ?? 5),
             price_override: (variant.price !== '' && variant.price !== null && variant.price !== undefined) 
                 ? Number(variant.price) 

@@ -75,6 +75,10 @@ const ProductDetailPage = () => {
     window.scrollTo(0, 0);
   }, [id]);
 
+  useEffect(() => {
+    setActiveImageIndex(0);
+  }, [selectedVariant?.id, selectedColor]);
+
   const handleSizeChange = (size) => {
     setSelectedSize(size);
     if (product.variants && product.variants.length > 0) {
@@ -101,7 +105,16 @@ const ProductDetailPage = () => {
 
   const handleAddToCart = () => {
     if (!product) return;
-    addToCart(product, selectedVariant || { size: selectedSize, color: selectedColor }, quantity);
+    const variantToAdd = selectedVariant 
+      ? { 
+          ...selectedVariant, 
+          image_urls: (selectedVariant.image_urls && selectedVariant.image_urls.length > 0) 
+            ? selectedVariant.image_urls 
+            : (variantImages || images)
+        }
+      : { size: selectedSize, color: selectedColor, image_urls: images };
+
+    addToCart(product, variantToAdd, quantity);
     setAddedNotice(true);
     setTimeout(() => setAddedNotice(false), 2000);
   };
@@ -109,17 +122,26 @@ const ProductDetailPage = () => {
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
     if (!reviewComment.trim()) return;
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('Please sign in to share an editorial review.');
+      navigate('/login?redirect=' + encodeURIComponent(window.location.pathname));
+      return;
+    }
+
     setReviewSubmitting(true);
     try {
       const res = await api.post(`/products/${id}/reviews`, {
         rating: reviewRating,
-        comment: reviewComment
+        content: reviewComment.trim(),
+        comment: reviewComment.trim()
       });
       setReviews(prev => [res.data, ...prev]);
       setReviewComment('');
       setReviewRating(5);
     } catch (err) {
-      alert(err.response?.data?.message || 'Please log in to submit a review.');
+      const msg = err.response?.data?.error || err.response?.data?.message || err.message;
+      alert(msg || 'Unable to submit review. Please try again.');
     } finally {
       setReviewSubmitting(false);
     }
@@ -145,10 +167,6 @@ const ProductDetailPage = () => {
       </div>
     );
   }
-
-  useEffect(() => {
-    setActiveImageIndex(0);
-  }, [selectedVariant?.id, selectedColor]);
 
   const variantImages = (selectedVariant?.image_urls && selectedVariant.image_urls.length > 0)
     ? selectedVariant.image_urls
@@ -193,7 +211,7 @@ const ProductDetailPage = () => {
         <div className="space-y-4">
           <div className="aspect-[3/4] rounded-3xl overflow-hidden bg-zinc-100 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 relative group shadow-sm">
             <img
-              src={images[activeImageIndex]}
+              src={images[activeImageIndex] || images[0] || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80'}
               alt={product.name}
               className="w-full h-full object-cover object-top"
             />
@@ -235,7 +253,7 @@ const ProductDetailPage = () => {
               </span>
               <span className="text-zinc-300 dark:text-zinc-700">•</span>
               <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                {product.gender || 'Unisex'} / {product.category || 'Clothing'}
+                {product.gender || 'Unisex'} / {product.category_name || product.category || 'Clothing'}
               </span>
             </div>
 
@@ -477,14 +495,14 @@ const ProductDetailPage = () => {
                       {reviews.map((r, i) => (
                         <div key={i} className="p-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-100 dark:border-zinc-800 space-y-1">
                           <div className="flex items-center justify-between">
-                            <span className="font-bold text-zinc-900 dark:text-white">{r.user_name || 'Verified Client'}</span>
+                            <span className="font-bold text-zinc-900 dark:text-white">{r.username || r.user_name || 'Verified Client'}</span>
                             <div className="flex text-amber-400">
                               {[...Array(r.rating || 5)].map((_, idx) => (
                                 <Star key={idx} size={12} fill="currentColor" />
                               ))}
                             </div>
                           </div>
-                          <p className="text-zinc-500">{r.comment}</p>
+                          <p className="text-zinc-500">{r.content || r.comment}</p>
                         </div>
                       ))}
                     </div>

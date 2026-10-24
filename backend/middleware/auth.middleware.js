@@ -16,12 +16,19 @@ export const protectRoute = async (req, res, next) => {
 
             // Fetch live user status to ensure revoked or changed roles are reflected immediately
             const userRes = await pool.query(
-                'SELECT id, email, first_name, last_name, role FROM users WHERE id = $1',
+                'SELECT id, email, first_name, last_name, role, is_blocked FROM users WHERE id = $1',
                 [decoded.id]
             );
 
             if (userRes.rows.length === 0) {
                 return res.status(401).json({ error: 'User account no longer exists' });
+            }
+
+            if (userRes.rows[0].is_blocked) {
+                return res.status(403).json({ 
+                    error: 'Your account has been suspended by the platform administrator.',
+                    code: 'USER_BLOCKED'
+                });
             }
 
             req.user = userRes.rows[0];
@@ -41,27 +48,46 @@ export const brandRoute = async (req, res, next) => {
     }
 
     if (req.user.role === 'admin' || req.user.role === 'super_admin') {
-        const brandRes = await pool.query('SELECT * FROM brands WHERE user_id = $1', [req.user.id]);
-        req.brand = brandRes.rows[0] || null;
+        let brandRes = await pool.query('SELECT * FROM brands WHERE user_id = $1', [req.user.id]);
+        if (brandRes.rows.length === 0) {
+            const defaultName = req.user.first_name ? `${req.user.first_name}'s Flagship Atelier` : 'Platform Flagship Atelier';
+            const slug = `admin-atelier-${req.user.id}`;
+            const created = await pool.query(
+                `INSERT INTO brands (user_id, name, slug, bio, status, commission_rate)
+                 VALUES ($1, $2, $3, $4, 'active', 0.00)
+                 ON CONFLICT (user_id) DO UPDATE SET name = EXCLUDED.name
+                 RETURNING *`,
+                [req.user.id, defaultName, slug, 'Official platform flagship brand and administration showcase']
+            );
+            brandRes = created;
+        }
+        req.brand = brandRes.rows[0];
         req.sellerStore = req.brand;
         return next();
     }
 
     if (req.user.role === 'seller' || req.user.role === 'brand') {
-        const brandRes = await pool.query('SELECT * FROM brands WHERE user_id = $1', [req.user.id]);
+        let brandRes = await pool.query('SELECT * FROM brands WHERE user_id = $1', [req.user.id]);
         if (brandRes.rows.length === 0) {
-            return res.status(403).json({ error: 'No brand profile registered for this account', code: 'NO_BRAND' });
+            const defaultName = req.user.first_name ? `${req.user.first_name}'s Label` : 'Independent Atelier';
+            const slug = `${defaultName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now().toString(36)}`;
+            const created = await pool.query(
+                `INSERT INTO brands (user_id, name, slug, bio, status, commission_rate)
+                 VALUES ($1, $2, $3, $4, 'pending', 10.00)
+                 RETURNING *`,
+                [req.user.id, defaultName, slug, `Official line of ${defaultName}`]
+            );
+            brandRes = created;
         }
         const brand = brandRes.rows[0];
         if (brand.status === 'suspended') {
             return res.status(403).json({ error: 'Your brand account is currently suspended. Please contact platform administration.', code: 'BRAND_SUSPENDED' });
         }
-        if (brand.status === 'pending') {
-            return res.status(403).json({ error: 'Your brand application is currently under review by Super Admin.', code: 'BRAND_PENDING' });
-        }
         if (brand.status === 'rejected') {
             return res.status(403).json({ error: 'Your brand application was not approved.', code: 'BRAND_REJECTED' });
         }
+
+        // Attach brand context (including status: 'pending' so portal can alert seller to verification)
         req.brand = brand;
         req.sellerStore = brand;
         return next();

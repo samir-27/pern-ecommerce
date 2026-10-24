@@ -3,7 +3,6 @@ import { Outlet } from 'react-router-dom';
 import BuyerNavbar from '../components/BuyerNavbar';
 import BuyerFooter from '../components/BuyerFooter';
 import CartDrawer from '../components/CartDrawer';
-import AIFashionAssistant from '../components/AIFashionAssistant';
 
 const BuyerLayout = ({ children }) => {
   return (
@@ -14,7 +13,6 @@ const BuyerLayout = ({ children }) => {
       </main>
       <BuyerFooter />
       <CartDrawer />
-      <AIFashionAssistant />
     </div>
   );
 };
