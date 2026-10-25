@@ -1,48 +1,104 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@400;500;700&display=swap');
 @import "tailwindcss";
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 @source "../";
-@source "../../apps";
+@source "../apps";
 
 @layer base {
   :root {
-    --bg-primary: #ffffff;
-    --bg-surface: #f8fafc;
-    --bg-card: #ffffff;
-    --border-color: #e2e8f0;
-    --text-primary: #0f172a;
-    --text-muted: #64748b;
-    --accent: #2563eb;
-    --accent-hover: #1d4ed8;
-  }
-
-  [data-theme="dark"] {
-    --bg-primary: #09090b;
-    --bg-surface: #121215;
-    --bg-card: #18181b;
-    --border-color: #27272a;
-    --text-primary: #f4f4f5;
-    --text-muted: #a1a1aa;
-    --accent: #3b82f6;
-    --accent-hover: #60a5fa;
+    --color-background: #F7F5F0;
+    --color-surface: #FFFEFA;
+    --color-text: #20201E;
+    --color-text-secondary: #77736D;
+    --color-border: #DCD8D0;
+    --color-accent: #783F32;
+    --color-accent-hover: #603127;
+    --color-dark-surface: #242320;
+    --color-dark-text: #F7F5F0;
+    --color-success: #386447;
+    --color-error: #A33C35;
+    --color-focus: #783F32;
+    --font-display: "Cormorant Garamond", Georgia, serif;
+    --font-body: "DM Sans", Arial, sans-serif;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 24px;
+    --space-6: 32px;
+    --space-7: 48px;
+    --space-8: 64px;
+    --space-9: 96px;
+    --space-10: 128px;
   }
 
   * {
     box-sizing: border-box;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     margin: 0;
-    padding: 0;
     min-height: 100vh;
+    background: var(--color-background);
+    color: var(--color-text);
+    font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
     transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+
+  img {
+    display: block;
+    max-width: 100%;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: -0.04em;
+    color: var(--color-text);
+  }
+
+  p {
+    margin: 0;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 3px;
   }
 }
 
-/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -53,15 +109,14 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.4);
+  background: rgba(120, 63, 50, 0.28);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.7);
+  background: rgba(120, 63, 50, 0.42);
 }
 
-/* Animations */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
@@ -71,9 +126,7 @@
   animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Official Print Stylesheet for Tax Invoices & Bills */
 @media print {
-  /* Hide all interactive site chromes, navbars, sidebars, buttons */
   body {
     background: #ffffff !important;
     color: #000000 !important;
@@ -85,7 +138,6 @@
     visibility: hidden;
   }
 
-  /* Only make the printable bill visible */
   #printable-bill, #printable-bill * {
     visibility: visible;
   }
@@ -105,7 +157,6 @@
     font-size: 11pt !important;
   }
 
-  /* Hide print buttons, returns, and links inside invoice */
   .no-print, nav, header, footer, button {
     display: none !important;
   }

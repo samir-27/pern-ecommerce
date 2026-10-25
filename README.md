@@ -8,13 +8,17 @@ An enterprise clothing marketplace built with PostgreSQL, Express.js, React 19, 
 
 ```
 ecommerce-platform/
-├── apps/
-│   ├── buyer-web/          # Modern High-Fashion Buyer Storefront
-│   ├── brand-seller-web/   # Professional Brand Operations & Dispatch Hub
-│   └── super-admin-web/    # Standalone Executive Governance & Security Console
+├── frontend/
+│   ├── apps/
+│   │   ├── buyer-web/      # Buyer storefront
+│   │   ├── brand-seller-web/ # Brand seller portal
+│   │   └── super-admin-web/  # Super admin console
+│   ├── src/                # Shared Vite runtime and route orchestration
+│   └── public/             # Static frontend assets
 ├── backend/                # Shared Express.js REST API with PostgreSQL & AI Services
 ├── database/               # PostgreSQL schema, migrations, and seeds
-└── frontend/               # Root Vite runtime orchestrating application routing
+├── shared/                 # Shared platform constants and helpers
+└── docs/                   # Architecture and migration documentation
 ```
 
 ---
@@ -65,7 +69,7 @@ To run the automated verification test suite:
 npm test
 ```
 
-### 3. Frontend Applications (Port 5173)
+### 3. Frontend (Port 5173)
 ```bash
 cd frontend
 npm install

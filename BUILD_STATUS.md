@@ -33,9 +33,9 @@ cd frontend && npm run build
 
 | Application | Path / Route | Role | Design & Scope |
 |---|---|---|---|
-| **Buyer Web** | `apps/buyer-web` (`/`) | `user` | Curated apparel storefront, category/attribute filters, AI stylist, cart, checkout, order tracking, returns, dual auth. |
-| **Brand Seller Web** | `apps/brand-seller-web` (`/seller`) | `seller` / `brand` | Dedicated studio portal (dark slate/amber), brand business credentials, clothing catalog & variant inventory, order dispatch hub, revenue analytics. |
-| **Super Admin Web** | `apps/super-admin-web` (`/admin`) | `admin` / `super_admin` | Standalone governance console (obsidian/indigo), brand seller moderation & commission overrides, buyer spend analytics, catalog moderation, security audit logs, dedicated `/admin/login`. |
+| **Buyer Web** | `frontend/apps/buyer-web` (`/`) | `user` | Curated apparel storefront, category/attribute filters, AI stylist, cart, checkout, order tracking, returns, dual auth. |
+| **Brand Seller Web** | `frontend/apps/brand-seller-web` (`/seller`) | `seller` / `brand` | Dedicated studio portal, brand business credentials, clothing catalog & variant inventory, order dispatch hub, revenue analytics. |
+| **Super Admin Web** | `frontend/apps/super-admin-web` (`/admin`) | `admin` / `super_admin` | Governance console, brand seller moderation & commission overrides, buyer spend analytics, catalog moderation, security audit logs, dedicated `/admin/login`. |
 
 ---
 

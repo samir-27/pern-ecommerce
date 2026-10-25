@@ -80,14 +80,11 @@ export const brandRoute = async (req, res, next) => {
             brandRes = created;
         }
         const brand = brandRes.rows[0];
-        if (brand.status === 'suspended') {
-            return res.status(403).json({ error: 'Your brand account is currently suspended. Please contact platform administration.', code: 'BRAND_SUSPENDED' });
-        }
         if (brand.status === 'rejected') {
             return res.status(403).json({ error: 'Your brand application was not approved.', code: 'BRAND_REJECTED' });
         }
 
-        // Attach brand context (including status: 'pending' so portal can alert seller to verification)
+        // Attach brand context (including status: 'pending' or 'suspended' so portal can alert seller to verification or suspension, and allow commission proposals to be received and answered)
         req.brand = brand;
         req.sellerStore = brand;
         return next();
