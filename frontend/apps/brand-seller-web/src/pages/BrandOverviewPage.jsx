@@ -28,14 +28,15 @@ const BrandOverviewPage = () => {
                 const st = storeRes.data || {};
                 setData({
                     brand: st,
-                    products: { total_products: ov.totalProducts ?? ov.products?.total_products ?? 0 },
+                    products: { total_products: ov.orders ? (ov.products?.total_products ?? 0) : (ov.totalProducts ?? 0) },
                     orders: {
-                        total_orders: ov.totalOrders ?? ov.orders?.total_orders ?? 0,
-                        gross_sales: ov.totalEarnings ?? ov.orders?.gross_sales ?? 0,
-                        net_earnings: ov.totalEarnings ?? ov.orders?.net_earnings ?? 0,
-                        pending_fulfillment: ov.pendingFulfillment ?? ov.orders?.pending_fulfillment ?? 0,
+                        total_orders: ov.orders?.total_orders ?? ov.totalOrders ?? 0,
+                        gross_sales: ov.orders?.gross_sales ?? ov.grossSales ?? ov.totalEarnings ?? 0,
+                        net_earnings: ov.orders?.net_earnings ?? ov.totalEarnings ?? 0,
+                        total_commission: ov.orders?.total_commission ?? ov.totalCommission ?? 0,
+                        pending_fulfillment: ov.orders?.pending_fulfillment ?? ov.pendingFulfillment ?? 0,
                     },
-                    inventory: { low_stock_count: ov.lowStockCount ?? ov.inventory?.low_stock_count ?? 0 },
+                    inventory: { low_stock_count: ov.inventory?.low_stock_count ?? ov.lowStockCount ?? 0 },
                 });
             } catch (err) {
                 console.error('Error loading brand overview:', err);
@@ -114,7 +115,7 @@ const BrandOverviewPage = () => {
                         </div>
                     </div>
                     <div className="text-2xl font-black text-amber-400">{formatCurrency(orders?.net_earnings)}</div>
-                    <p className="text-xs text-slate-400 mt-1">After {brand?.commission_rate || 10}% platform commission</p>
+                    <p className="text-xs text-slate-400 mt-1">After standard 5% platform commission</p>
                 </div>
 
                 {/* Active Products */}

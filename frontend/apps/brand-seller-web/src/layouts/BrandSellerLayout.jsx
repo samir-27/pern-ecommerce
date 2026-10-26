@@ -227,49 +227,6 @@ const BrandSellerLayout = ({ children }) => {
                     </div>
                 )}
 
-                {/* Proposed Commission Rate Consent Card (Matching Studio Amber/Dark Palette) */}
-                {brand?.commission_status === 'pending_brand_approval' && brand?.proposed_commission_rate && (
-                    <div className="bg-gradient-to-r from-amber-950/40 via-slate-900 to-amber-950/30 border-b border-amber-500/30 px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs text-slate-300 shadow-sm backdrop-blur-sm">
-                        <div className="flex items-start gap-3.5">
-                            <div className="p-2.5 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/30 shrink-0 mt-0.5 shadow-sm">
-                                <Percent size={18} />
-                            </div>
-                            <div className="space-y-1">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    <strong className="text-white font-bold text-sm">Commission Rate Adjustment Request</strong>
-                                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                                        Consent Required
-                                    </span>
-                                </div>
-                                <p className="text-slate-300 leading-relaxed max-w-2xl text-[11px] sm:text-xs">
-                                    The platform administrator has proposed adjusting your commission rate from{' '}
-                                    <span className="font-semibold text-slate-200 bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">{brand.commission_rate}%</span>{' '}
-                                    to{' '}
-                                    <span className="font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/30">{brand.proposed_commission_rate}%</span>.
-                                    Per platform governance rules, this change will only take effect once approved by your atelier.
-                                </p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2.5 shrink-0 self-end md:self-auto pt-2 md:pt-0">
-                            <button
-                                onClick={() => handleCommissionResponse(false)}
-                                disabled={commissionActionLoading}
-                                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold border border-slate-700 transition-all disabled:opacity-50 cursor-pointer"
-                            >
-                                Decline
-                            </button>
-                            <button
-                                onClick={() => handleCommissionResponse(true)}
-                                disabled={commissionActionLoading}
-                                className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 text-xs font-black shadow-lg shadow-amber-500/20 border border-amber-400/40 transition-all disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
-                            >
-                                <CheckCircle2 size={14} className="text-slate-950" />
-                                <span>Accept ({brand.proposed_commission_rate}%)</span>
-                            </button>
-                        </div>
-                    </div>
-                )}
-
                 {/* Viewport Content */}
                 <div className="flex-1 p-6 md:p-8 max-w-7xl mx-auto w-full">
                     {loading ? (

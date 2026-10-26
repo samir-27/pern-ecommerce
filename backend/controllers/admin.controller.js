@@ -55,7 +55,10 @@ export const getAdminOverview = async (req, res) => {
                 ORDER BY revenue DESC
             `),
             pool.query(`
-                SELECT total_amount, created_at FROM orders WHERE created_at >= NOW() - INTERVAL '14 days'
+                SELECT o.total_amount, o.created_at,
+                       (SELECT COALESCE(SUM(so.commission_amount), 0) FROM seller_orders so WHERE so.order_id = o.id) AS commission_amount
+                FROM orders o
+                WHERE o.created_at >= NOW() - INTERVAL '14 days'
             `)
         ]);
 
@@ -76,8 +79,11 @@ export const getAdminOverview = async (req, res) => {
             if (chartMap.has(dateStr)) {
                 const entry = chartMap.get(dateStr);
                 const amt = Number(o.total_amount || 0);
+                const comm = o.commission_amount != null && Number(o.commission_amount) > 0 
+                    ? Number(o.commission_amount) 
+                    : Number((amt * 0.1).toFixed(2));
                 entry.gmv += amt;
-                entry.commission += Number((amt * 0.1).toFixed(2));
+                entry.commission += Number(comm.toFixed(2));
                 entry.orders += 1;
             }
         });
@@ -667,11 +673,11 @@ export const getBrandSellers = async (req, res) => {
     }
 };
 
-// Super Admin Update Brand Status (Approve / Suspend / Reactivate / Propose Commission)
+// Super Admin Update Brand Status (Approve / Suspend / Reactivate)
 export const updateBrandStatus = async (req, res) => {
     try {
         const { id } = req.params;
-        const { status, commission_rate, note } = req.body;
+        const { status } = req.body;
         const validStatuses = ['active', 'suspended', 'rejected', 'pending'];
         if (status && !validStatuses.includes(status)) {
             return res.status(400).json({ error: 'Invalid brand status' });
@@ -680,35 +686,6 @@ export const updateBrandStatus = async (req, res) => {
         const currentBrandRes = await pool.query('SELECT * FROM brands WHERE id = $1', [id]);
         if (currentBrandRes.rows.length === 0) {
             return res.status(404).json({ error: 'Brand not found' });
-        }
-        const currentBrand = currentBrandRes.rows[0];
-
-        let commissionMessage = '';
-        // If commission_rate is provided and changed, it requires brand consent
-        if (commission_rate !== undefined && commission_rate !== null) {
-            const proposedRate = Number(commission_rate);
-            const currentRate = Number(currentBrand.commission_rate || 10.00);
-
-            if (proposedRate !== currentRate) {
-                await pool.query(`
-                    UPDATE brands SET
-                        proposed_commission_rate = $1,
-                        commission_status = 'pending_brand_approval',
-                        commission_change_note = $2,
-                        updated_at = NOW()
-                    WHERE id = $3
-                `, [proposedRate, note || 'Proposed by Super Administrator', id]);
-
-                commissionMessage = `Commission update of ${proposedRate}% proposed to brand. It will take effect once the brand allows it.`;
-
-                await logAuditEvent({
-                    userId: req.user.id,
-                    action: 'SUPER_ADMIN_BRAND_COMMISSION_PROPOSED',
-                    targetType: 'brand',
-                    targetId: id,
-                    details: { currentRate, proposedRate }
-                });
-            }
         }
 
         // Update status (e.g. approve/verify 'active', or 'suspended')
@@ -734,9 +711,8 @@ export const updateBrandStatus = async (req, res) => {
         const updatedBrand = await pool.query('SELECT * FROM brands WHERE id = $1', [id]);
 
         res.json({
-            message: commissionMessage || (status === 'active' ? 'Brand verified and activated successfully' : 'Brand status updated successfully'),
-            brand: updatedBrand.rows[0],
-            commission_proposed: !!commissionMessage
+            message: status === 'active' ? 'Brand verified and activated successfully' : 'Brand status updated successfully',
+            brand: updatedBrand.rows[0]
         });
     } catch (err) {
         console.error('Error updating brand status:', err);

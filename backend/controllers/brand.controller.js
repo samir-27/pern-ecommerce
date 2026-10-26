@@ -52,7 +52,7 @@ export const getBrandProfile = async (req, res) => {
                 const slug = `brand-${req.user.id}-${Date.now().toString(36)}`;
                 const created = await pool.query(
                     `INSERT INTO brands (user_id, name, slug, bio, status, commission_rate)
-                     VALUES ($1, $2, $3, $4, 'active', 10.00)
+                     VALUES ($1, $2, $3, $4, 'active', 5.00)
                      ON CONFLICT (user_id) DO UPDATE SET name = EXCLUDED.name
                      RETURNING *`,
                     [req.user.id, defaultName, slug, `Official line of ${defaultName}`]
@@ -199,7 +199,7 @@ export const getBrandOverview = async (req, res) => {
                 COUNT(*) FILTER (WHERE status = 'delivered' OR fulfillment_status = 'delivered') as delivered_orders,
                 COALESCE(SUM(subtotal), 0) as gross_sales,
                 COALESCE(SUM(commission_amount), 0) as total_commission,
-                COALESCE(SUM(COALESCE(seller_net_earnings, net_payout, 0)), 0) as net_earnings
+                COALESCE(SUM(COALESCE(seller_net_earnings, (subtotal - commission_amount), 0)), 0) as net_earnings
              FROM seller_orders WHERE brand_id = $1`,
             [brandId]
         );
@@ -550,7 +550,10 @@ export const getBrandOrders = async (req, res) => {
                             'price_at_purchase', oi.price_at_purchase,
                             'size', pv.size,
                             'color', pv.color,
-                            'fulfillment_status', oi.fulfillment_status
+                            'fulfillment_status', oi.fulfillment_status,
+                            'commission_rate', oi.commission_rate,
+                            'commission_amount', oi.commission_amount,
+                            'seller_net_amount', oi.seller_net_amount
                         )
                     ) FILTER (WHERE oi.id IS NOT NULL),
                     '[]'::json
@@ -679,7 +682,7 @@ export const getBrandAnalytics = async (req, res) => {
                 COUNT(*) as orders_count,
                 COALESCE(SUM(subtotal), 0) as gross_sales,
                 COALESCE(SUM(commission_amount), 0) as platform_fees,
-                COALESCE(SUM(COALESCE(seller_net_earnings, net_payout, 0)), 0) as net_earnings
+                COALESCE(SUM(COALESCE(seller_net_earnings, (subtotal - commission_amount), 0)), 0) as net_earnings
              FROM seller_orders
              WHERE brand_id = $1 AND created_at >= NOW() - INTERVAL '30 days'
              GROUP BY DATE(created_at)
@@ -780,73 +783,9 @@ export const getPublicBrandBySlug = async (req, res) => {
  * Brand response to Super Admin proposed commission rate change
  */
 export const respondToCommissionProposal = async (req, res) => {
-    try {
-        if (!req.brand) {
-            return res.status(403).json({ error: 'Brand context required' });
-        }
-
-        const { accept } = req.body;
-        const brandId = req.brand.id;
-
-        const currentRes = await pool.query(
-            'SELECT id, name, commission_rate, proposed_commission_rate, commission_status FROM brands WHERE id = $1',
-            [brandId]
-        );
-        const brand = currentRes.rows[0];
-
-        if (!brand || !brand.proposed_commission_rate || brand.commission_status !== 'pending_brand_approval') {
-            return res.status(400).json({ error: 'No pending commission change proposal found for this brand.' });
-        }
-
-        if (accept) {
-            const newRate = Number(brand.proposed_commission_rate);
-            await pool.query(`
-                UPDATE brands SET
-                    commission_rate = $1,
-                    proposed_commission_rate = NULL,
-                    commission_status = 'approved',
-                    updated_at = NOW()
-                WHERE id = $2
-            `, [newRate, brandId]);
-
-            await logAuditEvent({
-                userId: req.user.id,
-                action: 'BRAND_ACCEPTED_COMMISSION_CHANGE',
-                targetType: 'brand',
-                targetId: brandId,
-                details: { previousRate: brand.commission_rate, newRate }
-            });
-
-            return res.json({
-                message: `You have accepted the new commission rate of ${newRate}%.`,
-                commission_rate: newRate,
-                commission_status: 'approved'
-            });
-        } else {
-            await pool.query(`
-                UPDATE brands SET
-                    proposed_commission_rate = NULL,
-                    commission_status = 'rejected',
-                    updated_at = NOW()
-                WHERE id = $1
-            `, [brandId]);
-
-            await logAuditEvent({
-                userId: req.user.id,
-                action: 'BRAND_DECLINED_COMMISSION_CHANGE',
-                targetType: 'brand',
-                targetId: brandId,
-                details: { keptRate: brand.commission_rate, declinedRate: brand.proposed_commission_rate }
-            });
-
-            return res.json({
-                message: `You have declined the proposed commission rate. Your current rate of ${brand.commission_rate}% remains active.`,
-                commission_rate: brand.commission_rate,
-                commission_status: 'rejected'
-            });
-        }
-    } catch (err) {
-        console.error('Error responding to commission proposal:', err);
-        res.status(500).json({ error: 'Server error processing commission response' });
-    }
+    return res.json({
+        message: 'Marketplace commission is fixed at a static 5% for all brands.',
+        commission_rate: 5.00,
+        commission_status: 'approved'
+    });
 };

@@ -151,14 +151,14 @@ const SuperAdminBuyersPage = () => {
                                             {b.is_blocked ? (
                                                 <button
                                                     onClick={() => handleToggleBlock(b.id, b.email, true)}
-                                                    className="px-3 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-semibold border border-emerald-500/30 transition-colors"
+                                                    className="px-3 py-1 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 hover:text-white text-xs font-bold border border-emerald-700/60 transition-colors shadow-sm cursor-pointer"
                                                 >
-                                                    Unblock
+                                                    Unblock User
                                                 </button>
                                             ) : (
                                                 <button
                                                     onClick={() => handleToggleBlock(b.id, b.email, false)}
-                                                    className="px-3 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-semibold border border-red-500/30 transition-colors"
+                                                    className="px-3 py-1 rounded-lg bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 hover:text-white text-xs font-bold border border-rose-700/60 transition-colors shadow-sm cursor-pointer"
                                                 >
                                                     Block User
                                                 </button>

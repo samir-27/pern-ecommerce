@@ -230,7 +230,7 @@ const HomePage = () => {
               Showcase Your Brand to Discerning Buyers
             </h3>
             <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              Join MINIMAL Atelier as an official brand partner. Benefit from our dedicated Brand Studio dashboard, inventory dispatch hub, real-time analytics, and transparent 10% platform commission.
+              Join MINIMAL Atelier as an official brand partner. Benefit from our dedicated Brand Studio dashboard, inventory dispatch hub, real-time analytics, and transparent 5% platform commission.
             </p>
           </div>
 

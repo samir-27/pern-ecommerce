@@ -94,7 +94,7 @@ export const registerBrandSeller = async (req, res) => {
             `INSERT INTO brands (
                 user_id, name, slug, bio, website, contact_email, contact_phone, 
                 business_registration_number, policy_return, policy_shipping, status, commission_rate
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending', 10.00)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending', 5.00)
             RETURNING *`,
             [
                 user.id,
@@ -251,6 +251,26 @@ export const getUserProfile = async (req, res) => {
     }
 };
 
+const validateIndianMobile = (phone) => {
+    if (!phone) return null;
+    const digitsOnly = String(phone).replace(/\D/g, '');
+    let tenDigit = null;
+    if (digitsOnly.length === 10) tenDigit = digitsOnly;
+    else if (digitsOnly.length === 11 && digitsOnly.startsWith('0')) tenDigit = digitsOnly.slice(1);
+    else if (digitsOnly.length === 12 && digitsOnly.startsWith('91')) tenDigit = digitsOnly.slice(2);
+    
+    if (tenDigit && /^[6-9]\d{9}$/.test(tenDigit)) {
+        return tenDigit;
+    }
+    return null;
+};
+
+const validateIndianPincode = (pincode) => {
+    if (!pincode) return false;
+    const cleaned = String(pincode).trim();
+    return /^[1-9][0-9]{5}$/.test(cleaned);
+};
+
 export const updateUserProfile = async (req, res) => {
     const { first_name, last_name, name, email, phone } = req.body;
     const userId = req.user.id;
@@ -273,6 +293,17 @@ export const updateUserProfile = async (req, res) => {
         const currentUser = await pool.query('SELECT first_name, last_name, email, phone FROM users WHERE id = $1', [userId]);
         const currentData = currentUser.rows[0] || {};
 
+        let formattedPhone = currentData.phone;
+        if (phone !== undefined && phone !== null && String(phone).trim() !== '') {
+            const validMobile = validateIndianMobile(phone);
+            if (!validMobile) {
+                return res.status(400).json({ error: 'Please enter a valid 10-digit Indian mobile number (e.g. 9876543210).' });
+            }
+            formattedPhone = validMobile;
+        } else if (phone === '') {
+            formattedPhone = null;
+        }
+
         const updatedUser = await pool.query(
             `UPDATE users 
              SET first_name = COALESCE($1, first_name), 
@@ -286,7 +317,7 @@ export const updateUserProfile = async (req, res) => {
                 resolvedFirst ?? currentData.first_name, 
                 resolvedLast ?? currentData.last_name, 
                 email || currentData.email, 
-                phone !== undefined ? phone : currentData.phone,
+                formattedPhone,
                 userId
             ]
         );
@@ -332,6 +363,15 @@ export const createUserAddress = async (req, res) => {
         return res.status(400).json({ error: 'Recipient name, phone, address, city, and pincode are required.' });
     }
 
+    const validMobile = validateIndianMobile(phone);
+    if (!validMobile) {
+        return res.status(400).json({ error: 'Please enter a valid 10-digit Indian mobile number (e.g. 9876543210).' });
+    }
+
+    if (!validateIndianPincode(pincode)) {
+        return res.status(400).json({ error: 'Please enter a valid 6-digit Indian PIN code (e.g. 400001).' });
+    }
+
     try {
         const count = await pool.query('SELECT COUNT(*)::int as c FROM user_addresses WHERE user_id = $1', [req.user.id]);
         const shouldBeDefault = Boolean(isDefault) || count.rows[0].c === 0;
@@ -344,7 +384,7 @@ export const createUserAddress = async (req, res) => {
             `INSERT INTO user_addresses (user_id, full_name, phone, address_line, city, state, pincode, is_default)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
              RETURNING *`,
-            [req.user.id, fullName, phone, address, city, state, pincode, shouldBeDefault]
+            [req.user.id, fullName, validMobile, address, city, state, pincode, shouldBeDefault]
         );
 
         res.status(201).json(result.rows[0]);

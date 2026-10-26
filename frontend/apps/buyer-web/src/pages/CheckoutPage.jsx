@@ -13,6 +13,12 @@ import {
 } from 'lucide-react';
 import api from '@api';
 import { useCart } from '../context/CartContext';
+import { 
+  INDIAN_STATES, 
+  INDIAN_STATES_AND_CITIES, 
+  cleanAndValidateIndianMobile, 
+  validateIndianPincode 
+} from '../utils/indiaLocations';
 
 // Helper to dynamically load Razorpay checkout script
 const loadRazorpayScript = () => {
@@ -48,6 +54,7 @@ const CheckoutPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [placedOrder, setPlacedOrder] = useState(null);
+  const [isCustomCity, setIsCustomCity] = useState(false);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -69,6 +76,9 @@ const CheckoutPage = () => {
         if (addresses.length > 0) {
           const defaultAddr = addresses.find(a => a.is_default) || addresses[0];
           setSelectedAddressId(defaultAddr.id);
+          const cities = INDIAN_STATES_AND_CITIES[defaultAddr.state] || [];
+          const isCustom = Boolean(defaultAddr.city && cities.length > 0 && !cities.includes(defaultAddr.city));
+          setIsCustomCity(isCustom);
           setShippingForm({
             fullName: defaultAddr.full_name || profile.name || '',
             phone: defaultAddr.phone || profile.phone || '',
@@ -96,6 +106,9 @@ const CheckoutPage = () => {
 
   const selectAddress = (addr) => {
     setSelectedAddressId(addr.id);
+    const cities = INDIAN_STATES_AND_CITIES[addr.state] || [];
+    const isCustom = Boolean(addr.city && cities.length > 0 && !cities.includes(addr.city));
+    setIsCustomCity(isCustom);
     setShippingForm({
       fullName: addr.full_name || '',
       phone: addr.phone || '',
@@ -108,6 +121,7 @@ const CheckoutPage = () => {
 
   const handleAddNewAddressOption = () => {
     setSelectedAddressId('new');
+    setIsCustomCity(false);
     setShippingForm(prev => ({
       ...prev,
       address: '',
@@ -115,6 +129,27 @@ const CheckoutPage = () => {
       state: '',
       pincode: '',
     }));
+  };
+
+  const handleStateChange = (selectedState) => {
+    const cities = INDIAN_STATES_AND_CITIES[selectedState] || [];
+    const defaultCity = cities.length > 0 && cities[0] !== 'Other' ? cities[0] : '';
+    setIsCustomCity(false);
+    setShippingForm(prev => ({
+      ...prev,
+      state: selectedState,
+      city: defaultCity
+    }));
+  };
+
+  const handleCitySelectChange = (val) => {
+    if (val === 'Other') {
+      setIsCustomCity(true);
+      setShippingForm(prev => ({ ...prev, city: '' }));
+    } else {
+      setIsCustomCity(false);
+      setShippingForm(prev => ({ ...prev, city: val }));
+    }
   };
 
   const shippingCost = subtotal > 1999 ? 0 : (subtotal > 0 ? 150 : 0);
@@ -140,6 +175,17 @@ const CheckoutPage = () => {
 
     if (!shippingForm.fullName || !shippingForm.address || !shippingForm.city || !shippingForm.pincode) {
       setError('Please provide complete recipient and delivery address information.');
+      return;
+    }
+
+    const validatedMobile = cleanAndValidateIndianMobile(shippingForm.phone);
+    if (!validatedMobile) {
+      setError('Please enter a valid 10-digit Indian mobile number (e.g. 9876543210 or +91 9876543210).');
+      return;
+    }
+
+    if (!validateIndianPincode(shippingForm.pincode)) {
+      setError('Please enter a valid 6-digit Indian postal PIN code (cannot start with 0).');
       return;
     }
 
@@ -172,7 +218,7 @@ const CheckoutPage = () => {
         })
       );
 
-      const formattedShippingAddress = `${shippingForm.fullName}, Ph: ${shippingForm.phone}, ${shippingForm.address}, ${shippingForm.city}, ${shippingForm.state} - ${shippingForm.pincode}`;
+      const formattedShippingAddress = `${shippingForm.fullName}, Ph: ${validatedMobile}, ${shippingForm.address}, ${shippingForm.city}, ${shippingForm.state} - ${shippingForm.pincode}`;
 
       // 2. Initialize Razorpay Order via backend
       const res = await api.post('/orders/payment/order', {
@@ -215,7 +261,7 @@ const CheckoutPage = () => {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_order_id: response.razorpay_order_id,
               items: [...cartItems],
-              shipping: { ...shippingForm },
+              shipping: { ...shippingForm, phone: validatedMobile },
               pricing: {
                 subtotal: pricing?.subtotal ?? subtotal,
                 shipping: pricing?.shipping ?? shippingCost,
@@ -223,13 +269,14 @@ const CheckoutPage = () => {
                 total: pricing?.total ?? totalAmount,
               }
             });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
 
             // Save address to user's address book if requested
             if (selectedAddressId === 'new' && saveThisAddress) {
               try {
                 await api.post('/auth/addresses', {
                   fullName: shippingForm.fullName,
-                  phone: shippingForm.phone,
+                  phone: validatedMobile,
                   address: shippingForm.address,
                   addressLine: shippingForm.address,
                   city: shippingForm.city,
@@ -252,7 +299,7 @@ const CheckoutPage = () => {
         },
         prefill: {
           name: shippingForm.fullName,
-          contact: shippingForm.phone,
+          contact: validatedMobile,
         },
         theme: {
           color: '#09090b',
@@ -608,17 +655,26 @@ const CheckoutPage = () => {
 
               <div>
                 <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 block mb-1.5">
-                  Mobile Number *
+                  Mobile Number (India) *
                 </label>
                 <input
                   type="tel"
                   name="phone"
                   required
-                  placeholder="+91 98765 43210"
+                  placeholder="9876543210"
                   value={shippingForm.phone}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className={`w-full px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800 border text-xs text-zinc-900 dark:text-white focus:outline-none focus:ring-1 ${
+                    shippingForm.phone && !cleanAndValidateIndianMobile(shippingForm.phone)
+                      ? 'border-red-400 focus:ring-red-400'
+                      : 'border-zinc-200 dark:border-zinc-700 focus:ring-blue-500'
+                  }`}
                 />
+                {shippingForm.phone && !cleanAndValidateIndianMobile(shippingForm.phone) && (
+                  <p className="text-[10px] text-red-500 mt-1 font-medium">
+                    10-digit Indian mobile starting with 6, 7, 8, or 9
+                  </p>
+                )}
               </div>
 
               <div className="sm:col-span-2">
@@ -638,46 +694,89 @@ const CheckoutPage = () => {
 
               <div>
                 <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 block mb-1.5">
-                  City *
+                  State / Union Territory *
                 </label>
-                <input
-                  type="text"
-                  name="city"
+                <select
+                  name="state"
                   required
-                  placeholder="e.g. Mumbai"
-                  value={shippingForm.city}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
+                  value={shippingForm.state}
+                  onChange={(e) => handleStateChange(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                >
+                  <option value="">Select State / UT</option>
+                  {INDIAN_STATES.map((st) => (
+                    <option key={st} value={st}>{st}</option>
+                  ))}
+                </select>
               </div>
 
               <div>
                 <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 block mb-1.5">
-                  State
+                  City *
                 </label>
-                <input
-                  type="text"
-                  name="state"
-                  placeholder="e.g. Maharashtra"
-                  value={shippingForm.state}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
+                {shippingForm.state && (INDIAN_STATES_AND_CITIES[shippingForm.state] || []).length > 0 && !isCustomCity ? (
+                  <select
+                    name="city"
+                    required
+                    value={shippingForm.city}
+                    onChange={(e) => handleCitySelectChange(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                  >
+                    <option value="">Select City</option>
+                    {(INDIAN_STATES_AND_CITIES[shippingForm.state] || []).map((ct) => (
+                      <option key={ct} value={ct}>{ct}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="space-y-1.5">
+                    <input
+                      type="text"
+                      name="city"
+                      required
+                      placeholder="Enter city name"
+                      value={shippingForm.city}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                    {isCustomCity && (
+                      <button
+                        type="button"
+                        onClick={() => setIsCustomCity(false)}
+                        className="text-[10px] text-blue-500 hover:underline cursor-pointer"
+                      >
+                        ← Back to city list
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="sm:col-span-2">
                 <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 block mb-1.5">
-                  Postal Pincode *
+                  Postal PIN Code (6 Digits) *
                 </label>
                 <input
                   type="text"
                   name="pincode"
+                  maxLength={6}
                   required
                   placeholder="400001"
                   value={shippingForm.pincode}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                    setShippingForm(prev => ({ ...prev, pincode: val }));
+                  }}
+                  className={`w-full px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800 border text-xs text-zinc-900 dark:text-white focus:outline-none focus:ring-1 ${
+                    shippingForm.pincode && !validateIndianPincode(shippingForm.pincode)
+                      ? 'border-red-400 focus:ring-red-400'
+                      : 'border-zinc-200 dark:border-zinc-700 focus:ring-blue-500'
+                  }`}
                 />
+                {shippingForm.pincode && !validateIndianPincode(shippingForm.pincode) && (
+                  <p className="text-[10px] text-red-500 mt-1 font-medium">
+                    6-digit PIN code starting with 1-9 (e.g. 400001)
+                  </p>
+                )}
               </div>
 
               {selectedAddressId === 'new' && (

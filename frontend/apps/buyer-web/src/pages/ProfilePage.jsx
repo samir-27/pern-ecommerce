@@ -17,6 +17,12 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import api from '@api';
+import { 
+  INDIAN_STATES, 
+  INDIAN_STATES_AND_CITIES, 
+  cleanAndValidateIndianMobile, 
+  validateIndianPincode 
+} from '../utils/indiaLocations';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -33,6 +39,7 @@ const ProfilePage = () => {
 
   // Address Management State
   const [isAddingAddress, setIsAddingAddress] = useState(false);
+  const [isAddressCustomCity, setIsAddressCustomCity] = useState(false);
   const [newAddress, setNewAddress] = useState({
     fullName: '',
     phone: '',
@@ -86,16 +93,49 @@ const ProfilePage = () => {
     navigate('/login');
   };
 
+  const handleAddressStateChange = (selectedState) => {
+    const cities = INDIAN_STATES_AND_CITIES[selectedState] || [];
+    const defaultCity = cities.length > 0 && cities[0] !== 'Other' ? cities[0] : '';
+    setIsAddressCustomCity(false);
+    setNewAddress(prev => ({
+      ...prev,
+      state: selectedState,
+      city: defaultCity
+    }));
+  };
+
+  const handleAddressCityChange = (val) => {
+    if (val === 'Other') {
+      setIsAddressCustomCity(true);
+      setNewAddress(prev => ({ ...prev, city: '' }));
+    } else {
+      setIsAddressCustomCity(false);
+      setNewAddress(prev => ({ ...prev, city: val }));
+    }
+  };
+
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     setSavingProfile(true);
     setProfileSuccessMsg('');
+
+    if (profileForm.phone && profileForm.phone.trim()) {
+      const validMobile = cleanAndValidateIndianMobile(profileForm.phone);
+      if (!validMobile) {
+        alert('Please enter a valid 10-digit Indian mobile number (e.g. 9876543210).');
+        setSavingProfile(false);
+        return;
+      }
+    }
+
     try {
+      const formattedPhone = profileForm.phone ? cleanAndValidateIndianMobile(profileForm.phone) || profileForm.phone : '';
       const res = await api.put('/auth/profile', {
         name: profileForm.name,
-        phone: profileForm.phone
+        phone: formattedPhone
       });
-      setProfile(res.data?.user || { ...profile, ...profileForm });
+      setProfile(res.data?.user || { ...profile, ...profileForm, phone: formattedPhone });
+      setProfileForm(prev => ({ ...prev, phone: formattedPhone }));
       setProfileSuccessMsg('Profile information updated successfully.');
       setTimeout(() => setProfileSuccessMsg(''), 4000);
     } catch (err) {
@@ -109,10 +149,24 @@ const ProfilePage = () => {
     e.preventDefault();
     setAddressSubmitting(true);
     setAddressMsg('');
+
+    const validMobile = cleanAndValidateIndianMobile(newAddress.phone);
+    if (!validMobile) {
+      alert('Please enter a valid 10-digit Indian mobile number (e.g. 9876543210).');
+      setAddressSubmitting(false);
+      return;
+    }
+
+    if (!validateIndianPincode(newAddress.pincode)) {
+      alert('Please enter a valid 6-digit Indian PIN code (e.g. 400001).');
+      setAddressSubmitting(false);
+      return;
+    }
+
     try {
       const payload = {
         fullName: newAddress.fullName,
-        phone: newAddress.phone,
+        phone: validMobile,
         address: newAddress.address || newAddress.addressLine,
         addressLine: newAddress.address || newAddress.addressLine,
         city: newAddress.city,
@@ -122,6 +176,7 @@ const ProfilePage = () => {
       };
       await api.post('/auth/addresses', payload);
       setIsAddingAddress(false);
+      setIsAddressCustomCity(false);
       setNewAddress({
         fullName: profile?.name || '',
         phone: profile?.phone || '',
@@ -474,22 +529,31 @@ const ProfilePage = () => {
 
                 <div>
                   <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
-                    Primary Contact Mobile Phone
+                    Primary Contact Mobile Phone (India)
                   </label>
                   <input 
                     type="tel" 
-                    placeholder="+91 98765 43210"
+                    placeholder="9876543210"
                     value={profileForm.phone} 
                     onChange={(e) => setProfileForm(p => ({ ...p, phone: e.target.value }))}
-                    className="w-full px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium"
+                    className={`w-full px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800 border text-zinc-900 dark:text-white focus:outline-none focus:ring-1 font-medium ${
+                      profileForm.phone && !cleanAndValidateIndianMobile(profileForm.phone)
+                        ? 'border-red-400 focus:ring-red-400'
+                        : 'border-zinc-200 dark:border-zinc-700 focus:ring-blue-500'
+                    }`}
                   />
+                  {profileForm.phone && !cleanAndValidateIndianMobile(profileForm.phone) && (
+                    <p className="text-[10px] text-red-500 mt-1 font-medium">
+                      10-digit Indian mobile starting with 6, 7, 8, or 9
+                    </p>
+                  )}
                 </div>
 
                 <div className="pt-2">
                   <button
                     type="submit"
                     disabled={savingProfile}
-                    className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
                   >
                     <Save size={14} />
                     <span>{savingProfile ? 'Updating Profile...' : 'Save Profile Changes'}</span>
@@ -514,7 +578,7 @@ const ProfilePage = () => {
                 <button
                   type="button"
                   onClick={() => setIsAddingAddress(!isAddingAddress)}
-                  className="px-3.5 py-2 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-opacity hover:opacity-90 shadow-sm"
+                  className="px-3.5 py-2 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-opacity hover:opacity-90 shadow-sm cursor-pointer"
                 >
                   <Plus size={14} />
                   <span>{isAddingAddress ? 'Cancel' : '+ Add Address'}</span>
@@ -552,16 +616,23 @@ const ProfilePage = () => {
 
                     <div>
                       <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">
-                        Phone Number *
+                        Phone Number (India) *
                       </label>
                       <input 
                         type="tel" 
                         required
-                        placeholder="+91 98765 43210"
+                        placeholder="9876543210"
                         value={newAddress.phone}
                         onChange={(e) => setNewAddress(p => ({ ...p, phone: e.target.value }))}
-                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white"
+                        className={`w-full px-3 py-2 rounded-xl bg-white dark:bg-zinc-800 border text-zinc-900 dark:text-white ${
+                          newAddress.phone && !cleanAndValidateIndianMobile(newAddress.phone)
+                            ? 'border-red-400'
+                            : 'border-zinc-200 dark:border-zinc-700'
+                        }`}
                       />
+                      {newAddress.phone && !cleanAndValidateIndianMobile(newAddress.phone) && (
+                        <p className="text-[10px] text-red-500 mt-1">10-digit Indian mobile starting with 6-9</p>
+                      )}
                     </div>
 
                     <div className="sm:col-span-2">
@@ -580,43 +651,83 @@ const ProfilePage = () => {
 
                     <div>
                       <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">
-                        City *
+                        State / Union Territory *
                       </label>
-                      <input 
-                        type="text" 
+                      <select
                         required
-                        placeholder="Mumbai"
-                        value={newAddress.city}
-                        onChange={(e) => setNewAddress(p => ({ ...p, city: e.target.value }))}
-                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white"
-                      />
+                        value={newAddress.state}
+                        onChange={(e) => handleAddressStateChange(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white cursor-pointer"
+                      >
+                        <option value="">Select State / UT</option>
+                        {INDIAN_STATES.map((st) => (
+                          <option key={st} value={st}>{st}</option>
+                        ))}
+                      </select>
                     </div>
 
                     <div>
                       <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">
-                        State
+                        City *
                       </label>
-                      <input 
-                        type="text" 
-                        placeholder="Maharashtra"
-                        value={newAddress.state}
-                        onChange={(e) => setNewAddress(p => ({ ...p, state: e.target.value }))}
-                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white"
-                      />
+                      {newAddress.state && (INDIAN_STATES_AND_CITIES[newAddress.state] || []).length > 0 && !isAddressCustomCity ? (
+                        <select
+                          required
+                          value={newAddress.city}
+                          onChange={(e) => handleAddressCityChange(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white cursor-pointer"
+                        >
+                          <option value="">Select City</option>
+                          {(INDIAN_STATES_AND_CITIES[newAddress.state] || []).map((ct) => (
+                            <option key={ct} value={ct}>{ct}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <div className="space-y-1">
+                          <input 
+                            type="text" 
+                            required
+                            placeholder="Enter city name"
+                            value={newAddress.city}
+                            onChange={(e) => setNewAddress(p => ({ ...p, city: e.target.value }))}
+                            className="w-full px-3 py-2 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white"
+                          />
+                          {isAddressCustomCity && (
+                            <button
+                              type="button"
+                              onClick={() => setIsAddressCustomCity(false)}
+                              className="text-[10px] text-blue-500 hover:underline cursor-pointer"
+                            >
+                              ← Back to city list
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <div className="sm:col-span-2">
                       <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">
-                        Postal Pincode *
+                        Postal PIN Code (6 Digits) *
                       </label>
                       <input 
                         type="text" 
+                        maxLength={6}
                         required
                         placeholder="400001"
                         value={newAddress.pincode}
-                        onChange={(e) => setNewAddress(p => ({ ...p, pincode: e.target.value }))}
-                        className="w-full px-3 py-2 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white"
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                          setNewAddress(p => ({ ...p, pincode: val }));
+                        }}
+                        className={`w-full px-3 py-2 rounded-xl bg-white dark:bg-zinc-800 border text-zinc-900 dark:text-white ${
+                          newAddress.pincode && !validateIndianPincode(newAddress.pincode)
+                            ? 'border-red-400'
+                            : 'border-zinc-200 dark:border-zinc-700'
+                        }`}
                       />
+                      {newAddress.pincode && !validateIndianPincode(newAddress.pincode) && (
+                        <p className="text-[10px] text-red-500 mt-1">6-digit PIN code starting with 1-9 (e.g. 400001)</p>
+                      )}
                     </div>
 
                     <div className="sm:col-span-2">

@@ -176,10 +176,12 @@ const BrandOrdersPage = () => {
                                     </div>
 
                                     <div className="flex items-center gap-4 text-right">
-                                        <div>
-                                            <span className="text-xs text-slate-400 block">Brand Net Payout</span>
-                                            <span className="text-base font-black text-amber-400">
-                                                ₹{Number(o.seller_net_earnings ?? o.subtotal ?? 0).toLocaleString('en-IN')}
+                                        <div className="text-right">
+                                            <div className="text-[11px] text-slate-400">
+                                                Gross: ₹{Number(o.subtotal || 0).toLocaleString('en-IN')} • Fee (5%): -₹{Number(o.commission_amount || 0).toLocaleString('en-IN')}
+                                            </div>
+                                            <span className="text-base font-black text-amber-400 block">
+                                                ₹{Number(o.seller_net_earnings ?? o.subtotal ?? 0).toLocaleString('en-IN')} Net Payout
                                             </span>
                                         </div>
                                         {isPending && (

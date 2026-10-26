@@ -697,7 +697,7 @@ export const getColors = async (req, res) => {
 export const getProductReviews = async (req, res) => {
     try {
         const result = await pool.query(
-            `SELECT r.id, r.rating, r.content, r.created_at,
+            `SELECT r.id, r.user_id, r.rating, r.content, r.created_at,
                     COALESCE(NULLIF(TRIM(u.first_name || ' ' || u.last_name), ''), u.email) AS username
              FROM reviews r
              JOIN users u ON u.id = r.user_id
@@ -728,6 +728,16 @@ export const createProductReview = async (req, res) => {
     }
 
     try {
+        // Enforce one review per user per product
+        const existingReview = await pool.query(
+            'SELECT id FROM reviews WHERE product_id = $1 AND user_id = $2',
+            [req.params.id, req.user.id]
+        );
+
+        if (existingReview.rows.length > 0) {
+            return res.status(400).json({ error: 'You have already reviewed this product. Only one review per product is allowed.' });
+        }
+
         const result = await pool.query(
             `INSERT INTO reviews (product_id, user_id, rating, content)
              SELECT $1, $2, $3, $4
@@ -741,7 +751,7 @@ export const createProductReview = async (req, res) => {
         }
 
         const review = await pool.query(
-            `SELECT r.id, r.rating, r.content, r.created_at,
+            `SELECT r.id, r.user_id, r.rating, r.content, r.created_at,
                     COALESCE(NULLIF(TRIM(u.first_name || ' ' || u.last_name), ''), u.email) AS username
              FROM reviews r
              JOIN users u ON u.id = r.user_id
@@ -751,6 +761,9 @@ export const createProductReview = async (req, res) => {
 
         res.status(201).json(review.rows[0]);
     } catch (err) {
+        if (err.code === '23505') {
+            return res.status(400).json({ error: 'You have already reviewed this product. Only one review per product is allowed.' });
+        }
         console.error('Error creating product review:', err.message);
         res.status(500).json({ error: 'Server error' });
     }

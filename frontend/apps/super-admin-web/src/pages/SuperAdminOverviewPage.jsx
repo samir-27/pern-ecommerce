@@ -68,7 +68,7 @@ const SuperAdminOverviewPage = () => {
                 <div className="flex items-center gap-3">
                     <button
                         onClick={fetchAllData}
-                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 transition-all shadow-md active:scale-95"
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-colors shadow-lg shadow-indigo-600/20"
                     >
                         <RefreshCw size={14} />
                         <span>Refresh Metrics</span>
@@ -97,13 +97,13 @@ const SuperAdminOverviewPage = () => {
 
                 <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-2">
                     <div className="flex items-center justify-between text-slate-400">
-                        <span className="text-xs font-bold uppercase tracking-wider">Platform Take-Rate (10%)</span>
+                        <span className="text-xs font-bold uppercase tracking-wider">Platform Take-Rate (5%)</span>
                         <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
                             <TrendingUp size={16} />
                         </div>
                     </div>
                     <div className="text-2xl font-black text-indigo-400 font-mono">{formatCurrency(stats?.platformRevenue)}</div>
-                    <p className="text-xs text-slate-400">Net platform fee revenues</p>
+                    <p className="text-xs text-slate-400">Fixed 5% standard marketplace commission</p>
                 </div>
 
                 <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-2">

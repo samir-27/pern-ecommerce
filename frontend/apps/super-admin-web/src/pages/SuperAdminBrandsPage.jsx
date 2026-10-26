@@ -22,9 +22,6 @@ const SuperAdminBrandsPage = () => {
     const [statusFilter, setStatusFilter] = useState('all');
     const [selectedBrand, setSelectedBrand] = useState(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-    const [isCommissionOpen, setIsCommissionOpen] = useState(false);
-    const [newCommission, setNewCommission] = useState('10.00');
-    const [submitting, setSubmitting] = useState(false);
 
     const fetchBrands = async () => {
         try {
@@ -68,23 +65,6 @@ const SuperAdminBrandsPage = () => {
         } catch (err) {
             console.error('Error deleting brand:', err);
             alert(err.response?.data?.error || 'Failed to delete brand');
-        }
-    };
-
-    const handleCommissionSubmit = async (e) => {
-        e.preventDefault();
-        if (!selectedBrand) return;
-        setSubmitting(true);
-        try {
-            const res = await api.put(`/admin/brands/${selectedBrand.id}`, { commission_rate: parseFloat(newCommission) });
-            setIsCommissionOpen(false);
-            alert(res.data?.message || 'Commission rate proposed to brand. It will take effect once the brand accepts it.');
-            await fetchBrands();
-        } catch (err) {
-            console.error('Error proposing commission rate:', err);
-            alert(err.response?.data?.error || 'Failed to propose commission rate');
-        } finally {
-            setSubmitting(false);
         }
     };
 
@@ -196,29 +176,9 @@ const SuperAdminBrandsPage = () => {
 
                                     {/* Commission */}
                                     <td className="p-4">
-                                        <div className="space-y-1">
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedBrand(b);
-                                                    setNewCommission(b.commission_rate || '10.00');
-                                                    setIsCommissionOpen(true);
-                                                }}
-                                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-indigo-400 border border-slate-700 transition-colors"
-                                                title="Click to propose new commission rate to brand"
-                                            >
-                                                <Percent size={12} /> {b.commission_rate || 10}%
-                                            </button>
-                                            {b.commission_status === 'pending_brand_approval' && (
-                                                <span className="block text-[10px] text-amber-400 font-semibold bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded">
-                                                    Proposed: {b.proposed_commission_rate}% (Awaiting Brand Approval)
-                                                </span>
-                                            )}
-                                            {b.commission_status === 'rejected' && (
-                                                <span className="block text-[10px] text-red-400 font-semibold bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded">
-                                                    Rate Declined by Brand
-                                                </span>
-                                            )}
-                                        </div>
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-500/10 text-xs font-bold text-indigo-400 border border-indigo-500/20">
+                                            <Percent size={12} /> 5% Fixed
+                                        </span>
                                     </td>
 
                                     {/* Status Badge */}
@@ -252,22 +212,22 @@ const SuperAdminBrandsPage = () => {
                                             {b.status === 'pending' ? (
                                                 <button
                                                     onClick={() => handleStatusChange(b.id, 'active')}
-                                                    className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-bold border border-emerald-500/40 transition-colors flex items-center gap-1"
+                                                    className="px-3 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black border border-emerald-400 transition-all flex items-center gap-1 shadow-md shadow-emerald-500/20 cursor-pointer"
                                                     title="Verify brand seller to allow selling garments"
                                                 >
-                                                    <CheckCircle2 size={13} /> Verify & Allow Sell
+                                                    <CheckCircle2 size={13} className="text-slate-950" /> Verify & Allow Sell
                                                 </button>
                                             ) : b.status === 'active' ? (
                                                 <button
                                                     onClick={() => handleStatusChange(b.id, 'suspended')}
-                                                    className="px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-semibold border border-red-500/30 transition-colors"
+                                                    className="px-2.5 py-1 rounded-lg bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 hover:text-white text-xs font-bold border border-rose-700/60 transition-colors shadow-sm cursor-pointer"
                                                 >
                                                     Suspend
                                                 </button>
                                             ) : (
                                                 <button
                                                     onClick={() => handleStatusChange(b.id, 'active')}
-                                                    className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-semibold border border-emerald-500/30 transition-colors"
+                                                    className="px-2.5 py-1 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 hover:text-white text-xs font-bold border border-emerald-700/60 transition-colors shadow-sm cursor-pointer"
                                                 >
                                                     Activate
                                                 </button>
@@ -276,7 +236,7 @@ const SuperAdminBrandsPage = () => {
                                             {/* Delete Brand Button */}
                                             <button
                                                 onClick={() => handleDeleteBrand(b.id, b.name)}
-                                                className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 border border-red-500/20 transition-colors"
+                                                className="p-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 hover:text-white border border-rose-700/60 transition-colors cursor-pointer"
                                                 title="Delete Brand"
                                             >
                                                 <Trash2 size={14} />
@@ -339,65 +299,11 @@ const SuperAdminBrandsPage = () => {
                         <div className="flex justify-end pt-3 border-t border-slate-800">
                             <button
                                 onClick={() => setIsDetailsOpen(false)}
-                                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold"
+                                className="px-4 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold border border-slate-600 transition-colors shadow-sm cursor-pointer"
                             >
                                 Close
                             </button>
                         </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Modal: Adjust Commission */}
-            {isCommissionOpen && selectedBrand && (
-                <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm p-6 space-y-4">
-                        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                            <h3 className="text-base font-bold text-white flex items-center gap-2">
-                                <Percent size={16} className="text-indigo-400" /> Propose Commission Rate
-                            </h3>
-                            <button onClick={() => setIsCommissionOpen(false)} className="text-slate-400 hover:text-white">
-                                <X size={18} />
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleCommissionSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                                    New Commission for {selectedBrand.name} (%)
-                                </label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    max="100"
-                                    value={newCommission}
-                                    onChange={(e) => setNewCommission(e.target.value)}
-                                    required
-                                    className="w-full px-3.5 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500"
-                                />
-                                <div className="mt-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-300 leading-relaxed">
-                                    ℹ️ <strong>Brand Consent Required:</strong> Per platform governance, the brand must review and accept this commission rate before it takes effect.
-                                </div>
-                            </div>
-
-                            <div className="flex items-center justify-end gap-2 pt-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsCommissionOpen(false)}
-                                    className="px-3.5 py-2 rounded-xl text-slate-400 hover:text-white text-xs"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={submitting}
-                                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all disabled:opacity-50"
-                                >
-                                    {submitting ? 'Proposing...' : 'Propose Rate to Brand'}
-                                </button>
-                            </div>
-                        </form>
                     </div>
                 </div>
             )}

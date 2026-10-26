@@ -11,12 +11,19 @@ const BrandAnalyticsPage = () => {
     const [analyticsData, setAnalyticsData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [hoveredBar, setHoveredBar] = useState(null);
+    const [brandRate, setBrandRate] = useState(null);
 
     const fetchAllData = async () => {
         try {
             setLoading(true);
-            const ordersRes = await api.get('/seller/orders').catch(() => ({ data: [] }));
+            const [ordersRes, brandRes] = await Promise.all([
+                api.get('/seller/orders').catch(() => ({ data: [] })),
+                api.get('/brand/profile').catch(() => ({ data: null }))
+            ]);
             const orders = Array.isArray(ordersRes.data) ? ordersRes.data : [];
+            if (brandRes?.data?.commission_rate != null) {
+                setBrandRate(Number(brandRes.data.commission_rate));
+            }
 
             // 1. Build 14-day daily chart trajectory
             const chartMap = new Map();
@@ -143,17 +150,19 @@ const BrandAnalyticsPage = () => {
                     <span className="text-2xl font-black text-amber-400 font-mono">
                         ₹{(metrics.totalNet ?? 0).toLocaleString('en-IN')}
                     </span>
-                    <p className="text-[11px] text-emerald-400 mt-1 font-semibold">After 10% platform commission</p>
+                    <p className="text-[11px] text-emerald-400 mt-1 font-semibold">
+                        After standard 5% platform commission
+                    </p>
                 </div>
 
                 <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800">
                     <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">
-                        Platform Commission (10%)
+                        Platform Commission (5%)
                     </span>
                     <span className="text-2xl font-black text-slate-300 font-mono">
                         ₹{(metrics.totalCommission ?? 0).toLocaleString('en-IN')}
                     </span>
-                    <p className="text-[11px] text-slate-500 mt-1">Hosting, payment & marketplace fees</p>
+                    <p className="text-[11px] text-slate-500 mt-1">Marketplace hosting, settlement & transaction fees</p>
                 </div>
 
                 <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800">

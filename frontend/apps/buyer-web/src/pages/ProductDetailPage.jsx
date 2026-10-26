@@ -9,7 +9,8 @@ import {
   Check, 
   Minus, 
   Plus, 
-  ChevronRight
+  ChevronRight,
+  CheckCircle2
 } from 'lucide-react';
 import api from '@api';
 import { useCart } from '../context/CartContext';
@@ -28,6 +29,7 @@ const ProductDetailPage = () => {
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
   const [reviews, setReviews] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
   const [activeTab, setActiveTab] = useState('fabric'); // 'fabric' | 'shipping' | 'reviews'
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [reviewRating, setReviewRating] = useState(5);
@@ -39,15 +41,19 @@ const ProductDetailPage = () => {
     const fetchProduct = async () => {
       setLoading(true);
       try {
-        const [prodRes, reviewsRes, relatedRes] = await Promise.all([
+        const [prodRes, reviewsRes, relatedRes, userRes] = await Promise.all([
           api.get(`/products/${id}`),
           api.get(`/products/${id}/reviews`).catch(() => ({ data: [] })),
-          api.get(`/products?limit=4`).catch(() => ({ data: { products: [] } }))
+          api.get(`/products?limit=4`).catch(() => ({ data: { products: [] } })),
+          api.get('/auth/profile').catch(() => ({ data: null }))
         ]);
 
         const prod = prodRes.data;
         setProduct(prod);
         setReviews(Array.isArray(reviewsRes.data) ? reviewsRes.data : []);
+        if (userRes?.data?.id) {
+          setCurrentUser(userRes.data);
+        }
 
         const related = (relatedRes.data?.products || relatedRes.data || []).filter(p => p.id !== prod.id);
         setRelatedProducts(related.slice(0, 4));
@@ -449,41 +455,51 @@ const ProductDetailPage = () => {
 
               {activeTab === 'reviews' && (
                 <div className="space-y-6">
-                  {/* Reviews Form */}
-                  <form onSubmit={handleReviewSubmit} className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-3">
-                    <span className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white block">
-                      Leave an Editorial Review
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-zinc-500">Rating:</span>
-                      <div className="flex gap-1 text-amber-400">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <button
-                            type="button"
-                            key={star}
-                            onClick={() => setReviewRating(star)}
-                            className="p-0.5"
-                          >
-                            <Star size={16} fill={star <= reviewRating ? 'currentColor' : 'none'} />
-                          </button>
-                        ))}
+                  {/* Reviews Form or Already Reviewed Notice */}
+                  {currentUser?.id && reviews.some(r => Number(r.user_id) === Number(currentUser.id)) ? (
+                    <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2.5">
+                      <CheckCircle2 size={18} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <div>
+                        <strong className="block text-zinc-900 dark:text-white font-bold">Review Already Submitted</strong>
+                        <span>You have already shared your impressions for this garment. Only one review per client is permitted.</span>
                       </div>
                     </div>
-                    <textarea
-                      rows={3}
-                      placeholder="Share your fit feedback, fabric feel, and styling impressions..."
-                      value={reviewComment}
-                      onChange={(e) => setReviewComment(e.target.value)}
-                      className="w-full p-3 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                    <button
-                      type="submit"
-                      disabled={reviewSubmitting || !reviewComment.trim()}
-                      className="px-4 py-2 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-bold hover:opacity-90 transition-opacity"
-                    >
-                      {reviewSubmitting ? 'Submitting...' : 'Post Review'}
-                    </button>
-                  </form>
+                  ) : (
+                    <form onSubmit={handleReviewSubmit} className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-3">
+                      <span className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white block">
+                        Leave an Editorial Review
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-zinc-500">Rating:</span>
+                        <div className="flex gap-1 text-amber-400">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              type="button"
+                              key={star}
+                              onClick={() => setReviewRating(star)}
+                              className="p-0.5 cursor-pointer"
+                            >
+                              <Star size={16} fill={star <= reviewRating ? 'currentColor' : 'none'} />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <textarea
+                        rows={3}
+                        placeholder="Share your fit feedback, fabric feel, and styling impressions..."
+                        value={reviewComment}
+                        onChange={(e) => setReviewComment(e.target.value)}
+                        className="w-full p-3 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                      <button
+                        type="submit"
+                        disabled={reviewSubmitting || !reviewComment.trim()}
+                        className="px-4 py-2 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50"
+                      >
+                        {reviewSubmitting ? 'Submitting...' : 'Post Review'}
+                      </button>
+                    </form>
+                  )}
 
                   {/* Reviews List */}
                   {reviews.length === 0 ? (

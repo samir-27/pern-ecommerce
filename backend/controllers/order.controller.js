@@ -17,35 +17,9 @@ const getRazorpayClient = () => {
     });
 };
 
-// Helper: Determine commission rate for a seller & category
-const getEffectiveCommissionRate = async (client, sellerId, categoryId) => {
-    // 1. Check seller-specific override
-    const sellerRule = await client.query(
-        "SELECT rate FROM commission_rules WHERE rule_type = 'seller' AND target_id = $1 AND is_active = true",
-        [sellerId]
-    );
-    if (sellerRule.rows.length > 0) return Number(sellerRule.rows[0].rate);
-
-    // 2. Check category-specific override
-    if (categoryId) {
-        const catRule = await client.query(
-            "SELECT rate FROM commission_rules WHERE rule_type = 'category' AND target_id = $1 AND is_active = true",
-            [categoryId]
-        );
-        if (catRule.rows.length > 0) return Number(catRule.rows[0].rate);
-    }
-
-    // 3. Check store-level commission
-    const storeRes = await client.query('SELECT commission_rate FROM seller_stores WHERE user_id = $1', [sellerId]);
-    if (storeRes.rows.length > 0 && storeRes.rows[0].commission_rate != null) {
-        return Number(storeRes.rows[0].commission_rate);
-    }
-
-    // 4. Default global commission rule
-    const globalRule = await client.query("SELECT rate FROM commission_rules WHERE rule_type = 'global' AND is_active = true LIMIT 1");
-    if (globalRule.rows.length > 0) return Number(globalRule.rows[0].rate);
-
-    return 10.00; // Safe 10% default
+// Static 5% marketplace commission across all brands and sellers
+const getEffectiveCommissionRate = async () => {
+    return 5.00;
 };
 
 const getOrderPricing = async (client, orderItems) => {
@@ -82,11 +56,37 @@ const getOrderPricing = async (client, orderItems) => {
         const itemTotal = truePrice * quantity;
         subtotal += itemTotal;
 
-        const sellerId = variant.seller_id || 1; // Default to admin seller 1 if legacy
-        const storeId = variant.store_id;
-        const brandId = variant.brand_id || variant.store_id;
+        let sellerId = variant.seller_id;
+        if (sellerId) {
+            const userCheck = await client.query('SELECT id FROM users WHERE id = $1', [sellerId]);
+            if (userCheck.rows.length === 0) sellerId = null;
+        }
+        if (!sellerId) {
+            const adminUser = await client.query("SELECT id FROM users WHERE role IN ('super_admin', 'admin') ORDER BY id ASC LIMIT 1");
+            sellerId = adminUser.rows[0]?.id || 1;
+        }
 
-        const commissionRate = await getEffectiveCommissionRate(client, sellerId, variant.category_id);
+        let storeId = variant.store_id || null;
+        if (storeId) {
+            const storeCheck = await client.query('SELECT id FROM seller_stores WHERE id = $1', [storeId]);
+            if (storeCheck.rows.length === 0) storeId = null;
+        }
+        if (!storeId && sellerId) {
+            const storeByUser = await client.query('SELECT id FROM seller_stores WHERE user_id = $1 LIMIT 1', [sellerId]);
+            if (storeByUser.rows.length > 0) storeId = storeByUser.rows[0].id;
+        }
+
+        let brandId = variant.brand_id || null;
+        if (brandId) {
+            const brandCheck = await client.query('SELECT id FROM brands WHERE id = $1', [brandId]);
+            if (brandCheck.rows.length === 0) brandId = null;
+        }
+        if (!brandId && sellerId) {
+            const brandByUser = await client.query('SELECT id FROM brands WHERE user_id = $1 LIMIT 1', [sellerId]);
+            if (brandByUser.rows.length > 0) brandId = brandByUser.rows[0].id;
+        }
+
+        const commissionRate = await getEffectiveCommissionRate(client, sellerId, variant.category_id, brandId);
         const commissionAmount = Number(((itemTotal * commissionRate) / 100).toFixed(2));
         const sellerNetAmount = Number((itemTotal - commissionAmount).toFixed(2));
 
@@ -113,6 +113,9 @@ const getOrderPricing = async (client, orderItems) => {
                 sellerNetEarnings: 0,
                 items: []
             };
+        } else {
+            if (!sellerGroups[sellerId].storeId && storeId) sellerGroups[sellerId].storeId = storeId;
+            if (!sellerGroups[sellerId].brandId && brandId) sellerGroups[sellerId].brandId = brandId;
         }
         sellerGroups[sellerId].subtotal += itemTotal;
         sellerGroups[sellerId].commissionAmount += commissionAmount;
@@ -130,11 +133,12 @@ const getOrderPricing = async (client, orderItems) => {
 
 const saveOrder = async (client, userId, shippingAddress, pricing, razorpayPaymentId = null) => {
     // 1. Create parent Marketplace Order
+    const initialStatus = razorpayPaymentId ? 'processing' : 'pending';
     const orderResult = await client.query(
         `INSERT INTO orders (user_id, total_amount, shipping_address, razorpay_payment_id, status)
-         VALUES ($1, $2, $3, $4, 'pending')
+         VALUES ($1, $2, $3, $4, $5)
          RETURNING id, total_amount, status, created_at`,
-        [userId, pricing.total, shippingAddress, razorpayPaymentId]
+        [userId, pricing.total, shippingAddress, razorpayPaymentId, initialStatus]
     );
     const newOrder = orderResult.rows[0];
 
