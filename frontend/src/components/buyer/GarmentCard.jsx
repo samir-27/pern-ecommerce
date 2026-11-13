@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, Eye, Check } from 'lucide-react';
+import { Check, ShoppingBag } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 
 const GarmentCard = ({ product }) => {
@@ -14,108 +14,109 @@ const GarmentCard = ({ product }) => {
     ? Math.round(((comparePrice - price) / comparePrice) * 100)
     : null;
 
-  const fallbackImage = 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=700&q=80';
+  const fallbackImage = 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80';
   const displayImage = product.main_image || (product.images && product.images[0]) || product.image_url || fallbackImage;
 
   const handleQuickAdd = (e) => {
     e.preventDefault();
     e.stopPropagation();
     
-    // Choose first available variant if exists
+    // Select first variant if defined
     const variant = product.variants && product.variants.length > 0 ? product.variants[0] : null;
     addToCart(product, variant, 1);
     
     setAdded(true);
-    setTimeout(() => setAdded(false), 1500);
+    setTimeout(() => setAdded(false), 1600);
   };
 
   return (
     <div 
-      className="group relative flex flex-col bg-white dark:bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-200/80 dark:border-zinc-800/80 hover:shadow-xl hover:shadow-zinc-200/50 dark:hover:shadow-black/50 transition-all duration-300"
+      className="group relative flex flex-col bg-[#FBFBFA] border border-[#E8E8E4] transition-all duration-300"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Garment Image Stage */}
-      <Link to={`/product/${product.id}`} className="relative aspect-[3/4] overflow-hidden bg-zinc-100 dark:bg-zinc-800 block">
+      {/* 3:4 Vertical Fashion Canvas */}
+      <Link 
+        to={`/product/${product.id}`} 
+        className="relative aspect-[3/4] overflow-hidden bg-[#F4F4F2] block"
+      >
         <img
           src={displayImage}
           alt={product.name}
-          className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500 ease-out"
+          className="w-full h-full object-cover object-top group-hover:scale-[1.03] transition-transform duration-700 ease-out"
           loading="lazy"
         />
 
-        {/* Brand Tag Pill */}
-        <div className="absolute top-3 left-3 flex flex-col gap-1 items-start z-10">
+        {/* Minimal Corner Tags */}
+        <div className="absolute top-2.5 left-2.5 flex flex-col gap-1 items-start z-10 pointer-events-none">
           {product.brand_name && (
-            <span className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-white/90 dark:bg-zinc-900/90 text-zinc-900 dark:text-zinc-100 backdrop-blur-md rounded-full shadow-sm border border-zinc-200/50 dark:border-zinc-700/50">
+            <span className="px-2 py-0.5 text-[9px] font-medium uppercase tracking-fashion bg-[#FBFBFA]/95 text-[#121212] border border-[#E8E8E4]">
               {product.brand_name}
             </span>
           )}
           {discountPercent && (
-            <span className="px-2 py-0.5 text-[9px] font-black uppercase tracking-wider bg-red-600 text-white rounded-full shadow-sm">
-              {discountPercent}% OFF
+            <span className="px-1.5 py-0.5 text-[9px] font-tabular tracking-wider uppercase bg-[#843828] text-white">
+              -{discountPercent}%
             </span>
           )}
         </div>
 
-        {/* Quick Add Overlay on Desktop Hover */}
-        <div className={`absolute inset-x-3 bottom-3 flex items-center gap-2 transition-all duration-200 ${isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'}`}>
+        {/* Architectural Quick Add Bar (Slides up on desktop hover) */}
+        <div 
+          className={`absolute inset-x-2 bottom-2 transition-all duration-300 ${
+            isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
+          }`}
+        >
           <button
+            type="button"
             onClick={handleQuickAdd}
             disabled={added}
-            className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-lg transition-all ${
+            className={`w-full py-2.5 px-3 text-[10px] font-medium tracking-fashion uppercase flex items-center justify-center gap-1.5 transition-colors ${
               added 
-                ? 'bg-emerald-600 text-white' 
-                : 'bg-zinc-900/95 dark:bg-white/95 text-white dark:text-zinc-900 hover:bg-black dark:hover:bg-white backdrop-blur-sm'
+                ? 'bg-[#121212] text-white' 
+                : 'bg-[#121212]/95 hover:bg-[#121212] text-white shadow-sm'
             }`}
           >
             {added ? (
               <>
-                <Check size={14} /> Added
+                <Check size={12} className="text-[#E8E8E4]" />
+                <span>Added to Bag</span>
               </>
             ) : (
               <>
-                <ShoppingBag size={14} /> Quick Add
+                <ShoppingBag size={12} strokeWidth={1.5} />
+                <span>Quick Add</span>
               </>
             )}
           </button>
         </div>
       </Link>
 
-      {/* Product Details Section */}
-      <div className="p-4 flex flex-col flex-1 justify-between gap-2">
+      {/* Garment Editorial Details */}
+      <div className="p-3.5 flex flex-col flex-1 justify-between gap-2 border-t border-[#E8E8E4]">
         <div>
-          {/* Category & Gender Pill */}
-          <div className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-wider text-zinc-400 dark:text-zinc-500 mb-1">
-            <span>{product.gender || 'Unisex'}</span>
-            <span>•</span>
-            <span>{product.category_name || product.category || 'Apparel'}</span>
+          {/* Atelier & Department Header */}
+          <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1">
+            <span className="truncate">{product.brand_name || 'Atelier'}</span>
+            <span className="text-[#A1A1AA]">{product.gender || 'Collection'}</span>
           </div>
 
-          {/* Garment Title */}
-          <Link to={`/product/${product.id}`} className="block group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-            <h3 className="font-bold text-sm text-zinc-900 dark:text-zinc-100 line-clamp-1 leading-snug">
+          {/* Garment Name */}
+          <Link to={`/product/${product.id}`} className="block">
+            <h3 className="font-ui text-[13px] text-[#121212] line-clamp-1 leading-snug group-hover:text-[#843828] transition-colors">
               {product.name}
             </h3>
           </Link>
-
-          {/* Sizes Tagline if available */}
-          {product.sizes && product.sizes.length > 0 && (
-            <div className="flex items-center gap-1 mt-1.5 text-[10px] text-zinc-500 dark:text-zinc-400">
-              <span className="font-semibold">Sizes:</span>
-              <span>{Array.isArray(product.sizes) ? product.sizes.join(', ') : product.sizes}</span>
-            </div>
-          )}
         </div>
 
         {/* Pricing Line */}
-        <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between">
+        <div className="pt-2 border-t border-[#E8E8E4]/60 flex items-baseline justify-between">
           <div className="flex items-baseline gap-2">
-            <span className="text-base font-black text-zinc-900 dark:text-zinc-100">
+            <span className="font-tabular text-[13px] font-semibold text-[#121212]">
               ₹{price.toLocaleString('en-IN')}
             </span>
             {comparePrice && comparePrice > price && (
-              <span className="text-xs text-zinc-400 line-through">
+              <span className="font-tabular text-[11px] text-[#A1A1AA] line-through">
                 ₹{comparePrice.toLocaleString('en-IN')}
               </span>
             )}
@@ -123,10 +124,9 @@ const GarmentCard = ({ product }) => {
 
           <Link
             to={`/product/${product.id}`}
-            className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center gap-1"
+            className="text-[10px] font-medium uppercase tracking-fashion text-[#71717A] hover:text-[#121212] transition-colors"
           >
-            <span>View</span>
-            <Eye size={12} />
+            Details →
           </Link>
         </div>
       </div>

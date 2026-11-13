@@ -110,7 +110,7 @@ export const getOrderPricing = async (client, orderItems) => {
         validOrderItems.push(validItem);
     }
 
-    const shipping = subtotal > 150 ? 0 : 15;
+    const shipping = subtotal > 1999 ? 0 : (subtotal > 0 ? 150 : 0);
     const tax = Number((subtotal * 0.08).toFixed(2));
     const total = Number((subtotal + shipping + tax).toFixed(2));
 

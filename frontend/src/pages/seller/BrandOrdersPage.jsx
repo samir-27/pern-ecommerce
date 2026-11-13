@@ -80,48 +80,48 @@ const BrandOrdersPage = () => {
 
   if (loading) {
     return (
-      <div className="h-[60vh] flex items-center justify-center">
-        <Loader2 className="animate-spin text-amber-500" size={32} />
+      <div className="h-[60vh] flex items-center justify-center font-ui text-[#EDEDED]">
+        <Loader2 className="animate-spin text-white" size={28} />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-ui text-[#EDEDED]">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#23232C]">
         <div>
-          <h1 className="text-2xl md:text-3xl font-black text-white">Fulfillment & Dispatch Hub</h1>
-          <p className="text-slate-400 text-sm mt-1">
-            Review customer purchases for your garments and assign parcel tracking information.
+          <span className="text-[10px] font-semibold uppercase tracking-loose-caps text-[#843828] block">
+            Client Logistics
+          </span>
+          <h1 className="font-editorial text-3xl font-light text-white">Consignment Fulfillment</h1>
+          <p className="text-xs text-[#71717A] mt-0.5">
+            Audit customer orders for your atelier pieces, assign courier tracking numbers, and fulfill dispatches.
           </p>
         </div>
         <div className="relative">
-          <Search className="absolute left-3 top-2.5 text-slate-500" size={16} />
+          <Search className="absolute left-3 top-2.5 text-[#71717A]" size={14} />
           <input
             type="text"
+            placeholder="Search order ID or client email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search order number or buyer..."
-            className="pl-9 pr-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs w-64 focus:outline-none focus:border-amber-500"
+            className="pl-9 pr-4 py-2 bg-[#141419] border border-[#23232C] focus:border-white text-white text-xs outline-none transition-colors w-64"
           />
         </div>
       </div>
 
       {error && (
-        <div role="alert" className="flex items-center justify-between gap-4 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
-          <span>{error}</span>
-          <button type="button" onClick={fetchOrders} className="font-semibold underline">Retry</button>
+        <div className="p-3 bg-[#261313] border border-[#4D1F1F] text-[#FCA5A5] text-xs">
+          {error}
         </div>
       )}
 
-      {/* Orders List */}
       <BrandOrdersList
         orders={filteredOrders}
         onOpenFulfillModal={openFulfillModal}
       />
 
-      {/* Fulfillment Modal */}
       <OrderFulfillmentModal
         isOpen={isFulfillModalOpen}
         onClose={() => setIsFulfillModalOpen(false)}

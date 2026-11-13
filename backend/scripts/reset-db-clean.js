@@ -26,19 +26,20 @@ async function resetDatabase() {
       await client.query(`TRUNCATE TABLE ${truncateList} RESTART IDENTITY CASCADE;`);
     }
 
-    // 3. Hash Super Admin password
-    const adminEmail = 'admin@minimal.com';
-    const rawPassword = 'Admin@12345';
+    // 3. Hash Super Admin passwords
     const saltRounds = 10;
     const salt = await bcrypt.genSalt(saltRounds);
-    const passwordHash = await bcrypt.hash(rawPassword, salt);
+    const passwordHash1 = await bcrypt.hash('Admin@12345', salt);
+    const passwordHash2 = await bcrypt.hash('Admin@123', salt);
 
-    console.log('Inserting Super Admin account (admin@minimal.com)...');
+    console.log('Inserting Super Admin accounts...');
     await client.query(`
       INSERT INTO users (email, password_hash, first_name, last_name, role, is_verified)
-      VALUES ($1, $2, 'Super', 'Admin', 'super_admin', true)
+      VALUES 
+        ('admin@minimal.com', $1, 'Super', 'Admin', 'super_admin', true),
+        ('admin@gmail.com', $2, 'Super', 'Admin', 'super_admin', true)
       RETURNING id, email, role;
-    `, [adminEmail, passwordHash]);
+    `, [passwordHash1, passwordHash2]);
 
     // 4. Seed Standard Marketplace Categories
     console.log('Seeding standard fashion categories...');
@@ -63,6 +64,15 @@ async function resetDatabase() {
         ON CONFLICT (name) DO NOTHING;
       `, [cat.name, cat.description]);
     }
+
+    // 5. Seed Flagship Brand for Super Admin
+    await client.query(`
+      INSERT INTO brands (user_id, name, slug, bio, status, commission_rate)
+      VALUES 
+        (1, 'MINIMAL Official Store', 'minimal-official', 'Official platform flagship atelier and luxury collection', 'active', 5.00),
+        (2, 'Atelier MINIMAL', 'atelier-minimal', 'Contemporary luxury fashion house and premier flagship studio', 'active', 5.00)
+      ON CONFLICT DO NOTHING;
+    `);
 
     await client.query('COMMIT');
     console.log('\n=============================================');

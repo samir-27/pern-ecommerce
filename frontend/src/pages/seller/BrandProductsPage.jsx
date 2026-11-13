@@ -136,7 +136,7 @@ const BrandProductsPage = () => {
   };
 
   const handleDelete = async (productId) => {
-    if (!window.confirm('Are you sure you want to delete this clothing item from your catalog?')) return;
+    if (!window.confirm('Are you sure you want to remove this piece from your atelier catalog?')) return;
     try {
       await api.delete(`/products/${productId}`);
       setProducts(prev => prev.filter(p => p.id !== productId));
@@ -148,31 +148,36 @@ const BrandProductsPage = () => {
 
   if (loading) {
     return (
-      <div className="h-[60vh] flex items-center justify-center">
-        <Loader2 className="animate-spin text-amber-500" size={32} />
+      <div className="h-[60vh] flex items-center justify-center font-ui text-[#EDEDED]">
+        <Loader2 className="animate-spin text-white" size={28} />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-ui text-[#EDEDED]">
       {error && (
-        <div role="alert" className="flex items-center justify-between gap-4 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
+        <div role="alert" className="flex items-center justify-between gap-4 border border-[#4D1F1F] bg-[#261313] p-4 text-xs text-[#FCA5A5]">
           <span>{error}</span>
-          <button type="button" onClick={fetchCatalog} className="font-semibold underline">Retry</button>
+          <button type="button" onClick={fetchCatalog} className="font-semibold underline cursor-pointer">Retry</button>
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#23232C]">
         <div>
-          <h1 className="text-2xl md:text-3xl font-black text-white">Brand Garment Catalog</h1>
-          <p className="text-sm text-slate-400 mt-1">Manage luxury clothing lines, multi-colorways, and size inventory.</p>
+          <span className="text-[10px] font-semibold uppercase tracking-loose-caps text-[#843828] block">
+            Atelier Portfolio
+          </span>
+          <h1 className="font-editorial text-3xl font-light text-white">Garment Catalog</h1>
+          <p className="text-xs text-[#71717A] mt-0.5">Manage luxury ready-to-wear lines, variant colorways, and real-time inventory.</p>
         </div>
         <button
+          type="button"
           onClick={openAddModal}
-          className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm inline-flex items-center gap-2 shadow-lg shadow-amber-500/10 transition-colors"
+          className="px-5 py-2.5 bg-white hover:bg-[#F4F4F2] text-[#0C0C0E] text-[11px] font-medium uppercase tracking-fashion inline-flex items-center gap-2 transition-colors cursor-pointer self-start sm:self-auto"
         >
-          <Plus size={16} /> Add Garment
+          <Plus size={13} />
+          <span>New Garment</span>
         </button>
       </div>
 

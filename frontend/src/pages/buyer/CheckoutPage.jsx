@@ -282,7 +282,7 @@ const CheckoutPage = () => {
           contact: validatedMobile,
         },
         theme: {
-          color: '#09090b',
+          color: '#121212',
         },
         modal: {
           ondismiss: function () {
@@ -304,61 +304,70 @@ const CheckoutPage = () => {
   // If order is placed, show official bill
   if (placedOrder) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-10 space-y-8 animate-fade-in">
-        <TaxInvoiceBill order={placedOrder} showHeaderControls={true} />
+      <div className="min-h-screen bg-[#FBFBFA] py-12 px-4 sm:px-6">
+        <div className="max-w-4xl mx-auto space-y-6">
+          <TaxInvoiceBill order={placedOrder} showHeaderControls={true} />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <Link
-          to="/products"
-          className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors"
-        >
-          <ArrowLeft size={14} /> Back to Collection
-        </Link>
-        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
-          Secure Multi-Vendor Checkout
-        </span>
-      </div>
-
-      {error && (
-        <div className="p-4 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs flex items-center gap-2.5 animate-shake">
-          <AlertCircle size={16} className="shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        <div className="lg:col-span-7">
-          <CheckoutAddressSection
-            savedAddresses={savedAddresses}
-            selectedAddressId={selectedAddressId}
-            onSelectAddress={selectAddress}
-            onAddNewAddressOption={handleAddNewAddressOption}
-            shippingForm={shippingForm}
-            onInputChange={handleInputChange}
-            onStateChange={handleStateChange}
-            onCitySelectChange={handleCitySelectChange}
-            isCustomCity={isCustomCity}
-            saveThisAddress={saveThisAddress}
-            onSaveThisAddressChange={setSaveThisAddress}
-          />
+    <div className="min-h-screen bg-[#FBFBFA] text-[#121212] font-ui">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12 space-y-8">
+        
+        {/* Navigation line */}
+        <div className="flex items-center justify-between pb-4 border-b border-[#E8E8E4]">
+          <Link
+            to="/products"
+            className="inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-fashion text-[#71717A] hover:text-[#121212] transition-colors"
+          >
+            <ArrowLeft size={12} />
+            <span>Return to Catalog</span>
+          </Link>
+          <span className="text-[10px] font-semibold uppercase tracking-loose-caps text-[#843828]">
+            Secure Atelier Checkout
+          </span>
         </div>
 
-        <div className="lg:col-span-5">
-          <CheckoutOrderSummary
-            cartItems={cartItems}
-            subtotal={subtotal}
-            shippingCost={shippingCost}
-            estimatedTax={estimatedTax}
-            totalAmount={totalAmount}
-            loading={loading}
-            onPayClick={handleRazorpayPayment}
-          />
+        {error && (
+          <div className="p-4 bg-[#843828]/10 border border-[#843828]/30 text-[#843828] text-xs flex items-center gap-2.5">
+            <AlertCircle size={15} className="shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {/* Two-Column Checkout Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+          <div className="lg:col-span-7">
+            <CheckoutAddressSection
+              savedAddresses={savedAddresses}
+              selectedAddressId={selectedAddressId}
+              onSelectAddress={selectAddress}
+              onAddNewAddressOption={handleAddNewAddressOption}
+              shippingForm={shippingForm}
+              onInputChange={handleInputChange}
+              onStateChange={handleStateChange}
+              onCitySelectChange={handleCitySelectChange}
+              isCustomCity={isCustomCity}
+              saveThisAddress={saveThisAddress}
+              onSaveThisAddressChange={setSaveThisAddress}
+            />
+          </div>
+
+          <div className="lg:col-span-5">
+            <CheckoutOrderSummary
+              cartItems={cartItems}
+              subtotal={subtotal}
+              shippingCost={shippingCost}
+              estimatedTax={estimatedTax}
+              totalAmount={totalAmount}
+              loading={loading}
+              onPayClick={handleRazorpayPayment}
+            />
+          </div>
         </div>
+
       </div>
     </div>
   );

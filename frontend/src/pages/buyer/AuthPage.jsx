@@ -6,8 +6,7 @@ import {
   Mail, 
   ArrowRight, 
   Building2, 
-  AlertCircle,
-  Percent
+  AlertCircle
 } from 'lucide-react';
 import api from '@/services/Axios';
 
@@ -160,52 +159,58 @@ const AuthPage = ({ initialMode = 'login' }) => {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8 transition-colors">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center space-y-2">
+    <div className="min-h-screen bg-[#FBFBFA] text-[#121212] font-ui flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center space-y-3">
         <Link to="/" className="inline-block">
-          <span className="text-3xl font-black tracking-tighter text-zinc-900 dark:text-white">
-            MINIMAL<span className="text-blue-600 dark:text-blue-400">.</span>
+          <span className="font-editorial text-3xl sm:text-4xl font-light tracking-[0.06em] text-[#121212]">
+            MINIMAL<span className="text-[#843828]">.</span>
           </span>
         </Link>
-        <h2 className="text-xl font-bold tracking-tight text-zinc-800 dark:text-zinc-200">
-          {roleMode === 'buyer' 
-            ? (isRegister ? 'Join the Private Atelier Club' : 'Welcome Back, Discerning Client')
-            : (isRegister ? 'Register Your Clothing Brand' : 'Brand Operations Studio Sign In')
-          }
-        </h2>
+        <div className="space-y-1">
+          <span className="text-[10px] font-semibold uppercase tracking-loose-caps text-[#843828] block">
+            {roleMode === 'buyer' ? 'Client Access' : 'Partner Atelier Gateway'}
+          </span>
+          <h2 className="font-editorial text-2xl font-light text-[#121212]">
+            {roleMode === 'buyer' 
+              ? (isRegister ? 'Create Client Account' : 'Welcome to the Atelier')
+              : (isRegister ? 'Register Partner Brand' : 'Brand Studio Login')
+            }
+          </h2>
+        </div>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4">
-        <div className="bg-white dark:bg-zinc-900 py-8 px-6 sm:px-10 rounded-3xl border border-zinc-200/80 dark:border-zinc-800 shadow-xl space-y-6">
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white border border-[#E8E8E4] p-6 sm:p-8 space-y-6">
+          
           {/* Dual Role Selector Tabs */}
-          <div className="grid grid-cols-2 p-1 rounded-2xl bg-zinc-100 dark:bg-zinc-800">
+          <div className="grid grid-cols-2 border border-[#E8E8E4] p-1 bg-[#F4F4F2]">
             <button
               type="button"
               onClick={() => handleRoleChange('buyer')}
-              className={`py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              className={`py-2 text-[10px] font-medium uppercase tracking-fashion transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${
                 roleMode === 'buyer'
-                  ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-sm'
-                  : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200'
+                  ? 'bg-white text-[#121212] shadow-xs font-semibold'
+                  : 'text-[#71717A] hover:text-[#121212]'
               }`}
             >
-              <User size={14} /> Individual Client
+              <User size={12} /> Individual Client
             </button>
             <button
               type="button"
               onClick={() => handleRoleChange('seller')}
-              className={`py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              className={`py-2 text-[10px] font-medium uppercase tracking-fashion transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${
                 roleMode === 'seller'
-                  ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white shadow-sm'
-                  : 'text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200'
+                  ? 'bg-white text-[#121212] shadow-xs font-semibold'
+                  : 'text-[#71717A] hover:text-[#121212]'
               }`}
             >
-              <Building2 size={14} /> Brand Partner
+              <Building2 size={12} /> Partner Atelier
             </button>
           </div>
 
           {error && (
-            <div className="p-3.5 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-xs flex items-center gap-2">
-              <AlertCircle size={16} className="shrink-0" />
+            <div className="p-3 bg-[#843828]/10 border border-[#843828]/30 text-[#843828] text-xs flex items-center gap-2">
+              <AlertCircle size={14} className="shrink-0" />
               <span>{error}</span>
             </div>
           )}
@@ -214,8 +219,8 @@ const AuthPage = ({ initialMode = 'login' }) => {
             {isRegister && roleMode === 'seller' && (
               <>
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 mb-1.5">
-                    Official Brand Name *
+                  <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
+                    Official Atelier / Brand Name *
                   </label>
                   <div className="relative">
                     <input
@@ -225,37 +230,37 @@ const AuthPage = ({ initialMode = 'login' }) => {
                       value={formData.brandName}
                       onChange={handleInputChange}
                       placeholder="e.g. Maison de Silk, Urban Drape"
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-xs focus:ring-2 focus:ring-blue-500 outline-none"
+                      className="w-full pl-9 pr-3.5 py-2.5 text-xs bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] rounded-none focus:outline-none transition-colors"
                     />
-                    <Building2 size={16} className="absolute left-3 top-3 text-zinc-400" />
+                    <Building2 size={14} className="absolute left-3 top-3 text-[#A1A1AA]" />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 mb-1.5">
-                    Brand Narrative / Design Aesthetic
+                  <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
+                    Atelier Narrative & Design Ethos
                   </label>
                   <textarea
                     rows={2}
                     name="brandDescription"
                     value={formData.brandDescription}
                     onChange={handleInputChange}
-                    placeholder="Briefly describe your design philosophy, fabrics, or couture specialties..."
-                    className="w-full p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-xs focus:ring-2 focus:ring-blue-500 outline-none"
+                    placeholder="Briefly describe tailoring philosophy, textiles, or specialties..."
+                    className="w-full p-3 text-xs bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] rounded-none focus:outline-none transition-colors placeholder-[#A1A1AA]"
                   />
                 </div>
 
-                <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-[11px] text-blue-700 dark:text-blue-300 flex items-center gap-2">
-                  <Percent size={14} className="shrink-0 text-blue-500" />
-                  <span>Transparent 5% platform take-rate applied strictly on confirmed delivered orders.</span>
+                <div className="p-3 bg-[#F4F4F2] border border-[#E8E8E4] text-[11px] text-[#71717A]">
+                  <span className="font-semibold text-[#121212]">5.0% Transparent Commission: </span>
+                  <span>95% of garment proceeds are disbursed directly to your atelier on completed delivery.</span>
                 </div>
               </>
             )}
 
             {isRegister && (
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 mb-1.5">
-                  {roleMode === 'seller' ? 'Founder / Operations Contact Name *' : 'Full Name *'}
+                <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
+                  {roleMode === 'seller' ? 'Founder / Atelier Director Name *' : 'Full Name *'}
                 </label>
                 <div className="relative">
                   <input
@@ -264,17 +269,17 @@ const AuthPage = ({ initialMode = 'login' }) => {
                     required
                     value={formData.name}
                     onChange={handleInputChange}
-                    placeholder="e.g. Rahul Sharma"
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-xs focus:ring-2 focus:ring-blue-500 outline-none"
+                    placeholder="e.g. Rohini Sen"
+                    className="w-full pl-9 pr-3.5 py-2.5 text-xs bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] rounded-none focus:outline-none transition-colors"
                   />
-                  <User size={16} className="absolute left-3 top-3 text-zinc-400" />
+                  <User size={14} className="absolute left-3 top-3 text-[#A1A1AA]" />
                 </div>
               </div>
             )}
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 mb-1.5">
-                Work Email Address *
+              <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
+                Email Address *
               </label>
               <div className="relative">
                 <input
@@ -283,15 +288,15 @@ const AuthPage = ({ initialMode = 'login' }) => {
                   required
                   value={formData.email}
                   onChange={handleInputChange}
-                  placeholder="name@domain.com"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-xs focus:ring-2 focus:ring-blue-500 outline-none"
+                  placeholder="client@domain.com"
+                  className="w-full pl-9 pr-3.5 py-2.5 text-xs bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] rounded-none focus:outline-none transition-colors"
                 />
-                <Mail size={16} className="absolute left-3 top-3 text-zinc-400" />
+                <Mail size={14} className="absolute left-3 top-3 text-[#A1A1AA]" />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300 mb-1.5">
+              <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
                 Password *
               </label>
               <div className="relative">
@@ -302,35 +307,35 @@ const AuthPage = ({ initialMode = 'login' }) => {
                   value={formData.password}
                   onChange={handleInputChange}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-xs focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full pl-9 pr-3.5 py-2.5 text-xs bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] rounded-none focus:outline-none transition-colors"
                 />
-                <Lock size={16} className="absolute left-3 top-3 text-zinc-400" />
+                <Lock size={14} className="absolute left-3 top-3 text-[#A1A1AA]" />
               </div>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 rounded-xl font-bold text-xs uppercase tracking-wider bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:opacity-90 transition-opacity flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="w-full py-3.5 px-4 bg-[#121212] hover:bg-[#843828] text-white text-[11px] font-medium uppercase tracking-fashion transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40"
             >
-              <span>{loading ? 'Processing...' : (isRegister ? 'Complete Onboarding' : 'Sign In')}</span>
-              <ArrowRight size={14} />
+              <span>{loading ? 'Authenticating...' : (isRegister ? 'Create Account' : 'Sign In')}</span>
+              <ArrowRight size={13} />
             </button>
           </form>
 
           {/* Toggle Register/Login */}
-          <div className="text-center pt-2">
+          <div className="text-center pt-2 border-t border-[#E8E8E4]">
             <button
               type="button"
               onClick={() => {
                 setIsRegister(!isRegister);
                 setError('');
               }}
-              className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+              className="text-[11px] font-medium text-[#71717A] hover:text-[#121212] underline underline-offset-4 cursor-pointer"
             >
               {isRegister 
-                ? 'Already have an account? Sign in here' 
-                : "Don't have an account yet? Create one"}
+                ? 'Existing client or atelier? Sign in here' 
+                : "New to MINIMAL? Register an account"}
             </button>
           </div>
         </div>

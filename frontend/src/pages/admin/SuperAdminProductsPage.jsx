@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, CheckCircle2, Loader2 } from 'lucide-react';
+import { Search, Loader2 } from 'lucide-react';
 import api from '@/services/Axios';
 import { formatCurrency } from '@/utils/formatters';
 
@@ -54,161 +54,131 @@ const SuperAdminProductsPage = () => {
 
   if (loading) {
     return (
-      <div className="h-[60vh] flex items-center justify-center">
-        <Loader2 className="animate-spin text-indigo-500" size={32} />
+      <div className="h-[60vh] flex items-center justify-center font-ui text-[#EDEDED]">
+        <Loader2 className="animate-spin text-white" size={28} />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-6 font-ui text-[#EDEDED]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#202028]">
         <div>
-          <h1 className="text-2xl md:text-3xl font-black text-white">Catalog Product Moderation</h1>
-          <p className="text-slate-400 text-sm mt-1">
-            Review submitted clothing items, verify compliance with marketplace photography standards, and approve for sale.
+          <span className="text-[10px] font-semibold uppercase tracking-loose-caps text-[#843828] block">
+            Quality Assurance
+          </span>
+          <h1 className="font-editorial text-3xl font-light text-white">Catalog Moderation</h1>
+          <p className="text-xs text-[#71717A] mt-0.5">
+            Audit apparel quality, imagery compliance, and approve or reject atelier garment submissions.
           </p>
         </div>
         <div className="flex items-center gap-3">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs focus:outline-none focus:border-indigo-500"
+            className="px-3 py-2 bg-[#121217] border border-[#202028] text-white text-xs outline-none cursor-pointer"
           >
-            <option value="all">All Statuses</option>
-            <option value="approved">Approved</option>
-            <option value="pending">Pending Review</option>
+            <option value="all">All Garments</option>
+            <option value="pending">Pending Moderation</option>
+            <option value="approved">Approved & Published</option>
             <option value="rejected">Rejected</option>
           </select>
 
           <div className="relative">
-            <Search className="absolute left-3 top-2.5 text-slate-500" size={15} />
+            <Search className="absolute left-3 top-2.5 text-[#71717A]" size={14} />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search product, brand or seller..."
-              className="pl-9 pr-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs w-64 focus:outline-none focus:border-indigo-500"
+              placeholder="Search garment title or atelier..."
+              className="pl-9 pr-4 py-2 bg-[#121217] border border-[#202028] focus:border-white text-white text-xs w-60 outline-none transition-colors"
             />
           </div>
         </div>
       </div>
 
       {error && (
-        <div role="alert" className="flex items-center justify-between gap-4 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
-          <span>{error}</span>
-          <button type="button" onClick={fetchProducts} className="font-semibold underline">Retry</button>
+        <div className="p-3 bg-[#261313] border border-[#4D1F1F] text-[#FCA5A5] text-xs">
+          {error}
         </div>
       )}
 
-      <div className="rounded-2xl bg-slate-900/80 border border-slate-800 overflow-hidden">
+      <div className="bg-[#121217] border border-[#202028] overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-sm">
+          <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="border-b border-slate-800 bg-slate-950/60 text-slate-400 text-xs font-semibold uppercase tracking-wider">
+              <tr className="border-b border-[#202028] bg-[#0E0E12] text-[#71717A] text-[10px] font-semibold uppercase tracking-fashion">
                 <th className="p-4">Garment</th>
-                <th className="p-4">Brand / Atelier</th>
-                <th className="p-4">Base Price</th>
-                <th className="p-4">Variants & Stock</th>
-                <th className="p-4">Catalog Status</th>
-                <th className="p-4 text-right">Moderation Actions</th>
+                <th className="p-4">Atelier Label</th>
+                <th className="p-4">Retail Price</th>
+                <th className="p-4">Department & Category</th>
+                <th className="p-4">Status</th>
+                <th className="p-4 text-right">Moderation Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
+            <tbody className="divide-y divide-[#1E1E26]">
               {filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-slate-500 text-xs">
-                    No products matching search criteria.
+                  <td colSpan={6} className="p-8 text-center text-[#71717A] italic">
+                    No garments matching filter.
                   </td>
                 </tr>
               ) : (
                 filteredProducts.map((p) => {
-                  const img = Array.isArray(p.images) && p.images.length > 0 ? p.images[0] : (p.image_url || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=80&q=80');
-                  const isApproved = p.status === 'approved';
-                  const isPending = p.status === 'pending';
-
+                  const img = p.images?.[0] || p.main_image || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=100&q=80';
                   return (
-                    <tr key={p.id} className="hover:bg-slate-800/30 transition-colors">
+                    <tr key={p.id} className="hover:bg-[#16161D] transition-colors">
                       <td className="p-4">
                         <div className="flex items-center gap-3">
                           <img
                             src={img}
                             alt={p.name}
-                            className="w-11 h-14 rounded-lg object-cover bg-slate-800 shrink-0 border border-slate-700/60"
+                            className="w-10 aspect-[3/4] object-cover bg-[#1B1B22] border border-[#282834] shrink-0"
                           />
                           <div>
-                            <span className="font-bold text-white text-xs block max-w-xs truncate">{p.name}</span>
-                            <span className="text-[11px] text-slate-400 block">{p.category || 'Garment'}</span>
+                            <div className="font-medium text-white text-xs line-clamp-1">{p.name}</div>
+                            <div className="text-[10px] text-[#71717A] font-tabular">SKU #{p.id}</div>
                           </div>
                         </div>
                       </td>
-
                       <td className="p-4">
-                        <div className="text-xs">
-                          <span className="font-semibold text-white block">{p.brand || 'Independent'}</span>
-                          <span className="text-slate-500 block">{p.seller_email}</span>
-                        </div>
+                        <div className="text-white font-medium">{p.brand || 'Atelier Partner'}</div>
+                        <div className="text-[10px] text-[#71717A] font-tabular">{p.seller_email}</div>
                       </td>
-
-                      <td className="p-4">
-                        <span className="font-mono font-bold text-white text-xs">
-                          {formatCurrency(p.price || p.base_price || 0)}
-                        </span>
+                      <td className="p-4 font-tabular font-semibold text-white">
+                        {formatCurrency(p.price || p.base_price || 0)}
                       </td>
-
-                      <td className="p-4">
-                        <span className="text-xs text-slate-300 font-medium">
-                          {p.variant_count || p.variants?.length || 1} variants • {p.stock_quantity ?? 10} in stock
-                        </span>
+                      <td className="p-4 text-[#A1A1AA]">
+                        <span>{p.category || 'Clothing'}</span>
+                        <span className="block text-[10px] text-[#71717A] uppercase">{p.gender || 'Unisex'}</span>
                       </td>
-
                       <td className="p-4">
-                        <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md uppercase tracking-wider ${
-                          isApproved
-                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                            : isPending
-                            ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-                            : 'bg-red-500/10 text-red-400 border border-red-500/30'
+                        <span className={`inline-block px-2 py-0.5 text-[9px] uppercase tracking-fashion border ${
+                          p.status === 'approved'
+                            ? 'bg-[#1C281F] text-[#4ADE80] border-[#2E4A35]'
+                            : p.status === 'rejected'
+                            ? 'bg-[#261313] text-[#FCA5A5] border-[#4D1F1F]'
+                            : 'bg-[#2E2018] text-[#FBBF24] border-[#4D3321]'
                         }`}>
-                          {isApproved ? <CheckCircle2 size={11} /> : null}
                           {p.status || 'Active'}
                         </span>
                       </td>
-
                       <td className="p-4 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          {isPending && (
-                            <>
-                              <button
-                                onClick={() => handleModerate(p.id, 'approved')}
-                                className="px-3 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold transition-colors cursor-pointer"
-                              >
-                                Approve
-                              </button>
-                              <button
-                                onClick={() => handleModerate(p.id, 'rejected')}
-                                className="px-3 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-bold transition-colors cursor-pointer"
-                              >
-                                Reject
-                              </button>
-                            </>
-                          )}
-                          {!isPending && isApproved && (
-                            <button
-                              onClick={() => handleModerate(p.id, 'rejected')}
-                              className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition-colors cursor-pointer"
-                            >
-                              Revoke Approval
-                            </button>
-                          )}
-                          {!isPending && !isApproved && (
-                            <button
-                              onClick={() => handleModerate(p.id, 'approved')}
-                              className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition-colors cursor-pointer"
-                            >
-                              Approve
-                            </button>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleModerate(p.id, 'approved')}
+                            className="px-2.5 py-1 bg-[#1C281F] hover:bg-[#283C2D] text-[#4ADE80] border border-[#2E4A35] text-[9px] font-medium uppercase tracking-fashion transition-colors cursor-pointer"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleModerate(p.id, 'rejected')}
+                            className="px-2.5 py-1 bg-[#261313] hover:bg-[#3D1A1A] text-[#FCA5A5] border border-[#4D1F1F] text-[9px] font-medium uppercase tracking-fashion transition-colors cursor-pointer"
+                          >
+                            Reject
+                          </button>
                         </div>
                       </td>
                     </tr>

@@ -64,7 +64,7 @@ const BrandAnalyticsPage = () => {
             id: productId,
             name: item.product_name,
             images: item.image_urls || item.images || [],
-            clothing_type: item.size ? `Size ${item.size} • ${item.color || 'Standard'}` : 'Apparel',
+            clothing_type: item.size ? `Size ${item.size} · ${item.color || 'Standard'}` : 'Apparel',
             units_sold: 0,
             total_revenue: 0,
           };
@@ -103,8 +103,8 @@ const BrandAnalyticsPage = () => {
 
   if (loading) {
     return (
-      <div className="h-[60vh] flex items-center justify-center">
-        <Loader2 className="animate-spin text-amber-500" size={32} />
+      <div className="h-[60vh] flex items-center justify-center font-ui text-[#EDEDED]">
+        <Loader2 className="animate-spin text-white" size={28} />
       </div>
     );
   }
@@ -118,105 +118,107 @@ const BrandAnalyticsPage = () => {
   const maxDailySales = Math.max(...chartData.map(d => d.sales), 1);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 font-ui text-[#EDEDED]">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#23232C]">
         <div>
-          <h1 className="text-2xl md:text-3xl font-black text-white">Brand Sales & Analytics</h1>
-          <p className="text-slate-400 text-sm mt-1">
-            Track gross merchandise value, net payout reconciliation, and best-selling clothing pieces.
+          <span className="text-[10px] font-semibold uppercase tracking-loose-caps text-[#843828] block">
+            Commercial Telemetry
+          </span>
+          <h1 className="font-editorial text-3xl font-light text-white">Sales & Net Settlement</h1>
+          <p className="text-xs text-[#71717A] mt-0.5">
+            Audit gross merchandise volume, net atelier payouts, and top-performing garments.
           </p>
         </div>
         <button
+          type="button"
           onClick={fetchAllData}
-          className="px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 text-xs font-semibold inline-flex items-center gap-2 cursor-pointer"
+          className="px-4 py-2 bg-[#141419] border border-[#23232C] hover:border-white text-[#EDEDED] text-[10px] font-medium uppercase tracking-fashion inline-flex items-center gap-1.5 transition-colors cursor-pointer self-start sm:self-auto"
         >
-          <RefreshCw size={14} /> Refresh Data
+          <RefreshCw size={12} />
+          <span>Sync Data</span>
         </button>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-2">
+        <div className="p-5 bg-[#141419] border border-[#23232C]">
+          <span className="text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] block mb-2">
             Gross Merch Value
           </span>
-          <div className="text-2xl font-black text-white">
+          <div className="font-tabular text-2xl font-semibold text-white">
             {formatCurrency(metrics.totalGross)}
           </div>
-          <span className="text-[11px] text-slate-500 mt-1 block">Customer gross purchases</span>
+          <span className="text-[10px] text-[#71717A] mt-1 block">Total client order billing</span>
         </div>
 
-        <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-2">
+        <div className="p-5 bg-[#141419] border border-[#23232C]">
+          <span className="text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] block mb-2">
             Net Atelier Payout
           </span>
-          <div className="text-2xl font-black text-emerald-400">
+          <div className="font-tabular text-2xl font-semibold text-[#4ADE80]">
             {formatCurrency(metrics.totalNet)}
           </div>
-          <span className="text-[11px] text-slate-500 mt-1 block">
-            Minus {brandRate != null ? `${brandRate}%` : '5%'} platform commission
+          <span className="text-[10px] text-[#71717A] mt-1 block">
+            Minus {brandRate != null ? `${brandRate}%` : '5%'} platform share
           </span>
         </div>
 
-        <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-2">
+        <div className="p-5 bg-[#141419] border border-[#23232C]">
+          <span className="text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] block mb-2">
             Platform Take-Rate
           </span>
-          <div className="text-2xl font-black text-amber-400">
+          <div className="font-tabular text-2xl font-semibold text-white">
             {formatCurrency(metrics.totalCommission)}
           </div>
-          <span className="text-[11px] text-slate-500 mt-1 block">Static 5% retained fee</span>
+          <span className="text-[10px] text-[#71717A] mt-1 block">Static 5.0% platform fee</span>
         </div>
 
-        <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 block mb-2">
+        <div className="p-5 bg-[#141419] border border-[#23232C]">
+          <span className="text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] block mb-2">
             Average Order Value
           </span>
-          <div className="text-2xl font-black text-white">
+          <div className="font-tabular text-2xl font-semibold text-white">
             {formatCurrency(metrics.aov)}
           </div>
-          <span className="text-[11px] text-slate-500 mt-1 block">Over {metrics.ordersCount} total orders</span>
+          <span className="text-[10px] text-[#71717A] mt-1 block">Over {metrics.ordersCount} total consignments</span>
         </div>
       </div>
 
       {/* 14-Day Sales Velocity Chart */}
-      <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-6">
+      <div className="p-6 bg-[#141419] border border-[#23232C] space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <BarChart3 size={18} className="text-amber-400" /> 14-Day Sales Velocity
+            <h3 className="text-xs font-semibold uppercase tracking-fashion text-white flex items-center gap-2">
+              <BarChart3 size={14} className="text-[#843828]" />
+              <span>14-Day Sales Trajectory</span>
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">Daily gross order volume across this atelier's catalog</p>
+            <p className="text-[11px] text-[#71717A] mt-0.5">Daily gross order volume across this atelier's catalog</p>
           </div>
           {hoveredBar && (
-            <div className="text-right text-xs">
-              <span className="text-slate-400 font-medium">{hoveredBar.label}: </span>
-              <strong className="text-amber-400">{formatCurrency(hoveredBar.sales)}</strong>
-              <span className="text-slate-500"> ({hoveredBar.orders} orders)</span>
+            <div className="text-right text-xs font-tabular">
+              <span className="text-[#71717A]">{hoveredBar.label}: </span>
+              <strong className="text-white">{formatCurrency(hoveredBar.sales)}</strong>
+              <span className="text-[#71717A]"> ({hoveredBar.orders} orders)</span>
             </div>
           )}
         </div>
 
-        <div className="h-48 flex items-end gap-2 pt-6">
-          {chartData.map((d, idx) => {
-            const heightPercent = Math.max(8, Math.round((d.sales / maxDailySales) * 100));
+        <div className="h-44 flex items-end gap-2 pt-6 border-b border-[#23232C]">
+          {chartData.map((d, i) => {
+            const heightPercent = maxDailySales > 0 ? Math.max(6, Math.round((d.sales / maxDailySales) * 100)) : 6;
             return (
               <div
-                key={idx}
+                key={i}
+                className="flex-1 flex flex-col items-center h-full justify-end group cursor-pointer"
                 onMouseEnter={() => setHoveredBar(d)}
                 onMouseLeave={() => setHoveredBar(null)}
-                className="flex-1 flex flex-col items-center gap-2 h-full justify-end group cursor-pointer"
               >
                 <div
+                  className="w-full bg-[#2A2A38] group-hover:bg-white transition-colors"
                   style={{ height: `${heightPercent}%` }}
-                  className={`w-full rounded-t-lg transition-all ${
-                    d.sales > 0
-                      ? 'bg-amber-500/80 group-hover:bg-amber-400 group-hover:shadow-lg group-hover:shadow-amber-500/20'
-                      : 'bg-slate-800/40 group-hover:bg-slate-800'
-                  }`}
                 />
-                <span className="text-[10px] text-slate-500 truncate w-full text-center group-hover:text-white">
+                <span className="text-[9px] text-[#71717A] mt-2 truncate w-full text-center font-tabular">
                   {d.label.split(' ')[0]}
                 </span>
               </div>
@@ -225,55 +227,38 @@ const BrandAnalyticsPage = () => {
         </div>
       </div>
 
-      {/* Top Performing Garments Table */}
-      <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4">
-        <div>
-          <h3 className="text-base font-bold text-white flex items-center gap-2">
-            <Shirt size={18} className="text-amber-400" /> Best-Selling Garments
+      {/* Best-Performing Garments */}
+      <div className="bg-[#141419] border border-[#23232C] p-6 space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-[#23232C]">
+          <h3 className="text-xs font-semibold uppercase tracking-fashion text-white flex items-center gap-2">
+            <Shirt size={14} className="text-[#843828]" />
+            <span>Top-Performing Garments</span>
           </h3>
-          <p className="text-xs text-slate-400 mt-0.5">Ranked by volume of garment units purchased by clients</p>
+          <span className="text-[10px] text-[#71717A] uppercase tracking-wider font-tabular">
+            By Units Dispatched
+          </span>
         </div>
 
         {topProducts.length === 0 ? (
-          <div className="p-8 text-center text-xs text-slate-500">
-            No garment sales recorded yet. Once clients purchase pieces, sales metrics will populate here.
-          </div>
+          <p className="text-xs text-[#71717A] italic py-4">No product sales velocity recorded yet.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="border-b border-slate-800 text-slate-400 uppercase tracking-wider font-semibold">
-                  <th className="py-3 px-4">Garment</th>
-                  <th className="py-3 px-4">Classification</th>
-                  <th className="py-3 px-4 text-right">Units Sold</th>
-                  <th className="py-3 px-4 text-right">Gross Revenue</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/60">
-                {topProducts.map((p, idx) => {
-                  const img = Array.isArray(p.images) && p.images.length > 0 ? p.images[0] : null;
-                  return (
-                    <tr key={idx} className="hover:bg-slate-800/30 transition-colors">
-                      <td className="py-3.5 px-4 flex items-center gap-3">
-                        {img && (
-                          <img
-                            src={img}
-                            alt={p.name}
-                            className="w-10 h-12 rounded-lg object-cover bg-slate-800 shrink-0"
-                          />
-                        )}
-                        <span className="font-bold text-white truncate max-w-xs">{p.name}</span>
-                      </td>
-                      <td className="py-3.5 px-4 text-slate-400">{p.clothing_type}</td>
-                      <td className="py-3.5 px-4 text-right font-mono font-bold text-white">{p.units_sold}</td>
-                      <td className="py-3.5 px-4 text-right font-mono font-bold text-amber-400">
-                        {formatCurrency(p.total_revenue)}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="divide-y divide-[#23232C]">
+            {topProducts.map((p, idx) => (
+              <div key={idx} className="py-3 flex items-center justify-between gap-4 text-xs">
+                <div className="flex items-center gap-3">
+                  <span className="font-tabular text-[10px] text-[#71717A] w-5">#{idx + 1}</span>
+                  <div>
+                    <h4 className="font-medium text-white text-xs">{p.name}</h4>
+                    <span className="text-[10px] text-[#71717A]">{p.clothing_type}</span>
+                  </div>
+                </div>
+
+                <div className="text-right font-tabular">
+                  <span className="text-xs font-semibold text-white block">{p.units_sold} Units Sold</span>
+                  <span className="text-[10px] text-[#71717A]">{formatCurrency(p.total_revenue)}</span>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

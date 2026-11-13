@@ -78,147 +78,167 @@ const ProfileDetailsTab = ({ profile, onProfileUpdated }) => {
   };
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* 1. Personal Information Form */}
-      <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200/90 dark:border-zinc-800 p-6 sm:p-8 shadow-sm">
-        <h3 className="text-base font-black text-zinc-900 dark:text-white uppercase tracking-wider mb-6">
-          Personal Information
-        </h3>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 font-ui text-[#121212]">
+      {/* 1. Personal Details Form */}
+      <div className="bg-white border border-[#E8E8E4] p-6 sm:p-8 space-y-6">
+        <div>
+          <span className="text-[10px] font-semibold uppercase tracking-loose-caps text-[#843828] block">
+            Personal Identity
+          </span>
+          <h3 className="font-editorial text-2xl font-light text-[#121212]">
+            Client Particulars
+          </h3>
+          <p className="text-xs text-[#71717A] mt-0.5">
+            Your name and primary contact telephone for order dispatches.
+          </p>
+        </div>
 
         {profileSuccessMsg && (
-          <div className="mb-6 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs flex items-center gap-2">
-            <CheckCircle2 size={16} /> {profileSuccessMsg}
+          <div className="p-3 bg-[#F4F4F2] border border-[#E8E8E4] text-xs text-[#121212] flex items-center gap-2">
+            <CheckCircle2 size={14} className="text-[#843828]" />
+            <span>{profileSuccessMsg}</span>
           </div>
         )}
 
         {profileError && (
-          <div className="mb-6 p-4 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs flex items-center gap-2">
-            <AlertCircle size={16} /> {profileError}
+          <div className="p-3 bg-[#843828]/10 border border-[#843828]/30 text-xs text-[#843828] flex items-center gap-2">
+            <AlertCircle size={14} />
+            <span>{profileError}</span>
           </div>
         )}
 
-        <form onSubmit={handleProfileSubmit} className="space-y-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-2">
-                Full Name
-              </label>
-              <input
-                type="text"
-                value={profileForm.name}
-                onChange={(e) => setProfileForm(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="e.g. John Doe"
-                className="w-full px-4 py-3 rounded-2xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-xs outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-colors"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-2">
-                Mobile Number
-              </label>
-              <input
-                type="tel"
-                value={profileForm.phone}
-                onChange={(e) => setProfileForm(prev => ({ ...prev, phone: e.target.value }))}
-                placeholder="e.g. 9876543210"
-                className="w-full px-4 py-3 rounded-2xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-xs outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-colors"
-              />
-            </div>
-          </div>
-
+        <form onSubmit={handleProfileSubmit} className="space-y-4">
           <div>
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-2">
-              Registered Email (Account Identity)
+            <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
+              Full Name
             </label>
             <input
-              type="email"
-              value={profile?.email || ''}
-              disabled
-              className="w-full px-4 py-3 rounded-2xl bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 text-zinc-500 text-xs cursor-not-allowed"
+              type="text"
+              required
+              value={profileForm.name}
+              onChange={(e) => setProfileForm(p => ({ ...p, name: e.target.value }))}
+              className="w-full px-3.5 py-2.5 text-xs bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] rounded-none focus:outline-none transition-colors"
             />
           </div>
 
-          <div className="flex justify-end pt-2">
+          <div>
+            <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
+              Account Email
+            </label>
+            <input
+              type="email"
+              disabled
+              value={profile?.email || ''}
+              className="w-full px-3.5 py-2.5 text-xs bg-[#F4F4F2] border border-[#E8E8E4] text-[#71717A] rounded-none cursor-not-allowed font-tabular"
+            />
+            <span className="text-[10px] text-[#A1A1AA] mt-1 block">Account email cannot be modified.</span>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
+              Contact Mobile (+91 India)
+            </label>
+            <input
+              type="tel"
+              maxLength={10}
+              placeholder="10-digit mobile number"
+              value={profileForm.phone}
+              onChange={(e) => setProfileForm(p => ({ ...p, phone: e.target.value }))}
+              className="w-full px-3.5 py-2.5 text-xs bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] font-tabular rounded-none focus:outline-none transition-colors"
+            />
+          </div>
+
+          <div className="pt-2">
             <button
               type="submit"
               disabled={savingProfile}
-              className="px-6 py-3 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-50"
+              className="px-6 py-2.5 bg-[#121212] hover:bg-[#843828] text-white text-[10px] font-medium uppercase tracking-fashion transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
             >
-              <Save size={14} /> {savingProfile ? 'Saving...' : 'Save Changes'}
+              <Save size={12} />
+              <span>{savingProfile ? 'Saving...' : 'Save Particulars'}</span>
             </button>
           </div>
         </form>
       </div>
 
-      {/* 2. Security & Password Update Form */}
-      <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200/90 dark:border-zinc-800 p-6 sm:p-8 shadow-sm">
-        <h3 className="text-base font-black text-zinc-900 dark:text-white uppercase tracking-wider mb-6 flex items-center gap-2">
-          <Lock size={16} /> Security & Password
-        </h3>
+      {/* 2. Password & Credential Security */}
+      <div className="bg-white border border-[#E8E8E4] p-6 sm:p-8 space-y-6">
+        <div>
+          <span className="text-[10px] font-semibold uppercase tracking-loose-caps text-[#843828] block">
+            Access Security
+          </span>
+          <h3 className="font-editorial text-2xl font-light text-[#121212]">
+            Change Password
+          </h3>
+          <p className="text-xs text-[#71717A] mt-0.5">
+            Update your client account credential.
+          </p>
+        </div>
 
         {passwordMsg && (
-          <div className="mb-6 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs flex items-center gap-2">
-            <CheckCircle2 size={16} /> {passwordMsg}
+          <div className="p-3 bg-[#F4F4F2] border border-[#E8E8E4] text-xs text-[#121212] flex items-center gap-2">
+            <CheckCircle2 size={14} className="text-[#843828]" />
+            <span>{passwordMsg}</span>
           </div>
         )}
 
         {passwordError && (
-          <div className="mb-6 p-4 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs flex items-center gap-2">
-            <AlertCircle size={16} /> {passwordError}
+          <div className="p-3 bg-[#843828]/10 border border-[#843828]/30 text-xs text-[#843828] flex items-center gap-2">
+            <AlertCircle size={14} />
+            <span>{passwordError}</span>
           </div>
         )}
 
-        <form onSubmit={handlePasswordSubmit} className="space-y-5">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-2">
-                Current Password
-              </label>
-              <input
-                type="password"
-                value={passwordForm.currentPassword}
-                onChange={(e) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
-                className="w-full px-4 py-3 rounded-2xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-xs outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-colors"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-2">
-                New Password
-              </label>
-              <input
-                type="password"
-                value={passwordForm.newPassword}
-                onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
-                placeholder="Min 6 characters"
-                className="w-full px-4 py-3 rounded-2xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-xs outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-colors"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-2">
-                Confirm New Password
-              </label>
-              <input
-                type="password"
-                value={passwordForm.confirmPassword}
-                onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                className="w-full px-4 py-3 rounded-2xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white text-xs outline-none focus:border-zinc-400 dark:focus:border-zinc-600 transition-colors"
-                required
-              />
-            </div>
+        <form onSubmit={handlePasswordSubmit} className="space-y-4">
+          <div>
+            <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
+              Current Password
+            </label>
+            <input
+              type="password"
+              required
+              value={passwordForm.currentPassword}
+              onChange={(e) => setPasswordForm(p => ({ ...p, currentPassword: e.target.value }))}
+              className="w-full px-3.5 py-2.5 text-xs bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] rounded-none focus:outline-none transition-colors"
+            />
           </div>
 
-          <div className="flex justify-end pt-2">
+          <div>
+            <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
+              New Password
+            </label>
+            <input
+              type="password"
+              required
+              minLength={6}
+              value={passwordForm.newPassword}
+              onChange={(e) => setPasswordForm(p => ({ ...p, newPassword: e.target.value }))}
+              className="w-full px-3.5 py-2.5 text-xs bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] rounded-none focus:outline-none transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
+              Confirm New Password
+            </label>
+            <input
+              type="password"
+              required
+              minLength={6}
+              value={passwordForm.confirmPassword}
+              onChange={(e) => setPasswordForm(p => ({ ...p, confirmPassword: e.target.value }))}
+              className="w-full px-3.5 py-2.5 text-xs bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] rounded-none focus:outline-none transition-colors"
+            />
+          </div>
+
+          <div className="pt-2">
             <button
               type="submit"
               disabled={savingPassword}
-              className="px-6 py-3 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-50"
+              className="px-6 py-2.5 bg-[#121212] hover:bg-[#843828] text-white text-[10px] font-medium uppercase tracking-fashion transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
             >
-              <Lock size={14} /> {savingPassword ? 'Updating...' : 'Update Password'}
+              <Lock size={12} />
+              <span>{savingPassword ? 'Updating...' : 'Update Password'}</span>
             </button>
           </div>
         </form>

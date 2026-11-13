@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Filter, X } from 'lucide-react';
+import { SlidersHorizontal, X } from 'lucide-react';
 import api from '@/services/Axios';
 import GarmentCard from '@/components/buyer/GarmentCard';
 import ShopFilters from '@/components/buyer/ShopFilters';
@@ -127,70 +127,112 @@ const ShopPage = () => {
   const hasActiveFilters = Boolean(categoryParam || genderParam || searchParam || priceRangeParam || sizeParam);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-zinc-200 dark:border-zinc-800">
-        <div>
-          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400 block mb-1">
-            Curated Collections
-          </span>
-          <h1 className="text-3xl font-black tracking-tight text-zinc-900 dark:text-white">
-            Atelier Clothing Catalog
-          </h1>
-          <p className="text-xs text-zinc-500 mt-1">
-            {filteredProducts.length} unique garments available across verified designer brands
-          </p>
-        </div>
+    <div className="min-h-screen bg-[#FBFBFA] text-[#121212] font-ui">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12 space-y-8">
+        
+        {/* Architectural Header */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-6 border-b border-[#E8E8E4]">
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-loose-caps text-[#843828] mb-1">
+              Garment Directory
+            </div>
+            <h1 className="font-editorial text-3xl sm:text-4xl font-light text-[#121212]">
+              {categoryParam ? categoryParam : genderParam ? `${genderParam}'s Atelier Edit` : 'The Curated Catalog'}
+            </h1>
+            <p className="text-[12px] text-[#71717A] mt-1 font-tabular">
+              Showing {filteredProducts.length} unique pieces from independent fashion houses
+            </p>
+          </div>
 
-        {/* Sort & Mobile Filter Toggle */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setIsMobileFilterOpen(!isMobileFilterOpen)}
-            className="lg:hidden flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 cursor-pointer"
-          >
-            <Filter size={14} />
-            <span>Filters</span>
-          </button>
-
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-zinc-400 font-semibold hidden sm:inline">Sort:</span>
-            <select
-              value={sortParam}
-              onChange={(e) => updateParam('sort', e.target.value)}
-              className="px-3 py-2 rounded-xl text-xs font-semibold bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+          {/* Sort & Mobile Filter Toggle */}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setIsMobileFilterOpen(true)}
+              className="lg:hidden flex items-center gap-2 px-3.5 py-2 text-[11px] font-medium uppercase tracking-fashion border border-[#121212] bg-[#FBFBFA] cursor-pointer"
             >
-              <option value="newest">Newest Arrivals</option>
-              <option value="price_low">Price: Low to High</option>
-              <option value="price_high">Price: High to Low</option>
-              <option value="name">Alphabetical</option>
-            </select>
+              <SlidersHorizontal size={12} />
+              <span>Filter ({[categoryParam, genderParam, priceRangeParam, sizeParam].filter(Boolean).length})</span>
+            </button>
+
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-[10px] uppercase tracking-fashion text-[#71717A] hidden sm:inline">Sort By:</span>
+              <select
+                value={sortParam}
+                onChange={(e) => updateParam('sort', e.target.value)}
+                className="px-3 py-2 text-xs bg-[#FBFBFA] border border-[#E8E8E4] focus:border-[#121212] text-[#121212] focus:outline-none cursor-pointer rounded-none"
+              >
+                <option value="newest">Newest Releases</option>
+                <option value="price_low">Price: Low to High</option>
+                <option value="price_high">Price: High to Low</option>
+                <option value="name">Garment Title</option>
+              </select>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Main Grid: Sidebar + Product Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* Desktop Sidebar Filters */}
-        <aside className="hidden lg:block space-y-6">
-          <ShopFilters
-            genders={genders}
-            genderParam={genderParam}
-            categories={categories}
-            categoryParam={categoryParam}
-            priceRanges={priceRanges}
-            priceRangeParam={priceRangeParam}
-            sizes={sizes}
-            sizeParam={sizeParam}
-            onUpdateParam={updateParam}
-            onClearAll={clearAllFilters}
-            hasActiveFilters={hasActiveFilters}
-          />
-        </aside>
+        {/* Active Filter Strip */}
+        {hasActiveFilters && (
+          <div className="flex flex-wrap items-center gap-2 pt-1 pb-3">
+            <span className="text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mr-1">
+              Active Filters:
+            </span>
+            {genderParam && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] uppercase tracking-wider bg-white border border-[#E8E8E4] text-[#121212]">
+                <span>Dept: {genderParam}</span>
+                <button type="button" onClick={() => updateParam('gender', '')} className="text-[#71717A] hover:text-[#121212]">
+                  <X size={10} />
+                </button>
+              </span>
+            )}
+            {categoryParam && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] uppercase tracking-wider bg-white border border-[#E8E8E4] text-[#121212]">
+                <span>Category: {categoryParam}</span>
+                <button type="button" onClick={() => updateParam('category', '')} className="text-[#71717A] hover:text-[#121212]">
+                  <X size={10} />
+                </button>
+              </span>
+            )}
+            {priceRangeParam && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] uppercase tracking-wider bg-white border border-[#E8E8E4] text-[#121212]">
+                <span>Price: {priceRanges.find(p => p.value === priceRangeParam)?.label || priceRangeParam}</span>
+                <button type="button" onClick={() => updateParam('priceRange', '')} className="text-[#71717A] hover:text-[#121212]">
+                  <X size={10} />
+                </button>
+              </span>
+            )}
+            {sizeParam && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] uppercase tracking-wider bg-white border border-[#E8E8E4] text-[#121212]">
+                <span>Size: {sizeParam}</span>
+                <button type="button" onClick={() => updateParam('size', '')} className="text-[#71717A] hover:text-[#121212]">
+                  <X size={10} />
+                </button>
+              </span>
+            )}
+            {searchParam && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] uppercase tracking-wider bg-white border border-[#E8E8E4] text-[#121212]">
+                <span>Query: "{searchParam}"</span>
+                <button type="button" onClick={() => updateParam('search', '')} className="text-[#71717A] hover:text-[#121212]">
+                  <X size={10} />
+                </button>
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={clearAllFilters}
+              className="text-[10px] uppercase tracking-fashion text-[#843828] underline underline-offset-4 ml-2 hover:opacity-80"
+            >
+              Reset All
+            </button>
+          </div>
+        )}
 
-        {/* Mobile Filter Modal */}
-        {isMobileFilterOpen && (
-          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm lg:hidden flex justify-end">
-            <div className="w-full max-w-xs h-full bg-white dark:bg-zinc-900 p-4 overflow-y-auto">
+        {/* Main Grid: Sidebar + Product Cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 lg:gap-10">
+          
+          {/* Desktop Sidebar Filters */}
+          <aside className="hidden lg:block">
+            <div className="sticky top-28">
               <ShopFilters
                 genders={genders}
                 genderParam={genderParam}
@@ -203,85 +245,68 @@ const ShopPage = () => {
                 onUpdateParam={updateParam}
                 onClearAll={clearAllFilters}
                 hasActiveFilters={hasActiveFilters}
-                isMobile={true}
-                onCloseMobile={() => setIsMobileFilterOpen(false)}
               />
             </div>
-          </div>
-        )}
+          </aside>
 
-        {/* Product Catalog Stage */}
-        <div className="lg:col-span-3">
-          {/* Active Filter Pills Bar */}
-          {hasActiveFilters && (
-            <div className="flex flex-wrap items-center gap-2 mb-6 p-3 bg-zinc-100/60 dark:bg-zinc-900/60 rounded-2xl border border-zinc-200 dark:border-zinc-800">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 mr-1">Active:</span>
-              {genderParam && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
-                  Dept: {genderParam}
-                  <button onClick={() => updateParam('gender', '')} className="cursor-pointer"><X size={12} /></button>
-                </span>
-              )}
-              {categoryParam && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
-                  Category: {categoryParam}
-                  <button onClick={() => updateParam('category', '')} className="cursor-pointer"><X size={12} /></button>
-                </span>
-              )}
-              {priceRangeParam && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
-                  Price Filtered
-                  <button onClick={() => updateParam('priceRange', '')} className="cursor-pointer"><X size={12} /></button>
-                </span>
-              )}
-              {sizeParam && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
-                  Size: {sizeParam}
-                  <button onClick={() => updateParam('size', '')} className="cursor-pointer"><X size={12} /></button>
-                </span>
-              )}
-              {searchParam && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
-                  "{searchParam}"
-                  <button onClick={() => updateParam('search', '')} className="cursor-pointer"><X size={12} /></button>
-                </span>
-              )}
-              <button
-                onClick={clearAllFilters}
-                className="text-xs text-blue-600 dark:text-blue-400 font-bold ml-auto hover:underline cursor-pointer"
-              >
-                Clear All
-              </button>
+          {/* Mobile Filter Drawer Overlay */}
+          {isMobileFilterOpen && (
+            <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs lg:hidden flex justify-end">
+              <div className="w-full max-w-xs h-full bg-[#FBFBFA] overflow-y-auto">
+                <ShopFilters
+                  genders={genders}
+                  genderParam={genderParam}
+                  categories={categories}
+                  categoryParam={categoryParam}
+                  priceRanges={priceRanges}
+                  priceRangeParam={priceRangeParam}
+                  sizes={sizes}
+                  sizeParam={sizeParam}
+                  onUpdateParam={updateParam}
+                  onClearAll={clearAllFilters}
+                  hasActiveFilters={hasActiveFilters}
+                  isMobile={true}
+                  onCloseMobile={() => setIsMobileFilterOpen(false)}
+                />
+              </div>
             </div>
           )}
 
-          {/* Loading or Empty State or Product Cards */}
-          {loading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-              {[1, 2, 3, 4, 5, 6].map((n) => (
-                <div key={n} className="rounded-2xl bg-zinc-200 dark:bg-zinc-800 aspect-[3/4] animate-pulse" />
-              ))}
-            </div>
-          ) : filteredProducts.length === 0 ? (
-            <div className="text-center py-20 bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 p-8 space-y-4">
-              <h3 className="text-lg font-bold text-zinc-900 dark:text-white">No Garments Found</h3>
-              <p className="text-xs text-zinc-500 max-w-sm mx-auto">
-                We couldn't find any clothing items matching your selected criteria. Try adjusting or resetting your filters.
-              </p>
-              <button
-                onClick={clearAllFilters}
-                className="px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:opacity-90 transition-opacity cursor-pointer"
-              >
-                Reset All Filters
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-5 sm:gap-6">
-              {filteredProducts.map((product) => (
-                <GarmentCard key={product.id} product={product} />
-              ))}
-            </div>
-          )}
+          {/* Product Cards Grid */}
+          <main className="lg:col-span-3">
+            {loading ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <div key={n} className="bg-[#EFEFEA] aspect-[3/4] animate-pulse border border-[#E8E8E4]" />
+                ))}
+              </div>
+            ) : filteredProducts.length === 0 ? (
+              <div className="p-12 sm:p-16 text-center border border-[#E8E8E4] bg-white space-y-4">
+                <span className="font-editorial text-3xl font-light text-[#121212] block">
+                  No Garments Found
+                </span>
+                <p className="text-xs text-[#71717A] max-w-sm mx-auto leading-relaxed">
+                  We could not find any pieces matching your current filters. Try selecting different attributes or resetting filters.
+                </p>
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={clearAllFilters}
+                    className="px-6 py-2.5 bg-[#121212] text-white text-[11px] font-medium uppercase tracking-fashion hover:bg-[#843828] transition-colors"
+                  >
+                    Reset All Filters
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+                {filteredProducts.map((garment) => (
+                  <GarmentCard key={garment.id} product={garment} />
+                ))}
+              </div>
+            )}
+          </main>
+
         </div>
       </div>
     </div>

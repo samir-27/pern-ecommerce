@@ -18,24 +18,25 @@ const CheckoutAddressSection = ({
   onSaveThisAddressChange
 }) => {
   return (
-    <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200/90 dark:border-zinc-800 p-6 sm:p-8 shadow-sm space-y-6">
-      <div className="flex items-center gap-3 pb-4 border-b border-zinc-100 dark:border-zinc-800">
-        <div className="w-8 h-8 rounded-full bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 flex items-center justify-center font-black text-xs">
-          1
+    <div className="bg-[#FBFBFA] border border-[#E8E8E4] p-6 sm:p-8 space-y-6 font-ui text-[#121212]">
+      {/* Step Header */}
+      <div className="flex items-center gap-3 pb-4 border-b border-[#E8E8E4]">
+        <div className="w-7 h-7 bg-[#121212] text-white flex items-center justify-center font-tabular font-medium text-xs">
+          01
         </div>
         <div>
-          <h2 className="text-base font-black text-zinc-900 dark:text-white uppercase tracking-wider">
+          <h2 className="text-xs font-semibold uppercase tracking-loose-caps text-[#121212]">
             Delivery Destination
           </h2>
-          <p className="text-xs text-zinc-500">Select delivery address or specify new recipient</p>
+          <p className="text-[12px] text-[#71717A] mt-0.5">Specify recipient details and verified Indian dispatch address</p>
         </div>
       </div>
 
       {/* Saved Addresses Quick Selection */}
       {savedAddresses.length > 0 && (
         <div className="space-y-3">
-          <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400">
-            Saved Addresses
+          <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A]">
+            Saved Dispatch Addresses
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {savedAddresses.map((addr) => {
@@ -44,41 +45,43 @@ const CheckoutAddressSection = ({
                 <div
                   key={addr.id}
                   onClick={() => onSelectAddress(addr)}
-                  className={`p-4 rounded-2xl border cursor-pointer transition-all relative ${
+                  className={`p-4 border cursor-pointer transition-colors relative ${
                     isSelected
-                      ? 'border-zinc-900 dark:border-white bg-zinc-50/50 dark:bg-zinc-800/40 shadow-sm'
-                      : 'border-zinc-200 dark:border-zinc-800 hover:border-zinc-400'
+                      ? 'border-[#121212] bg-[#F4F4F2]'
+                      : 'border-[#E8E8E4] bg-white hover:border-[#71717A]'
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-xs text-zinc-900 dark:text-white flex items-center gap-1.5">
-                      <MapPin size={13} className={isSelected ? 'text-blue-600' : 'text-zinc-400'} />
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="font-medium text-xs text-[#121212] flex items-center gap-1.5">
+                      <MapPin size={12} className={isSelected ? 'text-[#843828]' : 'text-[#71717A]'} />
                       {addr.full_name}
                     </span>
                     {isSelected && (
-                      <span className="w-4 h-4 rounded-full bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 flex items-center justify-center">
+                      <span className="w-4 h-4 bg-[#121212] text-white flex items-center justify-center text-[10px]">
                         <Check size={10} />
                       </span>
                     )}
                   </div>
-                  <p className="text-[11px] text-zinc-500 line-clamp-2 leading-relaxed">
+                  <p className="text-[11px] text-[#71717A] line-clamp-2 leading-relaxed">
                     {addr.address_line}, {addr.city}, {addr.state} - {addr.pincode}
                   </p>
-                  <p className="text-[10px] text-zinc-400 mt-1 font-mono">Ph: {addr.phone}</p>
+                  <p className="text-[10px] text-[#A1A1AA] mt-1.5 font-tabular">Ph: {addr.phone}</p>
                 </div>
               );
             })}
 
             <div
               onClick={onAddNewAddressOption}
-              className={`p-4 rounded-2xl border border-dashed cursor-pointer transition-all flex flex-col items-center justify-center text-center ${
+              className={`p-4 border border-dashed cursor-pointer transition-colors flex flex-col items-center justify-center text-center ${
                 selectedAddressId === 'new'
-                  ? 'border-zinc-900 dark:border-white bg-zinc-50/50 dark:bg-zinc-800/40'
-                  : 'border-zinc-300 dark:border-zinc-700 hover:border-zinc-500 text-zinc-500'
+                  ? 'border-[#121212] bg-[#F4F4F2]'
+                  : 'border-[#E8E8E4] bg-white hover:border-[#121212] text-[#71717A]'
               }`}
             >
-              <Plus size={16} className="mb-1" />
-              <span className="text-xs font-bold text-zinc-900 dark:text-white">Use Another Address</span>
+              <Plus size={14} className="mb-1 text-[#121212]" />
+              <span className="text-[11px] font-medium uppercase tracking-fashion text-[#121212]">
+                Deliver to New Address
+              </span>
             </div>
           </div>
         </div>
@@ -86,129 +89,142 @@ const CheckoutAddressSection = ({
 
       {/* Recipient & Address Input Form */}
       {(selectedAddressId === 'new' || savedAddresses.length === 0) && (
-        <div className="space-y-4 pt-2">
+        <div className="space-y-4 pt-2 border-t border-[#E8E8E4]">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-1.5">
-                Full Name
+              <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
+                Recipient Full Name *
               </label>
               <input
                 type="text"
                 name="fullName"
                 required
+                placeholder="e.g. Rohini Sen"
                 value={shippingForm.fullName}
                 onChange={onInputChange}
-                placeholder="Recipient name"
-                className="w-full px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs outline-none focus:border-zinc-400"
+                className="w-full px-3.5 py-2.5 text-xs bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] rounded-none focus:outline-none transition-colors"
               />
             </div>
+
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-1.5">
-                10-Digit Mobile Number
+              <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
+                Mobile Number (India +91) *
               </label>
               <input
                 type="tel"
                 name="phone"
                 required
+                maxLength={10}
+                placeholder="10-digit mobile number"
                 value={shippingForm.phone}
                 onChange={onInputChange}
-                placeholder="e.g. 9876543210"
-                className="w-full px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs outline-none focus:border-zinc-400"
+                className="w-full px-3.5 py-2.5 text-xs bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] font-tabular rounded-none focus:outline-none transition-colors"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-1.5">
-              Street Address / Apartment
+            <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
+              Postal Street Address / Apartment / Suite *
             </label>
             <input
               type="text"
               name="address"
               required
+              placeholder="Building name, flat number, street lane"
               value={shippingForm.address}
               onChange={onInputChange}
-              placeholder="Flat / Building / Street Details"
-              className="w-full px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs outline-none focus:border-zinc-400"
+              className="w-full px-3.5 py-2.5 text-xs bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] rounded-none focus:outline-none transition-colors"
             />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-1.5">
-                State / UT
+              <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
+                State / UT *
               </label>
               <select
                 name="state"
                 required
                 value={shippingForm.state}
-                onChange={(e) => onStateChange(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs outline-none focus:border-zinc-400"
+                onChange={onStateChange}
+                className="w-full px-3.5 py-2.5 text-xs bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] rounded-none focus:outline-none transition-colors cursor-pointer"
               >
                 <option value="">Select State</option>
-                {INDIAN_STATES.map(st => (
+                {INDIAN_STATES.map((st) => (
                   <option key={st} value={st}>{st}</option>
                 ))}
               </select>
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-1.5">
-                City / Town
+              <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
+                City / District *
               </label>
-              {isCustomCity ? (
-                <input
-                  type="text"
-                  name="city"
-                  required
-                  placeholder="Enter city"
-                  value={shippingForm.city}
-                  onChange={onInputChange}
-                  className="w-full px-3 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs outline-none focus:border-zinc-400"
-                />
-              ) : (
+              {!isCustomCity ? (
                 <select
                   name="city"
                   required
                   value={shippingForm.city}
-                  onChange={(e) => onCitySelectChange(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs outline-none focus:border-zinc-400"
+                  onChange={onCitySelectChange}
+                  disabled={!shippingForm.state}
+                  className="w-full px-3.5 py-2.5 text-xs bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] rounded-none focus:outline-none transition-colors cursor-pointer disabled:opacity-50"
                 >
-                  <option value="">Select City</option>
-                  {(INDIAN_STATES_AND_CITIES[shippingForm.state] || ['Other']).map(city => (
-                    <option key={city} value={city}>{city}</option>
+                  <option value="">{shippingForm.state ? 'Select City' : 'Select State first'}</option>
+                  {(INDIAN_STATES_AND_CITIES[shippingForm.state] || []).map((ct) => (
+                    <option key={ct} value={ct}>{ct}</option>
                   ))}
+                  <option value="__CUSTOM_CITY__">+ Enter other city...</option>
                 </select>
+              ) : (
+                <div className="flex gap-1.5">
+                  <input
+                    type="text"
+                    name="city"
+                    required
+                    placeholder="Enter city"
+                    value={shippingForm.city}
+                    onChange={onInputChange}
+                    className="flex-1 px-3.5 py-2.5 text-xs bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] rounded-none focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => onCitySelectChange({ target: { value: '' } })}
+                    className="px-2.5 text-[10px] uppercase font-medium bg-[#F4F4F2] border border-[#E8E8E4] text-[#121212]"
+                  >
+                    List
+                  </button>
+                </div>
               )}
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-1.5">
-                Postal PIN Code
+              <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
+                Pincode (6 digits) *
               </label>
               <input
                 type="text"
                 name="pincode"
                 required
                 maxLength={6}
+                placeholder="e.g. 110001"
                 value={shippingForm.pincode}
                 onChange={onInputChange}
-                placeholder="6-digit PIN"
-                className="w-full px-3 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs outline-none focus:border-zinc-400 font-mono"
+                className="w-full px-3.5 py-2.5 text-xs bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] font-tabular rounded-none focus:outline-none transition-colors"
               />
             </div>
           </div>
 
-          <div className="flex items-center gap-2 pt-2">
+          <div className="pt-2 flex items-center gap-2">
             <input
               type="checkbox"
               id="saveAddressCheckbox"
               checked={saveThisAddress}
               onChange={(e) => onSaveThisAddressChange(e.target.checked)}
-              className="rounded text-zinc-900"
+              className="rounded-none border-[#E8E8E4] text-[#121212] focus:ring-0 cursor-pointer"
             />
-            <label htmlFor="saveAddressCheckbox" className="text-xs text-zinc-600 dark:text-zinc-400">
-              Save this address to my profile for future orders
+            <label htmlFor="saveAddressCheckbox" className="text-xs text-[#71717A] cursor-pointer">
+              Save this address to my profile for future atelier orders
             </label>
           </div>
         </div>

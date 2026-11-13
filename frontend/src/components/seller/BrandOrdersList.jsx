@@ -1,4 +1,4 @@
-import { PackageCheck, Truck, Calendar, User, MapPin, CheckCircle2, Clock } from 'lucide-react';
+import { PackageCheck, Truck, Calendar, Clock } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/utils/formatters';
 
 const BrandOrdersList = ({
@@ -7,18 +7,18 @@ const BrandOrdersList = ({
 }) => {
   if (orders.length === 0) {
     return (
-      <div className="p-12 text-center rounded-2xl bg-slate-900/60 border border-slate-800 text-slate-400">
-        <PackageCheck className="mx-auto text-slate-600 mb-3" size={40} />
-        <h3 className="text-base font-bold text-white">No orders matching criteria</h3>
-        <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-          New orders for your apparel will appear here automatically.
+      <div className="p-12 text-center bg-[#141419] border border-[#23232C] text-[#71717A] font-ui space-y-3">
+        <PackageCheck className="mx-auto text-[#71717A]" size={32} strokeWidth={1.5} />
+        <h3 className="font-editorial text-2xl font-light text-white">No Orders Found</h3>
+        <p className="text-xs text-[#71717A] max-w-sm mx-auto leading-relaxed">
+          Purchases of your atelier pieces will appear here in real-time as customer orders are verified.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 font-ui text-[#EDEDED]">
       {orders.map((o) => {
         const status = o.status || 'unfulfilled';
         const isPending = status === 'pending' || status === 'unfulfilled' || status === 'processing';
@@ -28,145 +28,103 @@ const BrandOrdersList = ({
         return (
           <div
             key={o.id}
-            className="p-5 md:p-6 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-slate-700/80 transition-all space-y-4"
+            className="p-5 md:p-6 bg-[#141419] border border-[#23232C] space-y-4 transition-colors"
           >
             {/* Order Header */}
-            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#23232C] pb-4">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 rounded-xl bg-slate-800 text-amber-400">
-                  <PackageCheck size={20} />
+                <div className="p-2.5 bg-[#1C1C24] text-white border border-[#282834]">
+                  <PackageCheck size={16} />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-white text-sm">
+                    <span className="font-tabular font-medium text-white text-xs">
                       Order #{o.order_id || o.id}
                     </span>
-                    <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md uppercase tracking-wider ${
+                    <span className={`inline-flex items-center gap-1 text-[9px] font-medium px-2 py-0.5 uppercase tracking-fashion border ${
                       isDelivered
-                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                        ? 'bg-[#1C281F] text-[#4ADE80] border-[#2E4A35]'
                         : isShipped
-                        ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30'
-                        : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                        ? 'bg-[#141E28] text-[#60A5FA] border-[#223B54]'
+                        : 'bg-[#2E2018] text-[#FBBF24] border-[#4D3321]'
                     }`}>
-                      {isDelivered || isShipped ? <Truck size={11} /> : <Clock size={11} />}
-                      {status}
+                      {isDelivered || isShipped ? <Truck size={10} /> : <Clock size={10} />}
+                      <span>{status}</span>
                     </span>
                   </div>
-                  <span className="text-xs text-slate-400 mt-0.5 flex items-center gap-1.5">
-                    <Calendar size={12} /> {formatDate(o.created_at)}
+                  <span className="text-[11px] text-[#71717A] mt-0.5 flex items-center gap-1.5 font-tabular">
+                    <Calendar size={11} /> {formatDate(o.created_at)}
                   </span>
                 </div>
               </div>
 
               <div className="flex items-center gap-4 text-right">
                 <div className="text-right">
-                  <div className="text-[11px] text-slate-400">
-                    Gross: {formatCurrency(o.subtotal || 0)} • Fee (5%): -{formatCurrency(o.commission_amount || 0)}
+                  <div className="text-[10px] text-[#71717A] font-tabular">
+                    Gross: {formatCurrency(o.subtotal || 0)} · Fee (5%): -{formatCurrency(o.commission_amount || 0)}
                   </div>
-                  <span className="text-base font-black text-amber-400 block">
+                  <span className="text-sm font-semibold font-tabular text-[#4ADE80] block">
                     {formatCurrency(o.seller_net_earnings ?? o.subtotal ?? 0)} Net Payout
                   </span>
                 </div>
                 {isPending && (
                   <button
+                    type="button"
                     onClick={() => onOpenFulfillModal(o)}
-                    className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition-all shadow-md active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                    className="px-4 py-2 bg-white hover:bg-[#F4F4F2] text-[#0C0C0E] text-[10px] font-medium uppercase tracking-fashion flex items-center gap-1.5 transition-colors cursor-pointer"
                   >
-                    <Truck size={14} /> Dispatch Parcel
+                    <Truck size={12} />
+                    <span>Dispatch Parcel</span>
                   </button>
                 )}
                 {isShipped && (
                   <button
+                    type="button"
                     onClick={() => onOpenFulfillModal(o)}
-                    className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm cursor-pointer"
+                    className="px-4 py-2 bg-[#1C1C24] hover:bg-[#252530] text-white border border-[#2C2C38] text-[10px] font-medium uppercase tracking-fashion flex items-center gap-1.5 transition-colors cursor-pointer"
                   >
-                    <Truck size={13} /> Update / Deliver
-                  </button>
-                )}
-                {isDelivered && (
-                  <button
-                    onClick={() => onOpenFulfillModal(o)}
-                    className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <CheckCircle2 size={13} className="text-emerald-400" /> Logistics Details
+                    <Truck size={12} />
+                    <span>Update Delivery</span>
                   </button>
                 )}
               </div>
             </div>
 
-            {/* Customer & Shipping Info */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs bg-slate-950/40 p-3.5 rounded-xl border border-slate-800/60">
-              <div className="flex items-start gap-2 text-slate-300">
-                <User size={14} className="text-amber-400 shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-semibold text-white block">
-                    {o.customer_name || 'Customer'}
-                  </span>
-                  <span className="text-slate-400">{o.customer_email}</span>
-                </div>
-              </div>
-              <div className="flex items-start gap-2 text-slate-300">
-                <MapPin size={14} className="text-amber-400 shrink-0 mt-0.5" />
-                <div>
-                  <span className="text-slate-400 block">Delivery Address:</span>
-                  <span className="text-white">
-                    {typeof o.shipping_address === 'object'
-                      ? Object.values(o.shipping_address || {}).filter(Boolean).join(', ')
-                      : o.shipping_address || 'Address provided on customer file'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Tracking Info if Shipped */}
-            {o.tracking_number && (
-              <div className="flex items-center gap-3 text-xs bg-blue-950/20 border border-blue-500/30 text-blue-300 px-3.5 py-2 rounded-xl">
-                <Truck size={14} className="text-blue-400" />
-                <span>
-                  Carrier: <strong>{o.shipping_carrier || 'Express Courier'}</strong> • Tracking AWB: <strong>{o.tracking_number}</strong>
-                </span>
-              </div>
-            )}
-
-            {/* Line Items */}
-            <div className="space-y-2 pt-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
-                Garments in this order ({o.items?.length || 0})
+            {/* Order Items Table Strip */}
+            <div className="space-y-2">
+              <span className="text-[10px] font-semibold uppercase tracking-loose-caps text-[#843828] block">
+                Purchased Pieces
               </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                {(o.items || []).map((item, idx) => (
+                  <div key={idx} className="p-3 bg-[#0C0C0E] border border-[#202028] flex items-center gap-3">
+                    <img
+                      src={item.image_url || 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=100&q=80'}
+                      alt={item.name}
+                      className="w-10 aspect-[3/4] object-cover bg-[#1B1B22] border border-[#282834] shrink-0"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-white font-medium truncate">{item.name}</p>
+                      <p className="text-[10px] text-[#71717A] font-tabular mt-0.5">
+                        Size: {item.size || 'Standard'} · Qty: {item.quantity} · {formatCurrency(item.price)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-              {(!o.items || o.items.length === 0) ? (
-                <div className="p-3 rounded-xl bg-slate-950/40 text-slate-500 text-xs italic">
-                  Awaiting garment item details
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                  {o.items.map((item, idx) => {
-                    const imgSrc = (Array.isArray(item.image_urls) && item.image_urls.length > 0 ? item.image_urls[0] : null) ||
-                                   (Array.isArray(item.images) && item.images.length > 0 ? item.images[0] : null) ||
-                                   item.image_url ||
-                                   'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=80&q=80';
-                    return (
-                      <div
-                        key={item.order_item_id || item.id || idx}
-                        className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center gap-3.5 text-xs hover:border-slate-700 transition-colors"
-                      >
-                        <img
-                          src={imgSrc}
-                          alt={item.product_name}
-                          className="w-12 h-14 rounded-lg object-cover bg-slate-800 shrink-0 border border-slate-700/60"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <div className="font-bold text-white truncate text-xs">{item.product_name}</div>
-                          <div className="text-slate-400 text-[11px] mt-0.5">
-                            Size: <span className="text-white font-medium">{item.size || 'Standard'}</span> • Color: <span className="text-white font-medium">{item.color || 'Standard'}</span>
-                          </div>
-                          <div className="text-amber-400 font-bold mt-1 font-mono">
-                            Qty {item.quantity} × {formatCurrency(item.price_at_purchase || 0)}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+            {/* Destination & Tracking Line */}
+            <div className="pt-2 border-t border-[#202028] flex flex-wrap items-center justify-between text-[11px] text-[#71717A] font-tabular gap-2">
+              <div>
+                <span className="text-white font-medium">Customer: </span>
+                <span>{o.customer_name || 'Verified Client'} ({o.customer_email})</span>
+              </div>
+              {o.tracking_number && (
+                <div className="text-white">
+                  <span>AWB: </span>
+                  <strong className="text-[#60A5FA]">{o.tracking_number}</strong>
+                  <span> ({o.shipping_carrier || 'Express Air'})</span>
                 </div>
               )}
             </div>

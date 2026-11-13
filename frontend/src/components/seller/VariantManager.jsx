@@ -16,26 +16,27 @@ const VariantManager = ({
   onRemoveVariantRow
 }) => {
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+    <div className="space-y-4 font-ui text-[#EDEDED]">
+      <div className="flex items-center justify-between pb-2 border-b border-[#23232C]">
         <div>
-          <h4 className="text-sm font-bold text-white uppercase tracking-wider">
-            Garment Variants & Inventory
+          <h4 className="text-xs font-semibold uppercase tracking-fashion text-white">
+            Garment Variants & Inventory Allocation
           </h4>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Organize sizes, colorways, individual stock levels, and upload up to 5 photos per color.
+          <p className="text-[11px] text-[#71717A] mt-0.5">
+            Configure sizes, colorways, individual SKU stock levels, and upload up to 5 photos per color.
           </p>
         </div>
         <button
           type="button"
           onClick={onAddVariantRow}
-          className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs flex items-center gap-1 transition-colors"
+          className="px-3 py-1.5 bg-white hover:bg-[#F4F4F2] text-[#0C0C0E] text-[10px] font-medium uppercase tracking-fashion flex items-center gap-1 transition-colors cursor-pointer"
         >
-          <Plus size={14} /> Add Colorway
+          <Plus size={11} />
+          <span>New Colorway</span>
         </button>
       </div>
 
-      <div className="space-y-4 max-h-96 overflow-y-auto pr-1">
+      <div className="space-y-3.5 max-h-96 overflow-y-auto pr-1">
         {variants.map((v, index) => {
           const previews = v.imagePreviews || [];
           const isFirstOfColor = index === 0 || (variants[index - 1].color || '').trim().toLowerCase() !== (v.color || '').trim().toLowerCase();
@@ -43,19 +44,19 @@ const VariantManager = ({
           return (
             <div
               key={index}
-              className={`p-4 rounded-xl border transition-all space-y-3 ${
+              className={`p-4 border transition-colors space-y-3 ${
                 isFirstOfColor
-                  ? 'border-slate-700 bg-slate-900/90'
-                  : 'border-slate-800/80 bg-slate-900/40 ml-4'
+                  ? 'border-[#2D2D3A] bg-[#141419]'
+                  : 'border-[#23232C] bg-[#101014] ml-3'
               }`}
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-slate-800 text-slate-400 text-[10px] font-bold flex items-center justify-center font-mono">
+                  <span className="w-5 h-5 bg-[#1E1E28] text-[#A1A1AA] text-[10px] font-tabular font-medium flex items-center justify-center">
                     {index + 1}
                   </span>
-                  <span className="text-xs font-bold text-white uppercase">
-                    {v.color || 'Colorway'} • Size {v.size}
+                  <span className="text-xs font-medium text-white uppercase tracking-wider">
+                    {v.color || 'Colorway'} · Size {v.size}
                   </span>
                 </div>
 
@@ -63,18 +64,19 @@ const VariantManager = ({
                   <button
                     type="button"
                     onClick={() => onAddSizeToColor(index)}
-                    className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 text-xs font-semibold flex items-center gap-1 transition-colors"
+                    className="px-2.5 py-1 bg-[#1E1E28] hover:bg-[#282836] text-white text-[10px] font-medium uppercase tracking-fashion flex items-center gap-1 transition-colors cursor-pointer border border-[#2B2B3A]"
                   >
-                    <Plus size={12} /> Add Size
+                    <Plus size={10} />
+                    <span>Add Size</span>
                   </button>
                   {variants.length > 1 && (
                     <button
                       type="button"
                       onClick={() => onRemoveVariantRow(index)}
-                      className="p-1 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                      className="p-1 text-[#71717A] hover:text-[#E17564] transition-colors cursor-pointer"
                       title="Remove Variant"
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={12} />
                     </button>
                   )}
                 </div>
@@ -83,27 +85,27 @@ const VariantManager = ({
               {/* Fields Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                    Color Name
+                  <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1">
+                    Colorway Name
                   </label>
                   <input
                     type="text"
                     required
                     value={v.color}
                     onChange={(e) => onVariantChange(index, 'color', e.target.value)}
-                    placeholder="e.g. Navy Blue"
-                    className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white outline-none focus:border-amber-500 text-xs"
+                    placeholder="e.g. Obsidian Black"
+                    className="w-full px-3 py-2 bg-[#0C0C0E] border border-[#23232C] focus:border-white text-white text-xs outline-none transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                    Size
+                  <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1">
+                    Garment Size
                   </label>
                   <select
                     value={v.size}
                     onChange={(e) => onVariantChange(index, 'size', e.target.value)}
-                    className="w-full px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white outline-none focus:border-amber-500 text-xs"
+                    className="w-full px-3 py-2 bg-[#0C0C0E] border border-[#23232C] focus:border-white text-white text-xs outline-none transition-colors cursor-pointer"
                   >
                     {CLOTHING_SIZES.map((sz) => (
                       <option key={sz} value={sz}>{sz}</option>
@@ -112,73 +114,69 @@ const VariantManager = ({
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                  <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1">
                     Stock Quantity
                   </label>
                   <input
                     type="number"
                     min="0"
                     required
-                    value={v.stock_quantity}
-                    onChange={(e) => onVariantChange(index, 'stock_quantity', e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white outline-none focus:border-amber-500 text-xs font-mono"
+                    value={v.stock_quantity ?? 10}
+                    onChange={(e) => onVariantChange(index, 'stock_quantity', parseInt(e.target.value) || 0)}
+                    className="w-full px-3 py-2 bg-[#0C0C0E] border border-[#23232C] focus:border-white text-white font-tabular text-xs outline-none transition-colors"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                    Price (₹)
+                  <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1">
+                    Price Override (₹)
                   </label>
                   <input
                     type="number"
                     min="0"
                     placeholder={`Default: ₹${basePrice || 0}`}
-                    value={v.price || ''}
+                    value={v.price_override ?? v.price ?? ''}
                     onChange={(e) => onVariantChange(index, 'price', e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-white outline-none focus:border-amber-500 text-xs font-mono"
+                    className="w-full px-3 py-2 bg-[#0C0C0E] border border-[#23232C] focus:border-white text-white font-tabular text-xs outline-none transition-colors"
                   />
                 </div>
               </div>
 
-              {/* Photos upload area (only show for first variant of each color or if unique) */}
+              {/* Photo Upload Strip for Colorway */}
               {isFirstOfColor && (
-                <div className="pt-2 border-t border-slate-800/80">
+                <div className="pt-2 border-t border-[#23232C]">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      Photos for {v.color || 'this color'} ({previews.length}/5)
+                    <span className="text-[10px] font-semibold uppercase tracking-fashion text-[#71717A]">
+                      Editorial Images for {v.color || 'this colorway'} ({previews.length}/5)
                     </span>
-                    {previews.length < 5 && (
-                      <label className="cursor-pointer text-[11px] font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1">
-                        <Upload size={12} /> Upload Photos
-                        <input
-                          type="file"
-                          multiple
-                          accept="image/*"
-                          onChange={(e) => onVariantImageUpload(index, e.target.files)}
-                          className="hidden"
-                        />
-                      </label>
-                    )}
+                    <label className="text-[10px] uppercase tracking-fashion text-white hover:underline flex items-center gap-1 cursor-pointer">
+                      <Upload size={10} />
+                      <span>Upload Photos</span>
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => onVariantImageUpload(index, e.target.files)}
+                      />
+                    </label>
                   </div>
 
-                  {previews.length > 0 ? (
-                    <div className="flex flex-wrap items-center gap-2">
-                      {previews.map((preview, pIdx) => (
-                        <div key={pIdx} className="relative group w-12 h-14 rounded-lg overflow-hidden border border-slate-700 bg-slate-800 shrink-0">
-                          <img src={preview} alt="preview" className="w-full h-full object-cover" />
+                  {previews.length > 0 && (
+                    <div className="flex gap-2 overflow-x-auto pb-1">
+                      {previews.map((prev, pIdx) => (
+                        <div key={pIdx} className="w-14 aspect-[3/4] bg-[#0C0C0E] border border-[#282834] relative group shrink-0">
+                          <img src={prev} alt="Preview" className="w-full h-full object-cover" />
                           <button
                             type="button"
                             onClick={() => onVariantImageRemove(index, pIdx)}
-                            className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-red-400 transition-opacity"
-                            title="Remove Photo"
+                            className="absolute top-1 right-1 p-0.5 bg-black/80 text-white hover:text-[#E17564] transition-colors cursor-pointer"
                           >
-                            <X size={14} />
+                            <X size={10} />
                           </button>
                         </div>
                       ))}
                     </div>
-                  ) : (
-                    <p className="text-[11px] text-slate-500 italic">No photos uploaded for this colorway.</p>
                   )}
                 </div>
               )}

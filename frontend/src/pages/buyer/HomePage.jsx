@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Sparkles, ChevronRight, Flame } from 'lucide-react';
+import { ArrowRight, ArrowUpRight } from 'lucide-react';
 import api from '@/services/Axios';
 import GarmentCard from '@/components/buyer/GarmentCard';
 
@@ -30,66 +30,109 @@ const HomePage = () => {
   }, []);
 
   return (
-    <div className="home-page space-y-16 pb-20">
-      {/* 1. Hero Editorial Section */}
-      <section className="home-hero mx-4 sm:mx-6 lg:mx-8 mt-6">
-        <div className="home-hero__copy">
-          <div className="home-hero__eyebrow">
-            <Sparkles size={14} />
-            <span>The considered wardrobe · Spring / Summer '26</span>
+    <div className="min-h-screen bg-[#FBFBFA] text-[#121212] font-ui space-y-16 lg:space-y-24 pb-24">
+      {/* 1. Full-Bleed Architectural Hero Section */}
+      <section className="relative border-b border-[#E8E8E4]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-12 lg:pt-12 lg:pb-16">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+            
+            {/* Left Editorial Copy (7 columns) */}
+            <div className="lg:col-span-7 space-y-6">
+              <div className="inline-flex items-center gap-2 text-[10px] uppercase font-semibold tracking-loose-caps text-[#843828] border-b border-[#843828]/30 pb-1">
+                <span>The Contemporary Edit · Autumn / Winter '26</span>
+              </div>
+
+              <h1 className="font-editorial text-4xl sm:text-6xl lg:text-7xl font-light tracking-tight text-[#121212] leading-[1.05]">
+                Tailored silhouttes.
+                <br />
+                <span className="italic font-normal">Considered craft.</span>
+              </h1>
+
+              <p className="text-sm sm:text-base text-[#71717A] max-w-lg leading-relaxed font-normal">
+                Discover uncompromised ready-to-wear and bespoke garments crafted by independent ateliers across India and abroad.
+              </p>
+
+              <div className="pt-2 flex flex-wrap items-center gap-4">
+                <Link
+                  to="/products"
+                  className="px-8 py-3.5 bg-[#121212] hover:bg-[#843828] text-white text-[11px] font-medium tracking-fashion uppercase transition-colors inline-flex items-center gap-2"
+                >
+                  <span>Explore the Collection</span>
+                  <ArrowRight size={13} />
+                </Link>
+
+                <Link
+                  to="/brands"
+                  className="px-6 py-3.5 border border-[#121212] hover:border-[#843828] hover:text-[#843828] text-[#121212] text-[11px] font-medium tracking-fashion uppercase transition-colors inline-flex items-center gap-1.5"
+                >
+                  <span>Meet the Ateliers</span>
+                  <ArrowUpRight size={13} />
+                </Link>
+              </div>
+
+              {/* Editorial Proof Numbers */}
+              <div className="pt-8 grid grid-cols-3 gap-6 border-t border-[#E8E8E4] max-w-lg">
+                <div>
+                  <span className="font-tabular text-sm font-semibold text-[#121212] block">01</span>
+                  <span className="text-[11px] text-[#71717A] uppercase tracking-wider block mt-0.5">Direct Ateliers</span>
+                </div>
+                <div>
+                  <span className="font-tabular text-sm font-semibold text-[#121212] block">02</span>
+                  <span className="text-[11px] text-[#71717A] uppercase tracking-wider block mt-0.5">Strict Vetting</span>
+                </div>
+                <div>
+                  <span className="font-tabular text-sm font-semibold text-[#121212] block">03</span>
+                  <span className="text-[11px] text-[#71717A] uppercase tracking-wider block mt-0.5">5% Fair Share</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Editorial Imagery (5 columns) */}
+            <div className="lg:col-span-5 relative">
+              <div className="relative aspect-[3/4] overflow-hidden bg-[#F4F4F2] border border-[#E8E8E4]">
+                <img
+                  src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1200&q=85"
+                  alt="A considered edit of contemporary fashion"
+                  className="w-full h-full object-cover object-top hover:scale-[1.02] transition-transform duration-700"
+                />
+                
+                <div className="absolute bottom-4 left-4 right-4 bg-[#FBFBFA]/95 backdrop-blur-sm border border-[#E8E8E4] p-3 flex items-center justify-between">
+                  <div>
+                    <span className="text-[9px] uppercase tracking-loose-caps text-[#71717A] block">Runway Capsule</span>
+                    <strong className="text-[12px] font-semibold text-[#121212] font-ui">Winter Trench & Overcoats</strong>
+                  </div>
+                  <Link
+                    to="/products?category=Jackets%20%26%20Outerwear"
+                    className="text-[10px] uppercase tracking-fashion font-medium text-[#121212] hover:text-[#843828] underline underline-offset-4"
+                  >
+                    View Edit →
+                  </Link>
+                </div>
+              </div>
+            </div>
+
           </div>
-          <h1>
-            Good clothes.
-            <br />
-            <em>Great stories.</em>
-          </h1>
-          <p>
-            Discover thoughtfully made pieces from independent designers who care about the details as much as you do.
-          </p>
-          <div className="home-hero__actions">
-            <Link to="/products" className="home-hero__primary">
-              <span>Explore the collection</span>
-              <ArrowRight size={16} />
-            </Link>
-            <Link to="/brands" className="home-hero__secondary">Meet the makers</Link>
-          </div>
-          <div className="home-hero__proof">
-            <div><strong>01</strong><span>Independent labels</span></div>
-            <div><strong>02</strong><span>Thoughtful design</span></div>
-            <div><strong>03</strong><span>Made to be worn</span></div>
-          </div>
-        </div>
-        <div className="home-hero__visual">
-          <img
-            src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1200&q=85"
-            alt="A considered edit of contemporary fashion"
-          />
-          <div className="home-hero__image-note">
-            <span>THE NEW SEASON</span>
-            <strong>Wear it your way.</strong>
-          </div>
-          <div className="home-hero__stamp" aria-hidden="true">GOOD<br />THINGS<br />TAKE TIME</div>
         </div>
       </section>
 
-      {/* 2. Partner Brands Spotlight */}
+      {/* 2. Official Ateliers Showcase */}
       {partnerBrands.length > 0 && (
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-end justify-between mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 pb-4 border-b border-[#E8E8E4]">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400 block mb-1">
-                Official Ateliers
+              <span className="text-[10px] font-semibold uppercase tracking-loose-caps text-[#843828] block mb-1">
+                Verified Partners
               </span>
-              <h2 className="text-2xl font-black tracking-tight text-zinc-900 dark:text-white">
-                Featured Clothing Brands
+              <h2 className="font-editorial text-2xl sm:text-3xl font-light text-[#121212]">
+                Independent Fashion Ateliers
               </h2>
             </div>
             <Link
               to="/brands"
-              className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+              className="text-[11px] font-medium uppercase tracking-fashion text-[#121212] hover:text-[#843828] flex items-center gap-1 transition-colors"
             >
-              <span>View All Brands</span>
-              <ChevronRight size={14} />
+              <span>View Directory</span>
+              <ArrowRight size={12} />
             </Link>
           </div>
 
@@ -98,19 +141,19 @@ const HomePage = () => {
               <Link
                 key={brand.id}
                 to={`/brands/${brand.slug || brand.id}`}
-                className="group p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 text-center hover:border-zinc-400 transition-all shadow-sm"
+                className="group p-5 bg-[#FBFBFA] border border-[#E8E8E4] text-center hover:border-[#121212] transition-all"
               >
-                <div className="w-16 h-16 mx-auto rounded-full overflow-hidden bg-zinc-100 dark:bg-zinc-800 mb-3 border border-zinc-200 dark:border-zinc-700">
+                <div className="w-14 h-14 mx-auto overflow-hidden bg-[#F4F4F2] mb-3.5 border border-[#E8E8E4]">
                   <img
                     src={brand.logo_url || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=120&q=80'}
                     alt={brand.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                 </div>
-                <h3 className="font-bold text-xs text-zinc-900 dark:text-white truncate">
+                <h3 className="font-ui text-xs font-semibold text-[#121212] truncate">
                   {brand.name}
                 </h3>
-                <span className="text-[10px] text-zinc-400 block mt-0.5 uppercase tracking-wider">
+                <span className="text-[10px] text-[#71717A] uppercase tracking-fashion block mt-1">
                   Verified Atelier
                 </span>
               </Link>
@@ -119,34 +162,34 @@ const HomePage = () => {
         </section>
       )}
 
-      {/* 3. Trending Curated Garments Grid */}
+      {/* 3. Trending Curated Garments Grid (Dynamic Data via GarmentCard) */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-end justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8 pb-4 border-b border-[#E8E8E4]">
           <div>
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-blue-600 dark:text-blue-400 flex items-center gap-1 mb-1">
-              <Flame size={12} /> Seasonal Capsule
+            <span className="text-[10px] font-semibold uppercase tracking-loose-caps text-[#843828] block mb-1">
+              Curated Selection
             </span>
-            <h2 className="text-2xl font-black tracking-tight text-zinc-900 dark:text-white">
-              Latest Editorial Garments
+            <h2 className="font-editorial text-2xl sm:text-3xl font-light text-[#121212]">
+              Latest Atelier Releases
             </h2>
           </div>
           <Link
             to="/products"
-            className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+            className="text-[11px] font-medium uppercase tracking-fashion text-[#121212] hover:text-[#843828] flex items-center gap-1 transition-colors"
           >
-            <span>Explore All</span>
-            <ChevronRight size={14} />
+            <span>Explore All Garments</span>
+            <ArrowRight size={12} />
           </Link>
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-              <div key={n} className="rounded-2xl bg-zinc-200 dark:bg-zinc-800 aspect-[3/4] animate-pulse" />
+              <div key={n} className="bg-[#EFEFEA] aspect-[3/4] animate-pulse border border-[#E8E8E4]" />
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             {featuredGarments.map((garment) => (
               <GarmentCard key={garment.id} product={garment} />
             ))}
@@ -154,42 +197,47 @@ const HomePage = () => {
         )}
       </section>
 
-      {/* 4. Editorial Department Promo Banner */}
+      {/* 4. Editorial Split Atelier Manifesto */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="relative rounded-3xl overflow-hidden bg-zinc-900 text-white p-8 md:p-14 border border-zinc-800 shadow-2xl">
-          <div className="relative z-10 max-w-xl space-y-4">
-            <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-blue-400">
-              Modern Craftsmanship
-            </span>
-            <h2 className="text-3xl md:text-5xl font-black tracking-tight leading-tight">
-              Direct from Independent Design Studios
-            </h2>
-            <p className="text-zinc-300 text-xs md:text-sm leading-relaxed">
-              Every garment on PERN Atelier is sourced directly from verified clothing labels. No mass production. No compromises.
-            </p>
-            <div className="pt-2 flex flex-wrap gap-3">
+        <div className="border border-[#E8E8E4] bg-[#121212] text-[#FBFBFA] grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
+          
+          <div className="lg:col-span-7 p-8 sm:p-12 lg:p-16 flex flex-col justify-between space-y-8">
+            <div className="space-y-4">
+              <span className="text-[10px] font-semibold uppercase tracking-loose-caps text-[#A1A1AA]">
+                Our Philosophy
+              </span>
+              <h2 className="font-editorial text-3xl sm:text-4xl lg:text-5xl font-light leading-tight">
+                Authentic craft. Direct from creators. Zero middlemen.
+              </h2>
+              <p className="text-xs sm:text-[13px] text-[#A1A1AA] max-w-md leading-relaxed">
+                By charging an unyielding static 5% platform take-rate, MINIMAL gives 95% of revenues directly back to fashion designers and apparel craftspeople.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-4 pt-4 border-t border-[#27272A]">
               <Link
                 to="/products?gender=Mens"
-                className="px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider bg-white text-zinc-900 hover:bg-zinc-100 transition-colors"
+                className="px-6 py-3 bg-white text-[#121212] text-[11px] font-medium uppercase tracking-fashion hover:bg-[#F4F4F2] transition-colors"
               >
                 Men's Department
               </Link>
               <Link
                 to="/products?gender=Womens"
-                className="px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider bg-white/10 text-white hover:bg-white/20 backdrop-blur-md transition-colors"
+                className="px-6 py-3 border border-[#3F3F46] text-[#FBFBFA] text-[11px] font-medium uppercase tracking-fashion hover:border-white transition-colors"
               >
-                Women's Department
+                Women's Atelier
               </Link>
             </div>
           </div>
 
-          <div className="absolute right-0 top-0 bottom-0 w-1/2 opacity-30 md:opacity-40 hidden sm:block pointer-events-none">
+          <div className="lg:col-span-5 relative min-h-[300px] lg:min-h-full">
             <img
               src="https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=1000&q=80"
-              alt="Tailoring"
-              className="w-full h-full object-cover object-center"
+              alt="Atelier tailoring craftsmanship"
+              className="w-full h-full object-cover object-center grayscale hover:grayscale-0 transition-all duration-700"
             />
           </div>
+
         </div>
       </section>
     </div>

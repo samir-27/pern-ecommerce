@@ -32,7 +32,7 @@ const ProductDetailPage = () => {
         const [prodRes, reviewsRes, relatedRes, userRes] = await Promise.all([
           api.get(`/products/${id}`),
           api.get(`/products/${id}/reviews`).catch(() => ({ data: [] })),
-          api.get(`/products?limit=4`).catch(() => ({ data: { products: [] } })),
+          api.get(`/products?limit=5`).catch(() => ({ data: { products: [] } })),
           api.get('/auth/profile').catch(() => ({ data: null }))
         ]);
 
@@ -43,7 +43,7 @@ const ProductDetailPage = () => {
           setCurrentUser(userRes.data);
         }
 
-        const related = (relatedRes.data?.products || relatedRes.data || []).filter(p => p.id !== prod.id);
+        const related = (relatedRes.data?.products || relatedRes.data || []).filter(p => Number(p.id) !== Number(prod.id));
         setRelatedProducts(related.slice(0, 4));
 
         if (prod.variants && prod.variants.length > 0) {
@@ -130,21 +130,34 @@ const ProductDetailPage = () => {
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-20 text-center animate-pulse">
-        <div className="h-96 max-w-xl mx-auto bg-zinc-200 dark:bg-zinc-800 rounded-3xl mb-6"></div>
-        <div className="h-6 w-48 bg-zinc-200 dark:bg-zinc-800 mx-auto rounded-lg"></div>
+      <div className="min-h-screen bg-[#FBFBFA] flex items-center justify-center py-24">
+        <div className="space-y-4 text-center">
+          <div className="w-12 h-12 border-2 border-[#121212] border-t-transparent animate-spin mx-auto" />
+          <p className="text-[11px] uppercase tracking-fashion text-[#71717A]">
+            Opening Atelier Archive...
+          </p>
+        </div>
       </div>
     );
   }
 
   if (!product) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-24 text-center">
-        <h2 className="text-2xl font-bold text-zinc-900 dark:text-white">Garment Not Found</h2>
-        <p className="text-zinc-500 text-xs mt-2">The product you are looking for may have been archived.</p>
-        <Link to="/products" className="mt-6 inline-block px-6 py-3 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl text-xs font-bold uppercase">
-          Back to Catalog
-        </Link>
+      <div className="min-h-screen bg-[#FBFBFA] flex items-center justify-center py-24 font-ui">
+        <div className="max-w-md mx-auto px-4 text-center space-y-4">
+          <h2 className="font-editorial text-3xl font-light text-[#121212]">Garment Not Found</h2>
+          <p className="text-xs text-[#71717A] leading-relaxed">
+            The archive piece you requested may have been discontinued or belongs to a private capsule.
+          </p>
+          <div className="pt-2">
+            <Link 
+              to="/products" 
+              className="px-6 py-3 bg-[#121212] text-white text-[11px] font-medium uppercase tracking-fashion inline-block"
+            >
+              Return to Catalog
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
@@ -173,92 +186,106 @@ const ProductDetailPage = () => {
     : (Array.isArray(product.colors) ? product.colors : []);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
-      {/* Breadcrumb Navigation */}
-      <nav className="flex items-center gap-2 text-xs text-zinc-500 font-medium">
-        <Link to="/" className="hover:text-zinc-900 dark:hover:text-white">Home</Link>
-        <ChevronRight size={12} />
-        <Link to="/products" className="hover:text-zinc-900 dark:hover:text-white">Shop</Link>
-        <ChevronRight size={12} />
-        <span className="text-zinc-900 dark:text-white font-bold truncate max-w-xs">{product.name}</span>
-      </nav>
+    <div className="min-h-screen bg-[#FBFBFA] text-[#121212] font-ui">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-10 sm:space-y-16">
+        
+        {/* Editorial Breadcrumb */}
+        <nav className="flex items-center gap-2 text-[11px] text-[#71717A] uppercase tracking-wider">
+          <Link to="/" className="hover:text-[#121212] transition-colors">Home</Link>
+          <ChevronRight size={11} className="text-[#A1A1AA]" />
+          <Link to="/products" className="hover:text-[#121212] transition-colors">Catalog</Link>
+          <ChevronRight size={11} className="text-[#A1A1AA]" />
+          <span className="text-[#121212] font-medium truncate max-w-xs">{product.name}</span>
+        </nav>
 
-      {/* Main Product Showcase Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-        {/* Left: Gallery */}
-        <ProductGallery
-          images={images}
-          activeImageIndex={activeImageIndex}
-          setActiveImageIndex={setActiveImageIndex}
-          brandName={product.brand_name}
-          productName={product.name}
-        />
+        {/* Two-Column Atelier Product Stage */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-14 items-start">
+          
+          {/* Left: Gallery (7 columns on large) */}
+          <div className="lg:col-span-7">
+            <ProductGallery
+              images={images}
+              activeImageIndex={activeImageIndex}
+              setActiveImageIndex={setActiveImageIndex}
+              brandName={product.brand_name}
+              productName={product.name}
+            />
+          </div>
 
-        {/* Right: Garment Details & Actions */}
-        <div className="space-y-6">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-xs font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">
-                {product.brand_name || 'MINIMAL Atelier'}
-              </span>
-              <span className="text-zinc-300 dark:text-zinc-700">•</span>
-              <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                {product.gender || 'Unisex'} / {product.category_name || product.category || 'Clothing'}
-              </span>
+          {/* Right: Garment Details & Actions (5 columns) */}
+          <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-28">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-loose-caps text-[#843828]">
+                <span>{product.brand_name || 'MINIMAL ATELIER'}</span>
+                <span>·</span>
+                <span className="text-[#71717A]">{product.gender || 'UNISEX'}</span>
+                <span>·</span>
+                <span className="text-[#71717A]">{product.category_name || product.category || 'APPAREL'}</span>
+              </div>
+
+              <h1 className="font-editorial text-3xl sm:text-4xl font-light text-[#121212] leading-[1.1]">
+                {product.name}
+              </h1>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-zinc-900 dark:text-white leading-tight">
-              {product.name}
-            </h1>
+            <p className="text-xs sm:text-[13px] text-[#71717A] leading-relaxed">
+              {product.description || "Expertly tailored from select textiles with meticulous attention to drape, proportions, and finishing details. Crafted for considered wardrobes."}
+            </p>
+
+            <ProductVariantSelector
+              price={price}
+              comparePrice={comparePrice}
+              currentStock={currentStock}
+              availableSizes={availableSizes}
+              selectedSize={selectedSize}
+              onSelectSize={handleSizeChange}
+              availableColors={availableColors}
+              selectedColor={selectedColor}
+              onSelectColor={handleColorChange}
+              quantity={quantity}
+              onQuantityChange={setQuantity}
+              onAddToCart={handleAddToCart}
+              addedNotice={addedNotice}
+            />
+
+            <ProductReviewsSection
+              reviews={reviews}
+              currentUser={currentUser}
+              onSubmitReview={handleReviewSubmit}
+              reviewSubmitting={reviewSubmitting}
+            />
           </div>
 
-          <p className="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed">
-            {product.description || "Expertly crafted from selected textiles with meticulous attention to drape, proportion, and finishing details. Designed for discerning wardrobes."}
-          </p>
-
-          <ProductVariantSelector
-            price={price}
-            comparePrice={comparePrice}
-            currentStock={currentStock}
-            availableSizes={availableSizes}
-            selectedSize={selectedSize}
-            onSelectSize={handleSizeChange}
-            availableColors={availableColors}
-            selectedColor={selectedColor}
-            onSelectColor={handleColorChange}
-            quantity={quantity}
-            onQuantityChange={setQuantity}
-            onAddToCart={handleAddToCart}
-            addedNotice={addedNotice}
-          />
-
-          <ProductReviewsSection
-            reviews={reviews}
-            currentUser={currentUser}
-            onSubmitReview={handleReviewSubmit}
-            reviewSubmitting={reviewSubmitting}
-          />
         </div>
-      </div>
 
-      {/* Related Garments Carousel */}
-      {relatedProducts.length > 0 && (
-        <section className="pt-12 border-t border-zinc-200 dark:border-zinc-800">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl font-black tracking-tight text-zinc-900 dark:text-white">
-              Complete the Atelier Look
-            </h2>
-            <Link to="/products" className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline">
-              Browse All
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {relatedProducts.map((p) => (
-              <GarmentCard key={p.id} product={p} />
-            ))}
-          </div>
-        </section>
-      )}
+        {/* Complete the Look Section */}
+        {relatedProducts.length > 0 && (
+          <section className="pt-12 sm:pt-16 border-t border-[#E8E8E4]">
+            <div className="flex items-end justify-between mb-8 pb-4 border-b border-[#E8E8E4]">
+              <div>
+                <span className="text-[10px] font-semibold uppercase tracking-loose-caps text-[#843828] block mb-1">
+                  Atelier Curation
+                </span>
+                <h2 className="font-editorial text-2xl sm:text-3xl font-light text-[#121212]">
+                  Complete the Ensemble
+                </h2>
+              </div>
+              <Link
+                to="/products"
+                className="text-[11px] font-medium uppercase tracking-fashion text-[#121212] hover:text-[#843828] transition-colors"
+              >
+                View Full Catalog →
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+              {relatedProducts.map((p) => (
+                <GarmentCard key={p.id} product={p} />
+              ))}
+            </div>
+          </section>
+        )}
+
+      </div>
     </div>
   );
 };

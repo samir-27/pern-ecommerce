@@ -32,7 +32,7 @@ const SuperAdminLoginPage = () => {
       setError(
         err.response?.data?.error ||
         (err.request
-          ? 'Unable to reach the server. Check that the backend is running and try again.'
+          ? 'Unable to connect with API server. Please verify backend is running on http://localhost:5000.'
           : 'Access denied: Invalid administrator credentials.')
       );
     } finally {
@@ -41,75 +41,95 @@ const SuperAdminLoginPage = () => {
   };
 
   return (
-    <div data-admin-theme="light" className="super-admin-theme min-h-screen bg-slate-950 flex items-center justify-center p-6 antialiased font-sans">
+    <div className="min-h-screen bg-[#0A0A0C] text-[#EDEDED] font-ui flex items-center justify-center p-6 antialiased">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center mx-auto text-white shadow-xl shadow-indigo-500/25">
-            <ShieldAlert size={28} />
+          <Link to="/" className="inline-block">
+            <span className="font-editorial text-3xl font-light tracking-[0.06em] text-white">
+              MINIMAL<span className="text-[#843828]">.</span>
+            </span>
+          </Link>
+          <div className="pt-2">
+            <span className="text-[10px] font-semibold uppercase tracking-loose-caps text-[#843828] block">
+              Governance Gateway
+            </span>
+            <h1 className="font-editorial text-2xl font-light text-white">Super Admin Command Center</h1>
+            <p className="text-xs text-[#71717A] max-w-xs mx-auto mt-1">
+              Restricted platform administrative zone. System operator credentials required.
+            </p>
           </div>
-          <span className="text-xs font-black uppercase tracking-[0.25em] text-indigo-400 block pt-2">
-            Platform Security Gateway
-          </span>
-          <h1 className="text-2xl font-black text-white">Super Admin Console</h1>
-          <p className="text-xs text-slate-400 max-w-xs mx-auto">
-            Restricted administrative zone. Authorized platform operators only.
-          </p>
         </div>
 
         {error && (
-          <div className="p-3.5 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs flex items-center gap-2.5">
-            <AlertCircle size={16} className="shrink-0 text-red-400" />
+          <div className="p-3.5 bg-[#261313] border border-[#4D1F1F] text-[#FCA5A5] text-xs flex items-center gap-2.5">
+            <AlertCircle size={14} className="shrink-0 text-[#F87171]" />
             <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="p-6 sm:p-8 rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl space-y-4">
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-              Admin Work Email
-            </label>
-            <div className="relative">
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@platform.com"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
-              />
-              <Mail size={16} className="absolute left-3 top-3 text-slate-400" />
+        <div className="bg-[#121217] border border-[#202028] p-6 sm:p-8 space-y-6 shadow-2xl">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
+                Operator Email *
+              </label>
+              <div className="relative">
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="admin@gmail.com"
+                  className="w-full pl-9 pr-3.5 py-2.5 bg-[#0A0A0C] border border-[#202028] focus:border-white text-white text-xs outline-none transition-colors"
+                />
+                <Mail size={13} className="absolute left-3 top-3 text-[#71717A]" />
+              </div>
             </div>
-          </div>
 
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-              Master Password
-            </label>
-            <div className="relative">
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••••••"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:ring-2 focus:ring-indigo-500 outline-none"
-              />
-              <Lock size={16} className="absolute left-3 top-3 text-slate-400" />
+            <div>
+              <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
+                Master Security Key / Password *
+              </label>
+              <div className="relative">
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full pl-9 pr-3.5 py-2.5 bg-[#0A0A0C] border border-[#202028] focus:border-white text-white text-xs outline-none transition-colors"
+                />
+                <Lock size={13} className="absolute left-3 top-3 text-[#71717A]" />
+              </div>
             </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3.5 px-4 bg-white hover:bg-[#F4F4F2] text-[#0A0A0C] text-[11px] font-medium uppercase tracking-fashion transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40"
+            >
+              {loading ? (
+                <>
+                  <Loader2 size={13} className="animate-spin" />
+                  <span>Authenticating Platform Operator...</span>
+                </>
+              ) : (
+                <>
+                  <span>Authenticate Operator</span>
+                  <ArrowRight size={13} />
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="pt-2 border-t border-[#1E1E26] text-center">
+            <Link
+              to="/"
+              className="text-[11px] text-[#71717A] hover:text-white transition-colors"
+            >
+              ← Return to Buyer Marketplace
+            </Link>
           </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 px-4 rounded-xl font-bold text-xs uppercase tracking-wider bg-indigo-600 hover:bg-indigo-500 text-white transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shadow-lg shadow-indigo-600/30"
-          >
-            {loading ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
-            <span>{loading ? 'Authenticating Operator...' : 'Authenticate & Enter'}</span>
-          </button>
-        </form>
-
-        <div className="text-center text-xs text-slate-500">
-          <Link to="/" className="hover:text-slate-300 transition-colors">← Back to Main Marketplace Store</Link>
         </div>
       </div>
     </div>

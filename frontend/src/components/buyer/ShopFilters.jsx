@@ -16,132 +16,151 @@ const ShopFilters = ({
   onCloseMobile
 }) => {
   return (
-    <div className={`bg-white dark:bg-zinc-900 rounded-3xl p-6 border border-zinc-200/80 dark:border-zinc-800 space-y-6 ${isMobile ? 'shadow-2xl' : ''}`}>
-      <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
-        <span className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-white flex items-center gap-2">
-          <SlidersHorizontal size={14} /> Refine Catalog
-        </span>
+    <div className={`bg-[#FBFBFA] border border-[#E8E8E4] p-5 space-y-6 font-ui text-[#121212] ${isMobile ? 'h-full' : ''}`}>
+      {/* Header */}
+      <div className="flex items-center justify-between pb-3.5 border-b border-[#E8E8E4]">
+        <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-fashion text-[#121212]">
+          <SlidersHorizontal size={13} strokeWidth={1.5} />
+          <span>Refine Selection</span>
+        </div>
         <div className="flex items-center gap-3">
           {hasActiveFilters && (
             <button
+              type="button"
               onClick={onClearAll}
-              className="text-[11px] font-bold text-red-600 hover:underline flex items-center gap-1 cursor-pointer"
+              className="text-[10px] font-medium uppercase tracking-fashion text-[#843828] hover:underline flex items-center gap-1 cursor-pointer"
             >
-              <RotateCcw size={11} /> Reset
+              <RotateCcw size={10} />
+              <span>Clear All</span>
             </button>
           )}
           {isMobile && onCloseMobile && (
-            <button onClick={onCloseMobile} className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer">
+            <button
+              type="button"
+              onClick={onCloseMobile}
+              className="p-1 text-[#71717A] hover:text-[#121212] cursor-pointer"
+            >
               <X size={16} />
             </button>
           )}
         </div>
       </div>
 
-      {/* Department / Gender */}
-      <details className="shop-filter-group" open>
-        <summary className="flex items-center justify-between cursor-pointer text-xs font-bold text-zinc-900 dark:text-white py-1">
+      {/* 1. Department / Gender */}
+      <details className="group border-b border-[#E8E8E4] pb-4" open>
+        <summary className="flex items-center justify-between cursor-pointer text-[11px] font-semibold uppercase tracking-fashion text-[#121212] py-1 list-none">
           <span>Department</span>
-          <ChevronDown size={15} aria-hidden="true" />
+          <ChevronDown size={14} className="group-open:rotate-180 transition-transform duration-200 text-[#71717A]" />
         </summary>
-        <div className="space-y-1.5 mt-2">
+        <div className="space-y-1 mt-3">
           <button
+            type="button"
             onClick={() => onUpdateParam('gender', '')}
-            className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+            className={`w-full text-left px-2.5 py-1.5 text-xs transition-colors cursor-pointer flex items-center justify-between ${
               !genderParam
-                ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 font-bold'
-                : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                ? 'bg-[#121212] text-white font-medium'
+                : 'text-[#71717A] hover:text-[#121212] hover:bg-[#F4F4F2]'
             }`}
           >
-            All Departments
+            <span>All Departments</span>
+            {!genderParam && <span className="text-[10px]">●</span>}
           </button>
           {genders.map((g) => (
             <button
               key={g}
+              type="button"
               onClick={() => onUpdateParam('gender', g === genderParam ? '' : g)}
-              className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+              className={`w-full text-left px-2.5 py-1.5 text-xs transition-colors cursor-pointer flex items-center justify-between ${
                 genderParam === g
-                  ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 font-bold'
-                  : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                  ? 'bg-[#121212] text-white font-medium'
+                  : 'text-[#71717A] hover:text-[#121212] hover:bg-[#F4F4F2]'
               }`}
             >
-              {g}
+              <span>{g}</span>
+              {genderParam === g && <span className="text-[10px]">●</span>}
             </button>
           ))}
         </div>
       </details>
 
-      {/* Category */}
-      <details className="shop-filter-group" open={Boolean(categoryParam)}>
-        <summary className="flex items-center justify-between cursor-pointer text-xs font-bold text-zinc-900 dark:text-white py-1">
-          <span>Garment Category</span>
-          <ChevronDown size={15} aria-hidden="true" />
+      {/* 2. Category */}
+      <details className="group border-b border-[#E8E8E4] pb-4" open={Boolean(categoryParam)}>
+        <summary className="flex items-center justify-between cursor-pointer text-[11px] font-semibold uppercase tracking-fashion text-[#121212] py-1 list-none">
+          <span>Category</span>
+          <ChevronDown size={14} className="group-open:rotate-180 transition-transform duration-200 text-[#71717A]" />
         </summary>
-        <div className="space-y-1.5 mt-2 max-h-56 overflow-y-auto">
+        <div className="space-y-1 mt-3 max-h-60 overflow-y-auto pr-1">
           <button
+            type="button"
             onClick={() => onUpdateParam('category', '')}
-            className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+            className={`w-full text-left px-2.5 py-1.5 text-xs transition-colors cursor-pointer flex items-center justify-between ${
               !categoryParam
-                ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 font-bold'
-                : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                ? 'bg-[#121212] text-white font-medium'
+                : 'text-[#71717A] hover:text-[#121212] hover:bg-[#F4F4F2]'
             }`}
           >
-            All Categories
+            <span>All Categories</span>
+            {!categoryParam && <span className="text-[10px]">●</span>}
           </button>
           {categories.map((c) => (
             <button
               key={c}
+              type="button"
               onClick={() => onUpdateParam('category', c === categoryParam ? '' : c)}
-              className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+              className={`w-full text-left px-2.5 py-1.5 text-xs transition-colors cursor-pointer flex items-center justify-between ${
                 categoryParam === c
-                  ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 font-bold'
-                  : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                  ? 'bg-[#121212] text-white font-medium'
+                  : 'text-[#71717A] hover:text-[#121212] hover:bg-[#F4F4F2]'
               }`}
             >
-              {c}
+              <span className="truncate">{c}</span>
+              {categoryParam === c && <span className="text-[10px]">●</span>}
             </button>
           ))}
         </div>
       </details>
 
-      {/* Price Range */}
-      <details className="shop-filter-group" open={Boolean(priceRangeParam)}>
-        <summary className="flex items-center justify-between cursor-pointer text-xs font-bold text-zinc-900 dark:text-white py-1">
+      {/* 3. Price Bracket */}
+      <details className="group border-b border-[#E8E8E4] pb-4" open={Boolean(priceRangeParam)}>
+        <summary className="flex items-center justify-between cursor-pointer text-[11px] font-semibold uppercase tracking-fashion text-[#121212] py-1 list-none">
           <span>Price Bracket</span>
-          <ChevronDown size={15} aria-hidden="true" />
+          <ChevronDown size={14} className="group-open:rotate-180 transition-transform duration-200 text-[#71717A]" />
         </summary>
-        <div className="space-y-1.5 mt-2">
+        <div className="space-y-1 mt-3">
           {priceRanges.map((pr) => (
             <button
               key={pr.value}
+              type="button"
               onClick={() => onUpdateParam('priceRange', pr.value === priceRangeParam ? '' : pr.value)}
-              className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+              className={`w-full text-left px-2.5 py-1.5 text-xs transition-colors cursor-pointer flex items-center justify-between font-tabular ${
                 priceRangeParam === pr.value
-                  ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 font-bold'
-                  : 'text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                  ? 'bg-[#121212] text-white font-medium'
+                  : 'text-[#71717A] hover:text-[#121212] hover:bg-[#F4F4F2]'
               }`}
             >
-              {pr.label}
+              <span>{pr.label}</span>
+              {priceRangeParam === pr.value && <span className="text-[10px]">●</span>}
             </button>
           ))}
         </div>
       </details>
 
-      {/* Sizes */}
-      <details className="shop-filter-group" open={Boolean(sizeParam)}>
-        <summary className="flex items-center justify-between cursor-pointer text-xs font-bold text-zinc-900 dark:text-white py-1">
+      {/* 4. Sizes Matrix */}
+      <details className="group pb-1" open={Boolean(sizeParam)}>
+        <summary className="flex items-center justify-between cursor-pointer text-[11px] font-semibold uppercase tracking-fashion text-[#121212] py-1 list-none">
           <span>Size</span>
-          <ChevronDown size={15} aria-hidden="true" />
+          <ChevronDown size={14} className="group-open:rotate-180 transition-transform duration-200 text-[#71717A]" />
         </summary>
-        <div className="grid grid-cols-3 gap-2 mt-2">
+        <div className="grid grid-cols-4 gap-1.5 mt-3">
           {sizes.map((s) => (
             <button
               key={s}
+              type="button"
               onClick={() => onUpdateParam('size', s === sizeParam ? '' : s)}
-              className={`py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+              className={`py-2 text-[11px] font-tabular tracking-wider uppercase transition-colors border cursor-pointer ${
                 sizeParam === s
-                  ? 'bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 border-transparent shadow-md'
-                  : 'bg-white dark:bg-zinc-800/80 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:border-zinc-400'
+                  ? 'bg-[#121212] text-white border-[#121212] font-semibold'
+                  : 'bg-white border-[#E8E8E4] text-[#121212] hover:border-[#121212]'
               }`}
             >
               {s}

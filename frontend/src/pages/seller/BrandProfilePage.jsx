@@ -122,7 +122,7 @@ const BrandProfilePage = () => {
       setLogoFile(null);
       setBannerFile(null);
 
-      setStatusMsg({ type: 'success', text: 'Brand profile and media assets successfully saved.' });
+      setStatusMsg({ type: 'success', text: 'Atelier profile details and media successfully saved.' });
     } catch (err) {
       console.error('Error saving brand profile:', err);
       setStatusMsg({
@@ -136,55 +136,59 @@ const BrandProfilePage = () => {
 
   if (loading) {
     return (
-      <div className="h-[60vh] flex items-center justify-center">
-        <Loader2 className="animate-spin text-amber-500" size={32} />
+      <div className="h-[60vh] flex items-center justify-center font-ui text-[#EDEDED]">
+        <Loader2 className="animate-spin text-white" size={28} />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-black text-white">Brand Profile & Visual Identity</h1>
-        <p className="text-slate-400 text-sm mt-1">
-          Customize your public atelier presentation, logos, high-res banners, and buyer policies.
+    <div className="space-y-6 max-w-4xl font-ui text-[#EDEDED]">
+      <div className="pb-4 border-b border-[#23232C]">
+        <span className="text-[10px] font-semibold uppercase tracking-loose-caps text-[#843828] block">
+          Atelier Identity
+        </span>
+        <h1 className="font-editorial text-3xl font-light text-white">Visual Presentation & Policies</h1>
+        <p className="text-xs text-[#71717A] mt-0.5">
+          Customize your public atelier hero cover, monogram logo, bio description, and client return guidelines.
         </p>
       </div>
 
       {statusMsg.text && (
-        <div className={`p-4 rounded-xl flex items-center gap-3 text-xs font-semibold ${
+        <div className={`p-3.5 flex items-center gap-2.5 text-xs font-medium ${
           statusMsg.type === 'success'
-            ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'
-            : 'bg-red-500/10 border border-red-500/30 text-red-400'
+            ? 'bg-[#1C281F] border border-[#2E4A35] text-[#4ADE80]'
+            : 'bg-[#261313] border border-[#4D1F1F] text-[#FCA5A5]'
         }`}>
-          {statusMsg.type === 'success' ? <Check size={16} /> : <AlertCircle size={16} />}
+          {statusMsg.type === 'success' ? <Check size={14} /> : <AlertCircle size={14} />}
           <span>{statusMsg.text}</span>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Visual Assets Showcase */}
-        <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-6">
-          <h3 className="text-base font-bold text-white flex items-center gap-2">
-            <Image size={18} className="text-amber-400" /> Visual Identity Assets
+        <div className="p-6 bg-[#141419] border border-[#23232C] space-y-6">
+          <h3 className="text-xs font-semibold uppercase tracking-fashion text-white flex items-center gap-2">
+            <Image size={14} className="text-[#843828]" />
+            <span>Brand Imagery Assets</span>
           </h3>
 
           {/* Banner Upload */}
           <div className="space-y-2">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
-              Brand Banner (Hero Cover)
+            <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A]">
+              Hero Cover Banner
             </label>
-            <div className="relative h-44 rounded-2xl overflow-hidden bg-slate-950 border-2 border-dashed border-slate-800 flex items-center justify-center group">
+            <div className="relative h-44 bg-[#0C0C0E] border border-dashed border-[#282834] flex items-center justify-center group overflow-hidden">
               {bannerPreview ? (
-                <img src={bannerPreview} alt="Banner Preview" className="w-full h-full object-cover" />
+                <img src={bannerPreview} alt="Banner Preview" className="w-full h-full object-cover opacity-80" />
               ) : (
-                <div className="text-center text-slate-500 p-4">
-                  <Upload size={24} className="mx-auto mb-2 opacity-50" />
+                <div className="text-center text-[#71717A] p-4">
+                  <Upload size={20} className="mx-auto mb-1.5 opacity-40" />
                   <span className="text-xs">No brand banner uploaded</span>
                 </div>
               )}
-              <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer gap-2 text-white text-xs font-bold">
-                <Upload size={16} /> Upload New Banner
+              <label className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer gap-2 text-white text-xs font-medium uppercase tracking-fashion">
+                <Upload size={14} /> Upload Banner
                 <input type="file" accept="image/*" onChange={handleBannerFileChange} className="hidden" />
               </label>
             </div>
@@ -193,25 +197,25 @@ const BrandProfilePage = () => {
               name="bannerUrl"
               value={formData.bannerUrl}
               onChange={handleBannerUrlChange}
-              placeholder="Or paste external banner image URL..."
-              className="w-full px-3.5 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-amber-500"
+              placeholder="Or enter image URL..."
+              className="w-full px-3.5 py-2 bg-[#0C0C0E] border border-[#23232C] focus:border-white text-white text-xs outline-none transition-colors"
             />
           </div>
 
           {/* Logo Upload */}
           <div className="space-y-2">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
-              Brand Logo / Icon
+            <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A]">
+              Atelier Logo Monogram
             </label>
             <div className="flex items-center gap-4">
-              <div className="relative w-24 h-24 rounded-2xl overflow-hidden bg-slate-950 border-2 border-dashed border-slate-800 flex items-center justify-center shrink-0 group">
+              <div className="relative w-20 h-20 bg-[#0C0C0E] border border-dashed border-[#282834] flex items-center justify-center shrink-0 group overflow-hidden">
                 {logoPreview ? (
                   <img src={logoPreview} alt="Logo Preview" className="w-full h-full object-cover" />
                 ) : (
-                  <Upload size={20} className="text-slate-600" />
+                  <Upload size={16} className="text-[#71717A]" />
                 )}
-                <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer text-white">
-                  <Upload size={14} />
+                <label className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer text-white">
+                  <Upload size={13} />
                   <input type="file" accept="image/*" onChange={handleLogoFileChange} className="hidden" />
                 </label>
               </div>
@@ -221,21 +225,21 @@ const BrandProfilePage = () => {
                   name="logoUrl"
                   value={formData.logoUrl}
                   onChange={handleLogoUrlChange}
-                  placeholder="Or paste external logo image URL..."
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-amber-500"
+                  placeholder="Or enter logo image URL..."
+                  className="w-full px-3.5 py-2 bg-[#0C0C0E] border border-[#23232C] focus:border-white text-white text-xs outline-none transition-colors"
                 />
-                <span className="text-[11px] text-slate-500 block">Square ratio (1:1), 500x500px recommended.</span>
+                <span className="text-[10px] text-[#71717A] block">Square 1:1 ratio recommended.</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Narrative & Atelier Info */}
-        <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4">
-          <h3 className="text-base font-bold text-white">Atelier Details</h3>
+        <div className="p-6 bg-[#141419] border border-[#23232C] space-y-4">
+          <h3 className="text-xs font-semibold uppercase tracking-fashion text-white">Atelier Manifesto & Narrative</h3>
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+            <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
               Brand Label Name *
             </label>
             <input
@@ -244,69 +248,66 @@ const BrandProfilePage = () => {
               required
               value={formData.name}
               onChange={handleChange}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-amber-500 font-medium"
+              className="w-full px-3.5 py-2.5 bg-[#0C0C0E] border border-[#23232C] focus:border-white text-white text-xs outline-none transition-colors"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
-              Brand Bio & Design Narrative
+            <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
+              Design Philosophy & Biography
             </label>
             <textarea
-              rows={4}
+              rows={3}
               name="bio"
               value={formData.bio}
               onChange={handleChange}
-              placeholder="Tell buyers about your atelier, materials used, tailoring philosophy, and aesthetic..."
-              className="w-full p-3.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-amber-500"
+              placeholder="Describe your design aesthetics, fabric sourcing heritage, and atelier ethos..."
+              className="w-full p-3 bg-[#0C0C0E] border border-[#23232C] focus:border-white text-white text-xs outline-none transition-colors"
             />
           </div>
         </div>
 
-        {/* Policies */}
-        <div className="p-6 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-4">
-          <h3 className="text-base font-bold text-white flex items-center gap-2">
-            <Truck size={18} className="text-amber-400" /> Shipping & Return Terms
-          </h3>
+        {/* Shipping & Return Policies */}
+        <div className="p-6 bg-[#141419] border border-[#23232C] space-y-4">
+          <h3 className="text-xs font-semibold uppercase tracking-fashion text-white">Client Service Policies</h3>
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5">
-              <Truck size={14} /> Shipping Policy
+            <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5 flex items-center gap-1.5">
+              <RotateCcw size={11} /> Return & Exchange Policy
             </label>
             <textarea
-              rows={3}
-              name="policyShipping"
-              value={formData.policyShipping}
-              onChange={handleChange}
-              placeholder="e.g. Dispatched within 24 hours. Express transit takes 2-4 business days."
-              className="w-full p-3.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-amber-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5">
-              <RotateCcw size={14} /> Return & Exchange Policy
-            </label>
-            <textarea
-              rows={3}
+              rows={2}
               name="policyReturn"
               value={formData.policyReturn}
               onChange={handleChange}
-              placeholder="e.g. 7-day complimentary doorstep return policy if unworn with tags attached."
-              className="w-full p-3.5 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-amber-500"
+              placeholder="e.g. 7-day complimentary return on unworn garments with original atelier tags intact."
+              className="w-full p-3 bg-[#0C0C0E] border border-[#23232C] focus:border-white text-white text-xs outline-none transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5 flex items-center gap-1.5">
+              <Truck size={11} /> Shipping & Courier Schedule
+            </label>
+            <textarea
+              rows={2}
+              name="policyShipping"
+              value={formData.policyShipping}
+              onChange={handleChange}
+              placeholder="e.g. Dispatched via BlueDart / Delhivery Priority Air Cargo within 24 hours of confirmation."
+              className="w-full p-3 bg-[#0C0C0E] border border-[#23232C] focus:border-white text-white text-xs outline-none transition-colors"
             />
           </div>
         </div>
 
-        {/* Save Button */}
         <div className="flex justify-end pt-2">
           <button
             type="submit"
             disabled={saving}
-            className="px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider inline-flex items-center gap-2 shadow-lg shadow-amber-500/10 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+            className="px-6 py-2.5 bg-white hover:bg-[#F4F4F2] text-[#0C0C0E] text-[11px] font-medium uppercase tracking-fashion transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-40"
           >
-            {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-            <span>{saving ? 'Saving Changes...' : 'Save Brand Settings'}</span>
+            <Save size={13} />
+            <span>{saving ? 'Saving...' : 'Save Profile Changes'}</span>
           </button>
         </div>
       </form>

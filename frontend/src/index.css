@@ -1,147 +1,167 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@400;500;700&display=swap');
 @import "tailwindcss";
-@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
-@source "../";
-@source "../apps";
 
 @layer base {
   :root {
-    --color-background: #F7F5F0;
-    --color-surface: #FFFEFA;
-    --color-text: #20201E;
-    --color-text-secondary: #77736D;
-    --color-border: #DCD8D0;
-    --color-accent: #783F32;
-    --color-accent-hover: #603127;
-    --color-dark-surface: #242320;
-    --color-dark-text: #F7F5F0;
-    --color-success: #386447;
-    --color-error: #A33C35;
-    --color-focus: #783F32;
-    --font-display: "Cormorant Garamond", Georgia, serif;
-    --font-body: "DM Sans", Arial, sans-serif;
-    --space-1: 4px;
-    --space-2: 8px;
-    --space-3: 12px;
-    --space-4: 16px;
-    --space-5: 24px;
-    --space-6: 32px;
-    --space-7: 48px;
-    --space-8: 64px;
-    --space-9: 96px;
-    --space-10: 128px;
+    --color-bg-primary: #FBFBFA;
+    --color-bg-surface: #FFFFFF;
+    --color-bg-subtle: #F4F4F1;
+    --color-text-primary: #121212;
+    --color-text-secondary: #6B6B67;
+    --color-text-muted: #9E9E98;
+    --color-border-hairline: #E8E8E4;
+    --color-border-strong: #121212;
+    --color-accent-umber: #843828;
+    
+    --font-serif: "Cormorant Garamond", Georgia, serif;
+    --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: "JetBrains Mono", monospace;
   }
 
   * {
     box-sizing: border-box;
+    border-color: var(--color-border-hairline);
   }
 
   html {
     scroll-behavior: smooth;
+    text-size-adjust: 100%;
   }
 
   body {
     margin: 0;
     min-height: 100vh;
-    background: var(--color-background);
-    color: var(--color-text);
-    font-family: var(--font-body);
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   #root {
     min-height: 100vh;
   }
 
-  img {
-    display: block;
-    max-width: 100%;
+  h1, h2, h3, h4, .font-editorial {
+    font-family: var(--font-serif);
+    font-feature-settings: "liga", "kern";
+    letter-spacing: -0.02em;
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    margin: 0;
-    font-family: var(--font-display);
-    font-weight: 400;
-    letter-spacing: -0.04em;
-    color: var(--color-text);
+  .font-ui {
+    font-family: var(--font-sans);
   }
 
-  p {
-    margin: 0;
-  }
-
-  button,
-  input,
-  select,
-  textarea {
-    font: inherit;
-  }
-
-  button,
-  a,
-  input,
-  select,
-  textarea {
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  a {
-    color: inherit;
-    text-decoration: none;
-  }
-
-  :focus-visible {
-    outline: 2px solid var(--color-focus);
-    outline-offset: 3px;
+  .font-tabular {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
   }
 }
 
+/* Custom Editorial Utilities */
+.tracking-fashion {
+  letter-spacing: 0.18em;
+}
+
+.tracking-loose-caps {
+  letter-spacing: 0.22em;
+}
+
+/* Atelier Button Styles */
+.btn-primary-atelier {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background-color: #121212;
+  color: #FFFFFF;
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  padding: 0.875rem 1.75rem;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid #121212;
+  cursor: pointer;
+}
+.btn-primary-atelier:hover:not(:disabled) {
+  background-color: #262626;
+  border-color: #262626;
+}
+.btn-primary-atelier:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-secondary-atelier {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background-color: transparent;
+  color: #121212;
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  padding: 0.875rem 1.75rem;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid #121212;
+  cursor: pointer;
+}
+.btn-secondary-atelier:hover:not(:disabled) {
+  background-color: #121212;
+  color: #FFFFFF;
+}
+
+/* Form Inputs */
+.input-atelier {
+  width: 100%;
+  background-color: #FFFFFF;
+  border: 1px solid #E8E8E4;
+  color: #121212;
+  font-size: 0.8125rem;
+  padding: 0.75rem 1rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  font-family: var(--font-sans);
+}
+.input-atelier:focus {
+  border-color: #121212;
+  box-shadow: 0 0 0 1px #121212;
+}
+
+/* Scrollbar Minimal */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
 }
-
 ::-webkit-scrollbar-track {
   background: transparent;
 }
-
 ::-webkit-scrollbar-thumb {
-  background: rgba(120, 63, 50, 0.28);
-  border-radius: 9999px;
+  background: #D4D4CE;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(120, 63, 50, 0.42);
+  background: #A3A39C;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
+/* Print Invoice Styling */
 @media print {
   body {
-    background: #ffffff !important;
+    background: #FFFFFF !important;
     color: #000000 !important;
     margin: 0 !important;
     padding: 0 !important;
   }
-
   body * {
     visibility: hidden;
   }
-
   #printable-bill, #printable-bill * {
     visibility: visible;
   }
-
   #printable-bill {
     position: absolute !important;
     left: 0 !important;
@@ -152,15 +172,13 @@
     padding: 12mm 15mm !important;
     box-shadow: none !important;
     border: none !important;
-    background: #ffffff !important;
+    background: #FFFFFF !important;
     color: #000000 !important;
     font-size: 11pt !important;
   }
-
   .no-print, nav, header, footer, button {
     display: none !important;
   }
-
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;

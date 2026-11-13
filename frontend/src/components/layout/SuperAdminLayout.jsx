@@ -27,32 +27,35 @@ const SuperAdminLayout = ({ children }) => {
     };
 
     const navItems = [
-        { label: 'Executive Overview', path: '/admin', icon: LayoutDashboard },
-        { label: 'Brand Sellers', path: '/admin/brands', icon: Briefcase },
-        { label: 'Platform Buyers', path: '/admin/buyers', icon: Users },
-        { label: 'Catalog Moderation', path: '/admin/products', icon: Shirt },
-        { label: 'Marketplace Orders', path: '/admin/orders', icon: ShoppingBag },
-        { label: 'Security Audit Logs', path: '/admin/audit-logs', icon: FileText },
+        { label: 'Executive Telemetry', path: '/admin', icon: LayoutDashboard },
+        { label: 'Partner Ateliers', path: '/admin/brands', icon: Briefcase },
+        { label: 'Platform Shoppers', path: '/admin/buyers', icon: Users },
+        { label: 'Garment Moderation', path: '/admin/products', icon: Shirt },
+        { label: 'Consignment Orders', path: '/admin/orders', icon: ShoppingBag },
+        { label: 'Security Audit Trail', path: '/admin/audit-logs', icon: FileText },
     ];
 
     return (
-        <div data-admin-theme="light" className="super-admin-theme min-h-screen bg-slate-950 text-slate-100 flex flex-col md:flex-row antialiased font-sans">
+        <div className="min-h-screen bg-[#0A0A0C] text-[#EDEDED] font-ui flex flex-col md:flex-row antialiased">
             {/* Sidebar Desktop */}
-            <aside className="w-full md:w-64 bg-slate-900/95 border-r border-slate-800 flex flex-col justify-between shrink-0">
+            <aside className="w-full md:w-64 bg-[#101014] border-r border-[#1E1E26] flex flex-col justify-between shrink-0">
                 <div>
                     {/* Header */}
-                    <div className="p-5 border-b border-slate-800 flex items-center justify-between">
+                    <div className="p-5 border-b border-[#1E1E26] flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
-                                <ShieldAlert size={18} />
+                            <div className="w-8 h-8 bg-white text-[#0A0A0C] flex items-center justify-center font-editorial font-light text-base">
+                                <ShieldAlert size={16} />
                             </div>
                             <div>
-                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400 block">Command Center</span>
-                                <h2 className="text-sm font-bold text-white">Super Admin</h2>
+                                <span className="text-[9px] font-semibold uppercase tracking-loose-caps text-[#843828] block">
+                                    Governance
+                                </span>
+                                <h2 className="text-xs font-semibold text-white">Platform Command</h2>
                             </div>
                         </div>
                         <button 
-                            className="md:hidden text-slate-400 hover:text-white"
+                            type="button"
+                            className="md:hidden text-[#71717A] hover:text-white"
                             onClick={() => setIsMobileOpen(!isMobileOpen)}
                         >
                             {isMobileOpen ? <X size={20} /> : <Menu size={20} />}
@@ -60,16 +63,16 @@ const SuperAdminLayout = ({ children }) => {
                     </div>
 
                     {/* System Status Pill */}
-                    <div className="mx-4 mt-4 p-2.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between text-xs">
-                        <span className="text-slate-400 flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Platform Engine
+                    <div className="mx-4 mt-4 p-2.5 bg-[#141419] border border-[#202028] flex items-center justify-between text-xs">
+                        <span className="text-[#A1A1AA] flex items-center gap-1.5 text-[11px]">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#4ADE80] animate-pulse" /> Engine 2.0
                         </span>
-                        <span className="text-emerald-400 font-semibold text-[11px] uppercase tracking-wider">
+                        <span className="text-[#4ADE80] font-medium text-[10px] font-tabular uppercase tracking-wider">
                             ONLINE
                         </span>
                     </div>
 
-                    {/* Nav Items */}
+                    {/* Navigation Items */}
                     <nav className={`p-4 space-y-1 ${isMobileOpen ? 'block' : 'hidden md:block'}`}>
                         {navItems.map((item) => {
                             const Icon = item.icon;
@@ -79,17 +82,17 @@ const SuperAdminLayout = ({ children }) => {
                                     key={item.path}
                                     to={item.path}
                                     onClick={() => setIsMobileOpen(false)}
-                                    className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                                    className={`flex items-center justify-between px-3.5 py-2.5 text-xs font-medium tracking-wide transition-colors ${
                                         isActive 
-                                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' 
-                                            : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                                            ? 'bg-white text-[#0A0A0C] font-semibold' 
+                                            : 'text-[#A1A1AA] hover:text-white hover:bg-[#181820]'
                                     }`}
                                 >
-                                    <div className="flex items-center gap-3">
-                                        <Icon size={16} className={isActive ? 'text-white' : 'text-slate-400'} />
+                                    <div className="flex items-center gap-2.5">
+                                        <Icon size={14} className={isActive ? 'text-[#0A0A0C]' : 'text-[#71717A]'} />
                                         <span>{item.label}</span>
                                     </div>
-                                    {isActive && <ChevronRight size={14} className="text-indigo-200" />}
+                                    {isActive && <ChevronRight size={12} className="text-[#0A0A0C]" />}
                                 </Link>
                             );
                         })}
@@ -97,19 +100,20 @@ const SuperAdminLayout = ({ children }) => {
                 </div>
 
                 {/* Footer Controls */}
-                <div className="p-4 border-t border-slate-800 space-y-2">
+                <div className="p-4 border-t border-[#1E1E26] space-y-2">
                     <Link
                         to="/"
-                        className="w-full flex items-center justify-between px-3 py-2 text-xs text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-lg transition-colors font-medium"
+                        className="w-full flex items-center justify-between px-3 py-2 text-xs text-[#71717A] hover:text-white hover:bg-[#16161D] transition-colors"
                     >
-                        <span>Buyer Storefront</span>
-                        <span className="text-[10px] text-slate-500">Live</span>
+                        <span>Buyer Marketplace</span>
+                        <span className="text-[10px] text-[#4ADE80] font-tabular">● Live</span>
                     </Link>
                     <button
+                        type="button"
                         onClick={handleLogout}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors font-semibold"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-[#E17564] hover:text-[#FFA090] hover:bg-[#2A1513] transition-colors font-medium cursor-pointer"
                     >
-                        <LogOut size={14} /> Exit Admin Console
+                        <LogOut size={13} /> Exit Command Center
                     </button>
                 </div>
             </aside>
@@ -117,20 +121,20 @@ const SuperAdminLayout = ({ children }) => {
             {/* Main Application Area */}
             <main className="flex-1 flex flex-col min-h-screen overflow-x-hidden">
                 {/* Header Bar */}
-                <header className="h-14 border-b border-slate-800 bg-slate-900/60 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-20">
-                    <div className="flex items-center gap-2 text-xs text-slate-400">
-                        <Lock size={12} className="text-indigo-400" />
-                        <span>Platform Administration</span>
+                <header className="h-14 border-b border-[#1E1E26] bg-[#0E0E12]/90 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-20">
+                    <div className="flex items-center gap-2 text-xs text-[#71717A]">
+                        <Lock size={11} className="text-[#A1A1AA]" />
+                        <span>Command Center</span>
                         <span>/</span>
                         <span className="text-white font-medium capitalize">
-                            {location.pathname.replace('/admin', '').replace('/', '') || 'Overview'}
+                            {location.pathname.replace('/admin', '').replace('/', '') || 'Executive Overview'}
                         </span>
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-xs text-slate-300">
-                            <span className="w-2 h-2 rounded-full bg-indigo-400" />
-                            <span>Super Admin Mode</span>
+                        <div className="flex items-center gap-2 px-2.5 py-1 bg-[#16161D] border border-[#242430] text-[11px] text-[#EDEDED] font-tabular">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#843828]" />
+                            <span>Super Admin Session</span>
                         </div>
                     </div>
                 </header>

@@ -23,53 +23,64 @@ const SuperAdminAuditPage = () => {
 
   if (loading) {
     return (
-      <div className="h-[60vh] flex items-center justify-center">
-        <Loader2 className="animate-spin text-indigo-500" size={32} />
+      <div className="h-[60vh] flex items-center justify-center font-ui text-[#EDEDED]">
+        <Loader2 className="animate-spin text-white" size={28} />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-black text-white">Platform Security Audit Trail</h1>
-        <p className="text-slate-400 text-sm mt-1">
-          Immutable chronological record of administrative actions, brand registrations, and fulfillment events.
+    <div className="space-y-6 font-ui text-[#EDEDED]">
+      <div className="pb-4 border-b border-[#202028]">
+        <span className="text-[10px] font-semibold uppercase tracking-loose-caps text-[#843828] block">
+          Platform Security
+        </span>
+        <h1 className="font-editorial text-3xl font-light text-white">Immutable Audit Trail</h1>
+        <p className="text-xs text-[#71717A] mt-0.5">
+          Chronological record of administrative events, atelier verifications, and fulfillment logs.
         </p>
       </div>
 
-      <div className="rounded-2xl bg-slate-900/80 border border-slate-800 overflow-hidden">
+      <div className="bg-[#121217] border border-[#202028] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="border-b border-slate-800 bg-slate-950/60 text-slate-400 uppercase tracking-wider font-semibold">
+              <tr className="border-b border-[#202028] bg-[#0E0E12] text-[#71717A] uppercase text-[10px] font-semibold tracking-fashion">
                 <th className="p-4">Timestamp</th>
                 <th className="p-4">Action Event</th>
-                <th className="p-4">Actor</th>
-                <th className="p-4">Target</th>
-                <th className="p-4">Payload Details</th>
+                <th className="p-4">Operator Actor</th>
+                <th className="p-4">Target Entity</th>
+                <th className="p-4">Payload Context</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
-              {logs.map((log) => (
-                <tr key={log.id} className="hover:bg-slate-800/30">
-                  <td className="p-4 text-slate-400 whitespace-nowrap">
-                    {new Date(log.created_at).toLocaleString()}
-                  </td>
-                  <td className="p-4 font-mono font-bold text-indigo-400">
-                    {log.action}
-                  </td>
-                  <td className="p-4 text-slate-300">
-                    {log.user_email || 'System'}
-                  </td>
-                  <td className="p-4 text-slate-400">
-                    {log.target_type} #{log.target_id || 'N/A'}
-                  </td>
-                  <td className="p-4 text-slate-400 font-mono text-[11px] truncate max-w-xs">
-                    {typeof log.details === 'object' ? JSON.stringify(log.details) : log.details || '-'}
+            <tbody className="divide-y divide-[#1E1E26]">
+              {logs.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="p-8 text-center text-[#71717A] italic">
+                    No security events recorded in the current session.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                logs.map((log) => (
+                  <tr key={log.id} className="hover:bg-[#16161D] transition-colors">
+                    <td className="p-4 text-[#71717A] font-tabular whitespace-nowrap">
+                      {new Date(log.created_at).toLocaleString('en-IN')}
+                    </td>
+                    <td className="p-4 font-tabular font-semibold text-white">
+                      {log.action}
+                    </td>
+                    <td className="p-4 text-[#A1A1AA] font-tabular">
+                      {log.actor_email || log.user_email || 'System'}
+                    </td>
+                    <td className="p-4 text-white font-tabular">
+                      {log.target_type} #{log.target_id}
+                    </td>
+                    <td className="p-4 text-[11px] text-[#71717A] font-tabular max-w-xs truncate">
+                      {typeof log.details === 'object' ? JSON.stringify(log.details) : (log.details || log.metadata || '—')}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

@@ -92,11 +92,11 @@ const ProductFormModal = ({
         ...prev.variants,
         {
           size: 'M',
-          color: 'New Color',
+          color: 'New Colorway',
           sku: '',
           price: prev.price || '',
           stock_quantity: 10,
-          low_stock_threshold: 5,
+          low_stock_threshold: 3,
           image_urls: [],
           imagePreviews: [],
           imageFiles: []
@@ -137,29 +137,30 @@ const ProductFormModal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto animate-fade-in">
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-3xl my-8 p-6 sm:p-8 shadow-2xl space-y-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs overflow-y-auto font-ui text-[#EDEDED]">
+      <div className="bg-[#141419] border border-[#23232C] w-full max-w-3xl my-8 p-6 sm:p-8 space-y-6 shadow-2xl">
         
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div className="flex items-center justify-between pb-4 border-b border-[#23232C]">
           <div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 block">
-              {editingProduct ? 'Update Garment Catalog' : 'Brand Garment Creator'}
+            <span className="text-[10px] font-semibold uppercase tracking-loose-caps text-[#843828] block">
+              {editingProduct ? 'Garment Revision' : 'Atelier Garment Creator'}
             </span>
-            <h3 className="text-lg font-black text-white">
-              {editingProduct ? `Edit ${editingProduct.name}` : 'Create Brand Clothing Piece'}
+            <h3 className="font-editorial text-2xl font-light text-white">
+              {editingProduct ? `Edit ${editingProduct.name}` : 'Publish New Atelier Piece'}
             </h3>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-1.5 text-[#71717A] hover:text-white transition-colors cursor-pointer"
           >
             <X size={18} />
           </button>
         </div>
 
         {error && (
-          <div className="p-3.5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
+          <div className="p-3 bg-[#261313] border border-[#4D1F1F] text-[#FCA5A5] text-xs">
             {error}
           </div>
         )}
@@ -168,28 +169,28 @@ const ProductFormModal = ({
           {/* General Garment Details */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             <div className="sm:col-span-2">
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                Garment Name
+              <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
+                Garment Title *
               </label>
               <input
                 type="text"
                 required
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="e.g. Classic Tailored Oxford Shirt"
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white outline-none focus:border-amber-500 text-xs"
+                placeholder="e.g. Bespoke Double-Breasted Wool Overcoat"
+                className="w-full px-3.5 py-2.5 bg-[#0C0C0E] border border-[#23232C] focus:border-white text-white outline-none text-xs transition-colors"
               />
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                Category
+              <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
+                Category *
               </label>
               <select
                 required
                 value={formData.category_id}
                 onChange={(e) => setFormData(prev => ({ ...prev, category_id: e.target.value }))}
-                className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white outline-none focus:border-amber-500 text-xs"
+                className="w-full px-3 py-2.5 bg-[#0C0C0E] border border-[#23232C] focus:border-white text-white outline-none text-xs transition-colors cursor-pointer"
               >
                 <option value="">Select Category</option>
                 {categories.map((c) => (
@@ -199,13 +200,13 @@ const ProductFormModal = ({
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                Gender Department
+              <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
+                Department *
               </label>
               <select
                 value={formData.gender}
                 onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
-                className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white outline-none focus:border-amber-500 text-xs"
+                className="w-full px-3 py-2.5 bg-[#0C0C0E] border border-[#23232C] focus:border-white text-white outline-none text-xs transition-colors cursor-pointer"
               >
                 {GENDER_OPTIONS.map((g) => (
                   <option key={g} value={g}>{g}</option>
@@ -213,9 +214,9 @@ const ProductFormModal = ({
               </select>
             </div>
 
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                Base Retail Price (₹)
+            <div className="sm:col-span-2">
+              <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
+                Base Retail Price (INR ₹) *
               </label>
               <input
                 type="number"
@@ -223,21 +224,21 @@ const ProductFormModal = ({
                 required
                 value={formData.price}
                 onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
-                placeholder="e.g. 2499"
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white outline-none focus:border-amber-500 text-xs font-mono"
+                placeholder="e.g. 5490"
+                className="w-full px-3.5 py-2.5 bg-[#0C0C0E] border border-[#23232C] focus:border-white text-white font-tabular outline-none text-xs transition-colors"
               />
             </div>
 
             <div className="sm:col-span-2">
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
-                Garment Description & Material
+              <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
+                Garment Description, Textile & Silhouette Notes
               </label>
               <textarea
                 rows={3}
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Fabric composition, fit, wash instructions, styling tips..."
-                className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white outline-none focus:border-amber-500 text-xs"
+                placeholder="Textile blend, weave density, silhouette drape, wash & maintenance guidelines..."
+                className="w-full p-3 bg-[#0C0C0E] border border-[#23232C] focus:border-white text-white outline-none text-xs transition-colors"
               />
             </div>
           </div>
@@ -255,25 +256,26 @@ const ProductFormModal = ({
           />
 
           {/* Modal Actions */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#23232C]">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition-colors"
+              className="px-4 py-2.5 border border-[#23232C] hover:border-white text-[#A1A1AA] hover:text-white text-[10px] font-medium uppercase tracking-fashion transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-amber-500/20 disabled:opacity-50"
+              className="px-6 py-2.5 bg-white hover:bg-[#F4F4F2] text-[#0C0C0E] text-[10px] font-medium uppercase tracking-fashion transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-40"
             >
               {submitting ? (
                 <>
-                  <Loader2 size={14} className="animate-spin" /> Saving Garment...
+                  <Loader2 size={13} className="animate-spin" />
+                  <span>Uploading to Cloudinary & Saving...</span>
                 </>
               ) : (
-                editingProduct ? 'Save Updates' : 'Publish to Catalog'
+                <span>{editingProduct ? 'Update Garment' : 'Publish to Atelier'}</span>
               )}
             </button>
           </div>

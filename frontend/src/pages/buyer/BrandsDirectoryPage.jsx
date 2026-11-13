@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, ShieldCheck, ArrowRight, Search } from 'lucide-react';
+import { ArrowRight, Search, ShieldCheck } from 'lucide-react';
 import api from '@/services/Axios';
 
 const BrandsDirectoryPage = () => {
@@ -28,93 +28,107 @@ const BrandsDirectoryPage = () => {
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
-      {/* Editorial Header */}
-      <div className="text-center max-w-2xl mx-auto space-y-4">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 text-xs font-bold uppercase tracking-wider">
-          <Sparkles size={13} /> Official Atelier Partners
-        </div>
-        <h1 className="text-4xl font-black tracking-tight text-zinc-900 dark:text-white uppercase">
-          Brand Directory
-        </h1>
-        <p className="text-xs sm:text-sm text-zinc-500 leading-relaxed">
-          Discover verified independent clothing brands, bespoke design houses, and master artisans featured on MINIMAL Atelier.
-        </p>
+    <div className="min-h-screen bg-[#FBFBFA] text-[#121212] font-ui">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-16 space-y-12">
+        
+        {/* Editorial Header */}
+        <div className="max-w-3xl space-y-4">
+          <div className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-loose-caps text-[#843828] border-b border-[#843828]/30 pb-1">
+            <span>Independent Atelier Directory</span>
+          </div>
+          <h1 className="font-editorial text-4xl sm:text-5xl font-light text-[#121212] leading-tight">
+            The Makers & Design Houses
+          </h1>
+          <p className="text-xs sm:text-[13px] text-[#71717A] max-w-xl leading-relaxed">
+            Every clothing label represented on MINIMAL undergoes strict atelier vetting to guarantee tailoring standards, textile integrity, and ethical dispatch.
+          </p>
 
-        {/* Search Bar */}
-        <div className="pt-4 max-w-md mx-auto relative">
-          <input
-            type="text"
-            placeholder="Search brand by name or aesthetic..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 text-xs rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
-          />
-          <Search size={16} className="absolute left-3.5 top-3 text-zinc-400" />
+          {/* Minimal Search Bar */}
+          <div className="pt-2 max-w-md relative">
+            <input
+              type="text"
+              placeholder="Search by atelier name or aesthetic..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 text-xs bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] placeholder-[#A1A1AA] focus:outline-none transition-colors rounded-none"
+            />
+            <Search size={14} className="absolute left-3 top-3 text-[#71717A]" />
+          </div>
         </div>
+
+        {/* Brand Grid */}
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[1, 2, 3].map(n => (
+              <div key={n} className="h-64 bg-[#EFEFEA] animate-pulse border border-[#E8E8E4]" />
+            ))}
+          </div>
+        ) : filteredBrands.length === 0 ? (
+          <div className="text-center py-16 bg-white border border-[#E8E8E4] p-8 space-y-3">
+            <h3 className="font-editorial text-2xl font-light text-[#121212]">No Ateliers Matching Search</h3>
+            <p className="text-xs text-[#71717A]">Try clearing your search query to view all vetted fashion houses.</p>
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setSearchTerm('')}
+                className="px-5 py-2 bg-[#121212] text-white text-[10px] font-medium uppercase tracking-fashion"
+              >
+                Reset Search
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredBrands.map((b) => (
+              <Link
+                key={b.id}
+                to={`/brands/${b.slug || b.id}`}
+                className="group flex flex-col bg-white border border-[#E8E8E4] hover:border-[#121212] transition-colors"
+              >
+                {/* Brand Cover Banner */}
+                <div className="h-36 bg-[#F4F4F2] relative overflow-hidden border-b border-[#E8E8E4]">
+                  <img
+                    src={b.banner_url || 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=800&q=80'}
+                    alt={b.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-80"
+                  />
+                  <div className="absolute top-2.5 right-2.5 px-2 py-0.5 text-[9px] font-medium uppercase tracking-fashion bg-[#FBFBFA]/95 text-[#121212] border border-[#E8E8E4] flex items-center gap-1">
+                    <ShieldCheck size={10} className="text-[#843828]" />
+                    <span>Verified Atelier</span>
+                  </div>
+                </div>
+
+                {/* Brand Body */}
+                <div className="p-5 flex flex-col flex-1 justify-between gap-4 -mt-8 relative z-10">
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-14 h-14 bg-white border border-[#E8E8E4] overflow-hidden flex items-center justify-center font-editorial text-xl text-[#121212] shrink-0">
+                      {b.logo_url ? (
+                        <img src={b.logo_url} alt={b.name} className="w-full h-full object-cover" />
+                      ) : (
+                        b.name?.charAt(0).toUpperCase()
+                      )}
+                    </div>
+                    <div className="pt-2">
+                      <h3 className="font-editorial text-lg font-normal text-[#121212] group-hover:text-[#843828] transition-colors">
+                        {b.name}
+                      </h3>
+                      <p className="text-xs text-[#71717A] line-clamp-2 mt-0.5 leading-relaxed">
+                        {b.description || 'Verified independent designer label curated for MINIMAL Atelier.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-[#E8E8E4] flex items-center justify-between text-[11px] font-medium uppercase tracking-fashion text-[#121212] group-hover:text-[#843828]">
+                    <span>Explore Atelier Collection</span>
+                    <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+
       </div>
-
-      {/* Brand Grid */}
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[1, 2, 3].map(n => (
-            <div key={n} className="h-64 rounded-3xl bg-zinc-200 dark:bg-zinc-800 animate-pulse" />
-          ))}
-        </div>
-      ) : filteredBrands.length === 0 ? (
-        <div className="text-center py-16 bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 p-8">
-          <h3 className="font-bold text-zinc-900 dark:text-white">No Brands Matching Search</h3>
-          <p className="text-xs text-zinc-500 mt-1">Try another keyword or view all registered brand sellers.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredBrands.map((b) => (
-            <Link
-              key={b.id}
-              to={`/brands/${b.slug || b.id}`}
-              className="group flex flex-col bg-white dark:bg-zinc-900 rounded-3xl overflow-hidden border border-zinc-200/80 dark:border-zinc-800 hover:shadow-xl hover:border-blue-500/40 transition-all duration-300"
-            >
-              {/* Brand Cover Banner */}
-              <div className="h-36 bg-zinc-900 relative overflow-hidden">
-                <img
-                  src={b.banner_url || 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=800&q=80'}
-                  alt={b.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-70"
-                />
-                <div className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-black/60 text-white backdrop-blur-md flex items-center gap-1">
-                  <ShieldCheck size={12} className="text-emerald-400" /> Verified
-                </div>
-              </div>
-
-              {/* Brand Body */}
-              <div className="p-6 flex flex-col flex-1 justify-between gap-4 -mt-10 relative z-10">
-                <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 rounded-2xl bg-white dark:bg-zinc-800 border-2 border-white dark:border-zinc-900 shadow-md overflow-hidden flex items-center justify-center font-black text-xl text-zinc-900 dark:text-white shrink-0">
-                    {b.logo_url ? (
-                      <img src={b.logo_url} alt={b.name} className="w-full h-full object-cover" />
-                    ) : (
-                      b.name?.charAt(0).toUpperCase()
-                    )}
-                  </div>
-                  <div className="pt-4">
-                    <h3 className="font-bold text-base text-zinc-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                      {b.name}
-                    </h3>
-                    <p className="text-xs text-zinc-400 line-clamp-2 mt-1">
-                      {b.description || 'Verified independent designer label curated for PERN Atelier.'}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between text-xs font-bold text-blue-600 dark:text-blue-400">
-                  <span>Explore Atelier Collection</span>
-                  <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
     </div>
   );
 };

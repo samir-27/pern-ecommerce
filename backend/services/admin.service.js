@@ -398,7 +398,7 @@ export const updateReturnStatusService = async (adminUser, returnId, { status, a
             [status, adminNotes || null, returnId]
         );
 
-        if (status === 'completed') {
+        if (status === 'completed' && returnReq.status !== 'completed') {
             const itemRes = await client.query('SELECT variant_id, quantity FROM order_items WHERE id = $1', [returnReq.order_item_id]);
             if (itemRes.rows.length > 0) {
                 const { variant_id, quantity } = itemRes.rows[0];

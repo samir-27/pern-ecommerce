@@ -85,7 +85,7 @@ const SavedAddressesTab = ({ addresses, onAddressesUpdated }) => {
   };
 
   const handleDeleteAddress = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this address?')) return;
+    if (!window.confirm('Are you sure you want to remove this dispatch address?')) return;
     try {
       await api.delete(`/auth/addresses/${id}`);
       if (onAddressesUpdated) onAddressesUpdated();
@@ -104,67 +104,75 @@ const SavedAddressesTab = ({ addresses, onAddressesUpdated }) => {
   };
 
   return (
-    <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200/90 dark:border-zinc-800 p-6 sm:p-8 shadow-sm space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
+    <div className="bg-white border border-[#E8E8E4] p-6 sm:p-8 space-y-6 font-ui text-[#121212]">
+      {/* Tab Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#E8E8E4] gap-4">
         <div>
-          <h3 className="text-base font-black text-zinc-900 dark:text-white uppercase tracking-wider">
-            Saved Delivery Addresses
+          <span className="text-[10px] font-semibold uppercase tracking-loose-caps text-[#843828] block">
+            Client Logistics
+          </span>
+          <h3 className="font-editorial text-2xl font-light text-[#121212]">
+            Saved Dispatch Addresses
           </h3>
-          <p className="text-xs text-zinc-500 mt-1">
-            Manage your personal addresses for swift one-click checkout.
+          <p className="text-xs text-[#71717A] mt-0.5">
+            Configure delivery destinations for rapid atelier consignment fulfillment.
           </p>
         </div>
 
         <button
+          type="button"
           onClick={() => setIsAddingAddress(true)}
-          className="px-4 py-2.5 rounded-2xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-bold uppercase tracking-wider hover:opacity-90 transition-opacity flex items-center gap-1.5"
+          className="px-4 py-2.5 bg-[#121212] hover:bg-[#843828] text-white text-[10px] font-medium uppercase tracking-fashion transition-colors flex items-center gap-1.5 self-start sm:self-center cursor-pointer"
         >
-          <Plus size={14} /> Add Address
+          <Plus size={12} />
+          <span>New Address</span>
         </button>
       </div>
 
-      {/* Address List */}
+      {/* Address Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {addresses.length === 0 ? (
-          <div className="col-span-full py-12 text-center text-zinc-400 text-xs border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl">
-            No delivery addresses saved yet. Click above to add your first address.
+          <div className="col-span-full py-12 text-center text-[#71717A] text-xs border border-dashed border-[#E8E8E4]">
+            No delivery addresses saved yet. Click "+ New Address" above to register your destination.
           </div>
         ) : (
           addresses.map((addr) => (
             <div
               key={addr.id}
-              className={`p-5 rounded-2xl border transition-all relative ${
+              className={`p-5 border transition-colors relative ${
                 addr.is_default
-                  ? 'border-blue-500/50 bg-blue-50/20 dark:bg-blue-950/10'
-                  : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/20'
+                  ? 'border-[#121212] bg-[#FBFBFA]'
+                  : 'border-[#E8E8E4] bg-white hover:border-[#71717A]'
               }`}
             >
               {addr.is_default && (
-                <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 mb-2">
-                  Default Address
+                <span className="inline-block px-2 py-0.5 text-[9px] font-medium uppercase tracking-fashion bg-[#121212] text-white mb-2">
+                  Primary Address
                 </span>
               )}
-              <h4 className="font-bold text-sm text-zinc-900 dark:text-white">{addr.full_name}</h4>
-              <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1 leading-relaxed">
+              <h4 className="font-medium text-xs text-[#121212]">{addr.full_name}</h4>
+              <p className="text-xs text-[#71717A] mt-1.5 leading-relaxed font-normal">
                 {addr.address_line}<br />
                 {addr.city}, {addr.state} - {addr.pincode}<br />
-                Phone: {addr.phone}
+                <span className="font-tabular text-[11px] text-[#A1A1AA]">Phone: +91 {addr.phone}</span>
               </p>
 
-              <div className="mt-4 pt-3 border-t border-zinc-200/60 dark:border-zinc-800 flex items-center justify-between">
+              <div className="mt-4 pt-3 border-t border-[#E8E8E4] flex items-center justify-between text-[10px] uppercase tracking-fashion">
                 {!addr.is_default && (
                   <button
+                    type="button"
                     onClick={() => handleSetDefault(addr.id)}
-                    className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                    className="font-medium text-[#121212] hover:text-[#843828] underline underline-offset-4 flex items-center gap-1 cursor-pointer"
                   >
-                    <Check size={12} /> Set Default
+                    <Check size={11} /> Set Primary
                   </button>
                 )}
                 <button
+                  type="button"
                   onClick={() => handleDeleteAddress(addr.id)}
-                  className="text-[11px] font-bold text-red-500 hover:text-red-700 ml-auto flex items-center gap-1"
+                  className="font-medium text-[#71717A] hover:text-[#843828] ml-auto flex items-center gap-1 cursor-pointer"
                 >
-                  <Trash2 size={12} /> Remove
+                  <Trash2 size={11} /> Remove
                 </button>
               </div>
             </div>
@@ -174,156 +182,162 @@ const SavedAddressesTab = ({ addresses, onAddressesUpdated }) => {
 
       {/* Add Address Modal */}
       {isAddingAddress && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 w-full max-w-lg p-6 sm:p-8 shadow-2xl space-y-6">
-            <div className="flex items-center justify-between pb-4 border-b border-zinc-200 dark:border-zinc-800">
-              <h3 className="text-base font-black text-zinc-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                <MapPin size={18} /> New Delivery Address
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-[#FBFBFA] border border-[#E8E8E4] w-full max-w-lg p-6 sm:p-8 space-y-6 shadow-2xl">
+            <div className="flex items-center justify-between pb-4 border-b border-[#E8E8E4]">
+              <h3 className="font-editorial text-2xl font-light text-[#121212]">
+                New Dispatch Address
               </h3>
               <button
+                type="button"
                 onClick={() => setIsAddingAddress(false)}
-                className="p-1 rounded-full text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                className="p-1 text-[#71717A] hover:text-[#121212] cursor-pointer"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
 
             {addressError && (
-              <div className="p-3.5 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs flex items-center gap-2">
-                <AlertCircle size={15} /> {addressError}
+              <div className="p-3 bg-[#843828]/10 border border-[#843828]/30 text-[#843828] text-xs flex items-center gap-2">
+                <AlertCircle size={14} />
+                <span>{addressError}</span>
               </div>
             )}
 
             <form onSubmit={handleAddAddress} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-1.5">
-                    Recipient Full Name
+                  <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
+                    Full Name *
                   </label>
                   <input
                     type="text"
                     required
                     value={newAddress.fullName}
-                    onChange={(e) => setNewAddress(prev => ({ ...prev, fullName: e.target.value }))}
-                    className="w-full px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs outline-none focus:border-zinc-400"
+                    onChange={(e) => setNewAddress(p => ({ ...p, fullName: e.target.value }))}
+                    className="w-full px-3.5 py-2.5 text-xs bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] rounded-none focus:outline-none transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-1.5">
-                    10-Digit Mobile Number
+                  <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
+                    Phone (+91 India) *
                   </label>
                   <input
                     type="tel"
                     required
+                    maxLength={10}
+                    placeholder="10-digit number"
                     value={newAddress.phone}
-                    onChange={(e) => setNewAddress(prev => ({ ...prev, phone: e.target.value }))}
-                    className="w-full px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs outline-none focus:border-zinc-400"
+                    onChange={(e) => setNewAddress(p => ({ ...p, phone: e.target.value }))}
+                    className="w-full px-3.5 py-2.5 text-xs bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] font-tabular rounded-none focus:outline-none transition-colors"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-1.5">
-                  Street Address / House / Flat
+                <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
+                  Street Address & Flat / Building *
                 </label>
                 <input
                   type="text"
                   required
                   value={newAddress.addressLine}
-                  onChange={(e) => setNewAddress(prev => ({ ...prev, addressLine: e.target.value }))}
-                  className="w-full px-4 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs outline-none focus:border-zinc-400"
+                  onChange={(e) => setNewAddress(p => ({ ...p, addressLine: e.target.value }))}
+                  className="w-full px-3.5 py-2.5 text-xs bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] rounded-none focus:outline-none transition-colors"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-1.5">
-                    State / UT
+                  <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
+                    State *
                   </label>
                   <select
                     required
                     value={newAddress.state}
                     onChange={(e) => handleStateChange(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs outline-none focus:border-zinc-400"
+                    className="w-full px-3 py-2.5 text-xs bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] rounded-none focus:outline-none transition-colors cursor-pointer"
                   >
                     <option value="">Select State</option>
-                    {INDIAN_STATES.map(st => (
+                    {INDIAN_STATES.map((st) => (
                       <option key={st} value={st}>{st}</option>
                     ))}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-1.5">
-                    City / Town
+                  <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
+                    City *
                   </label>
-                  {isAddressCustomCity ? (
+                  {!isAddressCustomCity ? (
+                    <select
+                      required
+                      value={newAddress.city}
+                      onChange={(e) => handleCitySelectChange(e.target.value)}
+                      disabled={!newAddress.state}
+                      className="w-full px-3 py-2.5 text-xs bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] rounded-none focus:outline-none transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      <option value="">{newAddress.state ? 'Select City' : 'State first'}</option>
+                      {(INDIAN_STATES_AND_CITIES[newAddress.state] || []).map((ct) => (
+                        <option key={ct} value={ct}>{ct}</option>
+                      ))}
+                      <option value="Other">+ Enter other...</option>
+                    </select>
+                  ) : (
                     <input
                       type="text"
                       required
                       placeholder="Enter city"
                       value={newAddress.city}
-                      onChange={(e) => setNewAddress(prev => ({ ...prev, city: e.target.value }))}
-                      className="w-full px-3 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs outline-none focus:border-zinc-400"
+                      onChange={(e) => setNewAddress(p => ({ ...p, city: e.target.value }))}
+                      className="w-full px-3.5 py-2.5 text-xs bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] rounded-none focus:outline-none"
                     />
-                  ) : (
-                    <select
-                      required
-                      value={newAddress.city}
-                      onChange={(e) => handleCitySelectChange(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs outline-none focus:border-zinc-400"
-                    >
-                      <option value="">Select City</option>
-                      {(INDIAN_STATES_AND_CITIES[newAddress.state] || ['Other']).map(city => (
-                        <option key={city} value={city}>{city}</option>
-                      ))}
-                    </select>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-500 mb-1.5">
-                    PIN Code
+                  <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
+                    Pincode *
                   </label>
                   <input
                     type="text"
                     required
                     maxLength={6}
+                    placeholder="6 digits"
                     value={newAddress.pincode}
-                    onChange={(e) => setNewAddress(prev => ({ ...prev, pincode: e.target.value }))}
-                    className="w-full px-3 py-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs outline-none focus:border-zinc-400 font-mono"
+                    onChange={(e) => setNewAddress(p => ({ ...p, pincode: e.target.value }))}
+                    className="w-full px-3.5 py-2.5 text-xs bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] font-tabular rounded-none focus:outline-none transition-colors"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 pt-2">
-                <input
-                  type="checkbox"
-                  id="isDefaultAddr"
-                  checked={newAddress.isDefault}
-                  onChange={(e) => setNewAddress(prev => ({ ...prev, isDefault: e.target.checked }))}
-                  className="rounded text-zinc-900"
-                />
-                <label htmlFor="isDefaultAddr" className="text-xs text-zinc-600 dark:text-zinc-400">
-                  Set as my primary delivery address
+              <div className="pt-2 flex items-center justify-between">
+                <label className="flex items-center gap-2 text-xs text-[#71717A] cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newAddress.isDefault}
+                    onChange={(e) => setNewAddress(p => ({ ...p, isDefault: e.target.checked }))}
+                    className="rounded-none border-[#E8E8E4] text-[#121212] focus:ring-0 cursor-pointer"
+                  />
+                  <span>Mark as primary address</span>
                 </label>
-              </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-zinc-200 dark:border-zinc-800">
-                <button
-                  type="button"
-                  onClick={() => setIsAddingAddress(false)}
-                  className="px-4 py-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-bold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={addressSubmitting}
-                  className="px-6 py-2.5 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs font-bold uppercase tracking-wider hover:opacity-90 disabled:opacity-50"
-                >
-                  {addressSubmitting ? 'Saving...' : 'Save Address'}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddingAddress(false)}
+                    className="px-4 py-2 border border-[#E8E8E4] text-[#71717A] text-[10px] uppercase font-medium tracking-fashion"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={addressSubmitting}
+                    className="px-5 py-2 bg-[#121212] hover:bg-[#843828] text-white text-[10px] uppercase font-medium tracking-fashion transition-colors disabled:opacity-40"
+                  >
+                    {addressSubmitting ? 'Saving...' : 'Save Address'}
+                  </button>
+                </div>
               </div>
             </form>
           </div>

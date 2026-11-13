@@ -1,10 +1,18 @@
 import multer from 'multer';
+import { ApiError } from '../middleware/error.middleware.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import * as productService from '../services/product.service.js';
 
 const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 5 * 1024 * 1024 }
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        if (/^image\/(jpeg|png|webp|gif|avif)$/.test(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new ApiError(400, 'Invalid file type. Only JPEG, PNG, WEBP, and AVIF images are permitted.'));
+        }
+    }
 });
 
 export const uploadProductImages = upload.array('images', 50);
