@@ -1,57 +1,110 @@
-import { useState, useEffect } from 'react';
-import { CartContext } from './CartContextDef';
+import { createContext, useContext, useState, useEffect } from 'react';
+
+const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
-    const [cartItems, setCartItems] = useState(() => {
-        try {
-            const saved = localStorage.getItem('min_cart');
-            return saved ? JSON.parse(saved) : [];
-        } catch {
-            return [];
-        }
+  const [cartItems, setCartItems] = useState(() => {
+    try {
+      const saved = localStorage.getItem('minimal_cart');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isAiStylistOpen, setIsAiStylistOpen] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('minimal_cart', JSON.stringify(cartItems));
+  }, [cartItems]);
+
+  const addToCart = (product, selectedVariant = null, quantity = 1) => {
+    setCartItems(prev => {
+      const variantKey = selectedVariant 
+        ? `${product.id}-${selectedVariant.size || 'default'}-${selectedVariant.color || 'default'}`
+        : `${product.id}-default`;
+
+      const existingIndex = prev.findIndex(item => item.cartKey === variantKey);
+
+      if (existingIndex > -1) {
+        const updated = [...prev];
+        updated[existingIndex].quantity += quantity;
+        return updated;
+      }
+
+      const itemPrice = selectedVariant?.price_override 
+        ? parseFloat(selectedVariant.price_override)
+        : parseFloat(product.base_price || product.price || 0);
+
+      const variantImage = (selectedVariant?.image_urls && selectedVariant.image_urls.length > 0)
+        ? selectedVariant.image_urls[0]
+        : (selectedVariant?.image_url || product.main_image || (product.images && product.images[0]) || product.image_url || '');
+
+      const newItem = {
+        cartKey: variantKey,
+        id: product.id,
+        name: product.name,
+        price: itemPrice,
+        image_url: variantImage,
+        brand_name: product.brand_name || product.brand || 'MINIMAL Atelier',
+        selectedSize: selectedVariant?.size || 'Standard',
+        selectedColor: selectedVariant?.color || 'Default',
+        variant_id: selectedVariant?.id || null,
+        stock_quantity: selectedVariant?.stock_quantity ?? product.stock_quantity ?? 99,
+        quantity: quantity,
+      };
+
+      return [...prev, newItem];
     });
 
-    useEffect(() => {
-        try {
-            localStorage.setItem('min_cart', JSON.stringify(cartItems));
-        } catch (e) {
-            console.error('Failed to save cart to localStorage', e);
-        }
-    }, [cartItems]);
+    setIsCartOpen(true);
+  };
 
-    const addToCart = (variant, product, quantity = 1) => {
-        setCartItems(prev => {
-            const current = Array.isArray(prev) ? prev : [];
-            const existing = current.find(item => item.variant_id === variant.id);
-            if (existing) {
-                return current.map(item => item.variant_id === variant.id ? { ...item, quantity: item.quantity + quantity } : item);
-            }
-            return [...current, {
-                variant_id: variant.id,
-                name: product.name,
-                color: variant.color,
-                size: variant.size,
-                price: Number(variant.price_override || product.base_price),
-                image: variant.image_urls?.[0] || '',
-                quantity
-            }];
-        });
-    };
-
-    const removeFromCart = (variantId) => setCartItems(prev => prev.filter(item => item.variant_id !== variantId));
-    
-    const updateQuantity = (variantId, qty) => {
-        if (qty < 1) return removeFromCart(variantId);
-        setCartItems(prev => prev.map(item => item.variant_id === variantId ? { ...item, quantity: qty } : item));
-    };
-
-    const clearCart = () => setCartItems([]);
-
-    const cartTotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-
-    return (
-        <CartContext.Provider value={{ cartItems, addToCart, removeFromCart, updateQuantity, clearCart, cartTotal }}>
-            {children}
-        </CartContext.Provider>
+  const updateQuantity = (cartKey, newQuantity) => {
+    if (newQuantity <= 0) {
+      removeFromCart(cartKey);
+      return;
+    }
+    setCartItems(prev =>
+      prev.map(item => item.cartKey === cartKey ? { ...item, quantity: newQuantity } : item)
     );
+  };
+
+  const removeFromCart = (cartKey) => {
+    setCartItems(prev => prev.filter(item => item.cartKey !== cartKey));
+  };
+
+  const clearCart = () => {
+    setCartItems([]);
+  };
+
+  const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+  const totalItemCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+
+  return (
+    <CartContext.Provider value={{
+      cartItems,
+      addToCart,
+      updateQuantity,
+      removeFromCart,
+      clearCart,
+      subtotal,
+      totalItemCount,
+      isCartOpen,
+      setIsCartOpen,
+      isAiStylistOpen,
+      setIsAiStylistOpen
+    }}>
+      {children}
+    </CartContext.Provider>
+  );
+};
+
+export const useCart = () => {
+  const context = useContext(CartContext);
+  if (!context) {
+    throw new Error('useCart must be used within a CartProvider');
+  }
+  return context;
 };

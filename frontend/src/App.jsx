@@ -1,37 +1,39 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import './App.css';
 
-// 1. BUYER APPLICATION
-import { 
-  CartProvider, 
-  BuyerLayout, 
-  HomePage, 
-  ShopPage, 
-  ProductDetailPage, 
-  BrandsDirectoryPage, 
-  BrandProfilePage, 
-  CheckoutPage, 
-  ProfilePage, 
-  AuthPage 
-} from '../apps/buyer-web/src';
+// Context
+import { CartProvider } from '@/context/CartContext';
 
-// 2. BRAND SELLER APPLICATION
-import BrandSellerLayout from '../apps/brand-seller-web/src/layouts/BrandSellerLayout';
-import BrandOverviewPage from '../apps/brand-seller-web/src/pages/BrandOverviewPage';
-import BrandProfilePage2 from '../apps/brand-seller-web/src/pages/BrandProfilePage';
-import BrandProductsPage from '../apps/brand-seller-web/src/pages/BrandProductsPage';
-import BrandOrdersPage from '../apps/brand-seller-web/src/pages/BrandOrdersPage';
-import BrandAnalyticsPage from '../apps/brand-seller-web/src/pages/BrandAnalyticsPage';
+// Layouts
+import BuyerLayout from '@/components/layout/BuyerLayout';
+import BrandSellerLayout from '@/components/layout/BrandSellerLayout';
+import SuperAdminLayout from '@/components/layout/SuperAdminLayout';
 
-// 3. SUPER ADMIN APPLICATION
-import SuperAdminLayout from '../apps/super-admin-web/src/layouts/SuperAdminLayout';
-import SuperAdminLoginPage from '../apps/super-admin-web/src/pages/SuperAdminLoginPage';
-import SuperAdminOverviewPage from '../apps/super-admin-web/src/pages/SuperAdminOverviewPage';
-import SuperAdminBrandsPage from '../apps/super-admin-web/src/pages/SuperAdminBrandsPage';
-import SuperAdminBuyersPage from '../apps/super-admin-web/src/pages/SuperAdminBuyersPage';
-import SuperAdminProductsPage from '../apps/super-admin-web/src/pages/SuperAdminProductsPage';
-import SuperAdminOrdersPage from '../apps/super-admin-web/src/pages/SuperAdminOrdersPage';
-import SuperAdminAuditPage from '../apps/super-admin-web/src/pages/SuperAdminAuditPage';
+// Buyer Pages
+import HomePage from '@/pages/buyer/HomePage';
+import ShopPage from '@/pages/buyer/ShopPage';
+import ProductDetailPage from '@/pages/buyer/ProductDetailPage';
+import BrandsDirectoryPage from '@/pages/buyer/BrandsDirectoryPage';
+import BrandProfilePage from '@/pages/buyer/BrandProfilePage';
+import CheckoutPage from '@/pages/buyer/CheckoutPage';
+import ProfilePage from '@/pages/buyer/ProfilePage';
+import AuthPage from '@/pages/buyer/AuthPage';
+
+// Brand Seller Pages
+import BrandOverviewPage from '@/pages/seller/BrandOverviewPage';
+import BrandProductsPage from '@/pages/seller/BrandProductsPage';
+import BrandOrdersPage from '@/pages/seller/BrandOrdersPage';
+import BrandAnalyticsPage from '@/pages/seller/BrandAnalyticsPage';
+import SellerBrandProfilePage from '@/pages/seller/BrandProfilePage';
+
+// Super Admin Pages
+import SuperAdminLoginPage from '@/pages/admin/SuperAdminLoginPage';
+import SuperAdminOverviewPage from '@/pages/admin/SuperAdminOverviewPage';
+import SuperAdminBrandsPage from '@/pages/admin/SuperAdminBrandsPage';
+import SuperAdminBuyersPage from '@/pages/admin/SuperAdminBuyersPage';
+import SuperAdminProductsPage from '@/pages/admin/SuperAdminProductsPage';
+import SuperAdminOrdersPage from '@/pages/admin/SuperAdminOrdersPage';
+import SuperAdminAuditPage from '@/pages/admin/SuperAdminAuditPage';
 
 // Auth Route Guards
 const ProtectedBuyerRoute = () => {
@@ -102,7 +104,7 @@ function App() {
             <Route path="/seller/products" element={<BrandSellerLayout><BrandProductsPage /></BrandSellerLayout>} />
             <Route path="/seller/orders" element={<BrandSellerLayout><BrandOrdersPage /></BrandSellerLayout>} />
             <Route path="/seller/analytics" element={<BrandSellerLayout><BrandAnalyticsPage /></BrandSellerLayout>} />
-            <Route path="/seller/profile" element={<BrandSellerLayout><BrandProfilePage2 /></BrandSellerLayout>} />
+            <Route path="/seller/profile" element={<BrandSellerLayout><SellerBrandProfilePage /></BrandSellerLayout>} />
           </Route>
 
           {/* ============================================================== */}
