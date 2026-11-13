@@ -21,6 +21,25 @@ async function runMigration() {
             console.log(`✓ Migration ${file} executed successfully.`);
         }
 
+        // Synchronize all serial sequences with MAX(id)
+        const seqTables = [
+            'users', 'seller_stores', 'brands', 'categories', 'products',
+            'product_variants', 'orders', 'seller_orders', 'order_items',
+            'seller_applications', 'return_requests', 'reviews', 'audit_logs',
+            'user_addresses', 'seller_payouts'
+        ];
+        for (const tbl of seqTables) {
+            try {
+                const seq = await client.query("SELECT pg_get_serial_sequence($1, 'id') as seq_name", [tbl]);
+                const seqName = seq.rows[0]?.seq_name;
+                if (seqName) {
+                    const max = await client.query(`SELECT COALESCE(MAX(id), 0) as max_id FROM ${tbl}`);
+                    const next = Number(max.rows[0].max_id) + 1;
+                    await client.query('SELECT setval($1, $2, false)', [seqName, next]);
+                }
+            } catch {}
+        }
+
         // Verify tables
         const tablesRes = await client.query(`
             SELECT table_name 

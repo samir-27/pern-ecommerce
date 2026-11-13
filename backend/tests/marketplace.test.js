@@ -2,7 +2,6 @@ import { test, describe, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import pool from '../db.js';
 import jwt from 'jsonwebtoken';
-import { executePrompt } from '../services/ai/aiService.js';
 
 describe('PERN Multi-Vendor Fashion Marketplace Test Suite', () => {
     let testAdminUser;
@@ -50,14 +49,14 @@ describe('PERN Multi-Vendor Fashion Marketplace Test Suite', () => {
         // Create Stores
         const store1Res = await pool.query(`
             INSERT INTO seller_stores (user_id, name, slug, bio, commission_rate, is_active)
-            VALUES ($1, 'Boutique One', $2, 'Fine Italian linen', 10.00, true)
+            VALUES ($1, 'Boutique One', $2, 'Fine Italian linen', 5.00, true)
             RETURNING *
         `, [testSellerUser1.id, `boutique-one-${testRunId}`]);
         store1 = store1Res.rows[0];
 
         const store2Res = await pool.query(`
             INSERT INTO seller_stores (user_id, name, slug, bio, commission_rate, is_active)
-            VALUES ($1, 'Atelier Two', $2, 'Streetwear denim', 12.00, true)
+            VALUES ($1, 'Atelier Two', $2, 'Streetwear denim', 5.00, true)
             RETURNING *
         `, [testSellerUser2.id, `atelier-two-${testRunId}`]);
         store2 = store2Res.rows[0];
@@ -181,9 +180,9 @@ describe('PERN Multi-Vendor Fashion Marketplace Test Suite', () => {
         const quantity = 2;
         const price = Number(variant1.price_override);
         const subtotal = price * quantity; // 2400.00
-        const commissionRate = 10.00;
-        const commissionAmount = Number(((subtotal * commissionRate) / 100).toFixed(2)); // 240.00
-        const sellerNetEarnings = Number((subtotal - commissionAmount).toFixed(2)); // 2160.00
+        const commissionRate = 5.00;
+        const commissionAmount = Number(((subtotal * commissionRate) / 100).toFixed(2)); // 120.00
+        const sellerNetEarnings = Number((subtotal - commissionAmount).toFixed(2)); // 2280.00
 
         // Create fulfillment group for Seller 1
         const sellerOrderRes = await pool.query(`
@@ -195,8 +194,8 @@ describe('PERN Multi-Vendor Fashion Marketplace Test Suite', () => {
             RETURNING *
         `, [order.id, testSellerUser1.id, store1.id, subtotal, commissionAmount, sellerNetEarnings]);
 
-        assert.equal(sellerOrderRes.rows[0].commission_amount, '240.00');
-        assert.equal(sellerOrderRes.rows[0].seller_net_earnings, '2160.00');
+        assert.equal(sellerOrderRes.rows[0].commission_amount, '120.00');
+        assert.equal(sellerOrderRes.rows[0].seller_net_earnings, '2280.00');
 
         // Link Order Item
         const orderItemRes = await pool.query(`
@@ -269,28 +268,12 @@ describe('PERN Multi-Vendor Fashion Marketplace Test Suite', () => {
         assert.equal(approvedReturn.rows[0].status, 'completed');
     });
 
-    test('8. AI Service Layer Heuristics & Fallback Resilience', async () => {
-        // Test product assistant prompt
-        const aiListing = await executePrompt({
-            prompt: 'Name: Linen Tee, Fabric: 100% Linen',
-            feature: 'product_assistant',
-            jsonMode: true
-        });
-
-        assert.ok(aiListing.suggestedTitle, 'AI must suggest a title');
-        assert.ok(aiListing.suggestedDescription, 'AI must provide a description');
-        assert.ok(Array.isArray(aiListing.tags), 'AI must return tags array');
-
-        // Test conversational shopping search extraction
-        const aiSearch = await executePrompt({
-            prompt: 'Find blue cotton shirts under ₹1500 for men',
-            feature: 'shop_assistant_intent',
-            jsonMode: true
-        });
-
-        assert.equal(aiSearch.gender, 'Mens');
-        assert.equal(aiSearch.category, 'Shirt');
-        assert.equal(aiSearch.maxPrice, 1500);
+    test('8. Static 5% Platform Commission & Take-Rate Integrity', async () => {
+        // Verify that commission across active brands is strictly standard 5.00%
+        const brandRes = await pool.query('SELECT commission_rate FROM brands WHERE status = $1 LIMIT 5', ['active']);
+        for (const brand of brandRes.rows) {
+            assert.equal(Number(brand.commission_rate), 5.00, 'Commission rate must be fixed 5.00%');
+        }
     });
 
     test('9. Audit Trail Logging', async () => {

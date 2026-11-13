@@ -8,7 +8,7 @@ import orderRoutes from './routes/order.route.js';
 import adminRoutes from './routes/admin.route.js';
 import sellerRoutes from './routes/seller.route.js';
 import brandRoutes from './routes/brand.route.js';
-import aiRoutes from './routes/ai.route.js';
+import { errorHandler } from './middleware/error.middleware.js';
 
 
 const app = express();
@@ -26,7 +26,6 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/seller', sellerRoutes);
 app.use('/api/brand', brandRoutes);
-// app.use('/api/ai', aiRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -44,6 +43,9 @@ app.get('/', (req, res) => {
         </div>
     `);
 });
+
+// Global Centralized Error Handling Middleware (must be registered after all route handlers)
+app.use(errorHandler);
 
 // Start the server and verify database connection
 process.on('uncaughtException', (err) => {

@@ -1,0 +1,439 @@
+import crypto from 'crypto';
+import pool from '../db.js';
+import { getRazorpayClient } from '../config/razorpay.js';
+import { ApiError } from '../middleware/error.middleware.js';
+import { logAuditEvent } from '../utils/auditLogger.js';
+
+// Static 5% marketplace commission across all brands and sellers
+export const getEffectiveCommissionRate = async () => {
+    return 5.00;
+};
+
+export const getOrderPricing = async (client, orderItems) => {
+    let subtotal = 0;
+    const validOrderItems = [];
+    const sellerGroups = {};
+
+    for (const item of orderItems) {
+        const quantity = Number(item.quantity);
+        if (!Number.isInteger(quantity) || quantity < 1) {
+            throw new ApiError(400, 'Invalid item quantity');
+        }
+
+        const variantResult = await client.query(
+            `SELECT pv.id AS variant_id, pv.stock_quantity, pv.price_override, 
+                    p.id AS product_id, p.name AS product_name, p.base_price, 
+                    p.category_id, p.seller_id, p.store_id, p.brand_id
+             FROM product_variants pv
+             JOIN products p ON pv.product_id = p.id
+             WHERE pv.id = $1 FOR UPDATE`,
+            [item.variant_id]
+        );
+
+        if (variantResult.rows.length === 0) {
+            throw new ApiError(404, `Variant ID ${item.variant_id} not found.`);
+        }
+
+        const variant = variantResult.rows[0];
+        if (variant.stock_quantity < quantity) {
+            throw new ApiError(400, `Not enough stock for "${variant.product_name}". Only ${variant.stock_quantity} left.`);
+        }
+
+        const truePrice = Number(variant.price_override ?? variant.base_price);
+        const itemTotal = truePrice * quantity;
+        subtotal += itemTotal;
+
+        let sellerId = variant.seller_id;
+        if (sellerId) {
+            const userCheck = await client.query('SELECT id FROM users WHERE id = $1', [sellerId]);
+            if (userCheck.rows.length === 0) sellerId = null;
+        }
+        if (!sellerId) {
+            const adminUser = await client.query("SELECT id FROM users WHERE role IN ('super_admin', 'admin') ORDER BY id ASC LIMIT 1");
+            sellerId = adminUser.rows[0]?.id || 1;
+        }
+
+        let storeId = variant.store_id || null;
+        if (storeId) {
+            const storeCheck = await client.query('SELECT id FROM seller_stores WHERE id = $1', [storeId]);
+            if (storeCheck.rows.length === 0) storeId = null;
+        }
+        if (!storeId && sellerId) {
+            const storeByUser = await client.query('SELECT id FROM seller_stores WHERE user_id = $1 LIMIT 1', [sellerId]);
+            if (storeByUser.rows.length > 0) storeId = storeByUser.rows[0].id;
+        }
+
+        let brandId = variant.brand_id || null;
+        if (brandId) {
+            const brandCheck = await client.query('SELECT id FROM brands WHERE id = $1', [brandId]);
+            if (brandCheck.rows.length === 0) brandId = null;
+        }
+        if (!brandId && sellerId) {
+            const brandByUser = await client.query('SELECT id FROM brands WHERE user_id = $1 LIMIT 1', [sellerId]);
+            if (brandByUser.rows.length > 0) brandId = brandByUser.rows[0].id;
+        }
+
+        const commissionRate = await getEffectiveCommissionRate();
+        const commissionAmount = Number(((itemTotal * commissionRate) / 100).toFixed(2));
+        const sellerNetAmount = Number((itemTotal - commissionAmount).toFixed(2));
+
+        const validItem = {
+            variant_id: item.variant_id,
+            quantity,
+            price_at_purchase: truePrice,
+            seller_id: sellerId,
+            store_id: storeId,
+            brand_id: brandId,
+            commission_rate: commissionRate,
+            commission_amount: commissionAmount,
+            seller_net_amount: sellerNetAmount,
+        };
+
+        if (!sellerGroups[sellerId]) {
+            sellerGroups[sellerId] = {
+                sellerId,
+                storeId,
+                brandId,
+                subtotal: 0,
+                commissionAmount: 0,
+                sellerNetEarnings: 0,
+                items: []
+            };
+        } else {
+            if (!sellerGroups[sellerId].storeId && storeId) sellerGroups[sellerId].storeId = storeId;
+            if (!sellerGroups[sellerId].brandId && brandId) sellerGroups[sellerId].brandId = brandId;
+        }
+        sellerGroups[sellerId].subtotal += itemTotal;
+        sellerGroups[sellerId].commissionAmount += commissionAmount;
+        sellerGroups[sellerId].sellerNetEarnings += sellerNetAmount;
+        sellerGroups[sellerId].items.push(validItem);
+        validOrderItems.push(validItem);
+    }
+
+    const shipping = subtotal > 150 ? 0 : 15;
+    const tax = Number((subtotal * 0.08).toFixed(2));
+    const total = Number((subtotal + shipping + tax).toFixed(2));
+
+    return { validOrderItems, sellerGroups, subtotal, shipping, tax, total };
+};
+
+export const saveOrder = async (client, userId, shippingAddress, pricing, razorpayPaymentId = null) => {
+    const initialStatus = razorpayPaymentId ? 'processing' : 'pending';
+    const orderResult = await client.query(
+        `INSERT INTO orders (user_id, total_amount, shipping_address, razorpay_payment_id, status)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id, total_amount, status, created_at`,
+        [userId, pricing.total, shippingAddress, razorpayPaymentId, initialStatus]
+    );
+    const newOrder = orderResult.rows[0];
+
+    const sellerOrderMap = {};
+    for (const sellerIdStr of Object.keys(pricing.sellerGroups)) {
+        const group = pricing.sellerGroups[sellerIdStr];
+        const sellerOrderRes = await client.query(
+            `INSERT INTO seller_orders (
+                order_id, seller_id, store_id, brand_id, subtotal, shipping_fee,
+                commission_amount, seller_net_earnings, status
+            )
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'unfulfilled')
+             RETURNING id, seller_id`,
+            [
+                newOrder.id,
+                group.sellerId,
+                group.storeId,
+                group.brandId,
+                group.subtotal,
+                0,
+                group.commissionAmount,
+                group.sellerNetEarnings
+            ]
+        );
+        sellerOrderMap[group.sellerId] = sellerOrderRes.rows[0].id;
+    }
+
+    for (const validItem of pricing.validOrderItems) {
+        const sellerOrderId = sellerOrderMap[validItem.seller_id] || null;
+
+        await client.query(
+            `INSERT INTO order_items (
+                order_id, variant_id, quantity, price_at_purchase,
+                seller_id, seller_order_id, commission_rate, commission_amount,
+                seller_net_amount, fulfillment_status
+            )
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'unfulfilled')`,
+            [
+                newOrder.id,
+                validItem.variant_id,
+                validItem.quantity,
+                validItem.price_at_purchase,
+                validItem.seller_id,
+                sellerOrderId,
+                validItem.commission_rate,
+                validItem.commission_amount,
+                validItem.seller_net_amount
+            ]
+        );
+
+        const updateStock = await client.query(
+            `UPDATE product_variants
+             SET stock_quantity = stock_quantity - $1
+             WHERE id = $2 AND stock_quantity >= $1
+             RETURNING id, stock_quantity`,
+            [validItem.quantity, validItem.variant_id]
+        );
+
+        if (updateStock.rows.length === 0) {
+            throw new ApiError(400, `Insufficient inventory for variant ID ${validItem.variant_id} during checkout confirmation.`);
+        }
+    }
+
+    await logAuditEvent({
+        userId,
+        action: 'MARKETPLACE_ORDER_CREATED',
+        targetEntity: 'orders',
+        targetId: newOrder.id,
+        details: { total: pricing.total, sellers: Object.keys(pricing.sellerGroups) }
+    });
+
+    return newOrder;
+};
+
+export const createPaymentOrderService = async (userId, orderItems) => {
+    if (!Array.isArray(orderItems) || orderItems.length === 0) {
+        throw new ApiError(400, 'No order items');
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const razorpay = getRazorpayClient();
+        const pricing = await getOrderPricing(client, orderItems);
+        await client.query('COMMIT');
+
+        const paymentOrder = await razorpay.orders.create({
+            amount: Math.round(pricing.total * 100),
+            currency: 'INR',
+            receipt: `checkout_${userId}_${Date.now()}`,
+        });
+
+        return {
+            keyId: process.env.RAZORPAY_KEY_ID,
+            paymentOrder,
+            pricing: {
+                subtotal: pricing.subtotal,
+                shipping: pricing.shipping,
+                tax: pricing.tax,
+                total: pricing.total,
+            },
+        };
+    } catch (err) {
+        await client.query('ROLLBACK');
+        const errorMessage = err.error?.description || err.error?.reason || err.message || 'Unable to initialize payment';
+        throw new ApiError(400, errorMessage);
+    } finally {
+        client.release();
+    }
+};
+
+export const verifyPaymentService = async (userId, data) => {
+    const {
+        razorpay_order_id: razorpayOrderId,
+        razorpay_payment_id: razorpayPaymentId,
+        razorpay_signature: razorpaySignature,
+        orderItems,
+        shippingAddress,
+    } = data;
+
+    if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature || !Array.isArray(orderItems) || !shippingAddress) {
+        throw new ApiError(400, 'Incomplete payment details');
+    }
+
+    if (!process.env.RAZORPAY_KEY_SECRET) {
+        throw new ApiError(503, 'Razorpay is not configured on the server');
+    }
+
+    const expectedSignature = crypto
+        .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+        .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+        .digest('hex');
+
+    const expectedSignatureBuffer = Buffer.from(expectedSignature);
+    const receivedSignatureBuffer = Buffer.from(razorpaySignature);
+    if (expectedSignatureBuffer.length !== receivedSignatureBuffer.length ||
+        !crypto.timingSafeEqual(expectedSignatureBuffer, receivedSignatureBuffer)) {
+        throw new ApiError(400, 'Payment verification failed');
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        const existingOrder = await client.query(
+            'SELECT id FROM orders WHERE razorpay_payment_id = $1',
+            [razorpayPaymentId]
+        );
+        if (existingOrder.rows.length > 0) {
+            await client.query('ROLLBACK');
+            return {
+                alreadyProcessed: true,
+                order: existingOrder.rows[0]
+            };
+        }
+
+        const razorpay = getRazorpayClient();
+        const pricing = await getOrderPricing(client, orderItems);
+        const paymentOrder = await razorpay.orders.fetch(razorpayOrderId);
+
+        if (paymentOrder.receipt !== undefined && !paymentOrder.receipt.startsWith(`checkout_${userId}_`)) {
+            throw new ApiError(400, 'Payment does not belong to the current user');
+        }
+
+        if (Number(paymentOrder.amount) !== Math.round(pricing.total * 100) || paymentOrder.currency !== 'INR') {
+            throw new ApiError(400, 'Payment amount mismatch');
+        }
+
+        const newOrder = await saveOrder(client, userId, shippingAddress, pricing, razorpayPaymentId);
+        await client.query('COMMIT');
+
+        return {
+            alreadyProcessed: false,
+            order: newOrder
+        };
+    } catch (err) {
+        await client.query('ROLLBACK');
+        throw new ApiError(400, err.message || 'Unable to create order');
+    } finally {
+        client.release();
+    }
+};
+
+export const createOrderService = async (userId, { orderItems, shippingAddress }) => {
+    if (!orderItems || orderItems.length === 0) {
+        throw new ApiError(400, 'No order items');
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        const pricing = await getOrderPricing(client, orderItems);
+        const newOrder = await saveOrder(client, userId, shippingAddress, pricing);
+        await client.query('COMMIT');
+        return newOrder;
+    } catch (err) {
+        await client.query('ROLLBACK');
+        throw new ApiError(400, err.message);
+    } finally {
+        client.release();
+    }
+};
+
+export const getMyOrdersService = async (userId) => {
+    const ordersResult = await pool.query(
+        'SELECT * FROM orders WHERE user_id = $1 ORDER BY created_at DESC',
+        [userId]
+    );
+
+    const orders = ordersResult.rows;
+    if (orders.length === 0) return [];
+
+    return Promise.all(
+        orders.map(async (order) => {
+            const [itemsResult, sellerOrdersResult] = await Promise.all([
+                pool.query(`
+                    SELECT 
+                        oi.id,
+                        oi.id AS order_item_id,
+                        oi.quantity, 
+                        oi.price_at_purchase,
+                        oi.fulfillment_status,
+                        pv.size,
+                        pv.color,
+                        pv.image_urls,
+                        p.id AS product_id,
+                        p.name AS product_name,
+                        s.name AS store_name,
+                        s.slug AS store_slug,
+                        so.tracking_number,
+                        so.shipping_carrier
+                    FROM order_items oi
+                    JOIN product_variants pv ON oi.variant_id = pv.id
+                    JOIN products p ON pv.product_id = p.id
+                    LEFT JOIN seller_stores s ON p.store_id = s.id
+                    LEFT JOIN seller_orders so ON oi.seller_order_id = so.id
+                    WHERE oi.order_id = $1
+                `, [order.id]),
+                pool.query(`
+                    SELECT so.*, s.name AS store_name, s.slug AS store_slug
+                    FROM seller_orders so
+                    LEFT JOIN seller_stores s ON so.store_id = s.id
+                    WHERE so.order_id = $1
+                `, [order.id])
+            ]);
+
+            return {
+                ...order,
+                items: itemsResult.rows,
+                sellerFulfillments: sellerOrdersResult.rows
+            };
+        })
+    );
+};
+
+export const requestReturnService = async (userId, { orderItemId, reason, details, imageUrls }) => {
+    if (!orderItemId || !reason) {
+        throw new ApiError(400, 'Order item and return reason are required');
+    }
+
+    const itemRes = await pool.query(`
+        SELECT oi.*, o.user_id, o.id AS order_id
+        FROM order_items oi
+        JOIN orders o ON oi.order_id = o.id
+        WHERE oi.id = $1 AND o.user_id = $2
+    `, [orderItemId, userId]);
+
+    if (itemRes.rows.length === 0) {
+        throw new ApiError(404, 'Order item not found or does not belong to user');
+    }
+
+    const item = itemRes.rows[0];
+    const returnRes = await pool.query(`
+        INSERT INTO return_requests (
+            order_id, order_item_id, seller_id, user_id,
+            reason, details, image_urls, status, refund_amount
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $8)
+        RETURNING *
+    `, [
+        item.order_id,
+        item.id,
+        item.seller_id,
+        userId,
+        reason,
+        details || null,
+        imageUrls || [],
+        Number(item.price_at_purchase) * Number(item.quantity)
+    ]);
+
+    await logAuditEvent({
+        userId,
+        action: 'RETURN_REQUESTED',
+        targetEntity: 'return_requests',
+        targetId: returnRes.rows[0].id,
+        details: { orderItemId, reason }
+    });
+
+    return returnRes.rows[0];
+};
+
+export const getMyReturnsService = async (userId) => {
+    const result = await pool.query(`
+        SELECT rr.*, p.name AS product_name, pv.size, pv.color
+        FROM return_requests rr
+        JOIN order_items oi ON rr.order_item_id = oi.id
+        JOIN product_variants pv ON oi.variant_id = pv.id
+        JOIN products p ON pv.product_id = p.id
+        WHERE rr.user_id = $1
+        ORDER BY rr.created_at DESC
+    `, [userId]);
+    return result.rows;
+};
