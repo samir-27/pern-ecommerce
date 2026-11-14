@@ -43,20 +43,20 @@ const SuperAdminBuyersPage = () => {
 
   if (loading) {
     return (
-      <div className="h-[60vh] flex items-center justify-center font-ui text-[#EDEDED]">
-        <Loader2 className="animate-spin text-white" size={28} />
+      <div className="h-[60vh] flex items-center justify-center font-ui text-[#121212]">
+        <Loader2 className="animate-spin text-[#121212]" size={28} />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 font-ui text-[#EDEDED]">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#202028]">
+    <div className="space-y-6 font-ui text-[#121212]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E8E8E4]">
         <div>
           <span className="text-[10px] font-semibold uppercase tracking-loose-caps text-[#843828] block">
             Customer Directory
           </span>
-          <h1 className="font-editorial text-3xl font-light text-white">Platform Shoppers Directory</h1>
+          <h1 className="font-editorial text-3xl font-light text-[#121212]">Platform Shoppers Directory</h1>
           <p className="text-xs text-[#71717A] mt-0.5">
             Audit registered buyer accounts, security state, and order frequencies.
           </p>
@@ -68,16 +68,16 @@ const SuperAdminBuyersPage = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search shopper name or email..."
-            className="pl-9 pr-4 py-2 bg-[#121217] border border-[#202028] focus:border-white text-white text-xs w-64 outline-none transition-colors"
+            className="pl-9 pr-4 py-2 bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] text-xs w-64 outline-none transition-colors shadow-2xs"
           />
         </div>
       </div>
 
-      <div className="bg-[#121217] border border-[#202028] overflow-hidden">
+      <div className="bg-white border border-[#E8E8E4] overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="border-b border-[#202028] bg-[#0E0E12] text-[#71717A] text-[10px] font-semibold uppercase tracking-fashion">
+              <tr className="border-b border-[#E8E8E4] bg-[#F4F4F2] text-[#71717A] text-[10px] font-semibold uppercase tracking-loose-caps">
                 <th className="p-4">Shopper Identity</th>
                 <th className="p-4">Contact Phone</th>
                 <th className="p-4">Onboarded Date</th>
@@ -85,7 +85,7 @@ const SuperAdminBuyersPage = () => {
                 <th className="p-4 text-right">Moderation Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#1E1E26]">
+            <tbody className="divide-y divide-[#E8E8E4]">
               {filteredBuyers.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="p-8 text-center text-[#71717A] italic">
@@ -94,14 +94,14 @@ const SuperAdminBuyersPage = () => {
                 </tr>
               ) : (
                 filteredBuyers.map((b) => (
-                  <tr key={b.id} className="hover:bg-[#16161D] transition-colors">
+                  <tr key={b.id} className="hover:bg-[#FBFBFA] transition-colors">
                     <td className="p-4">
-                      <div className="font-medium text-white text-xs">
+                      <div className="font-medium text-[#121212] text-xs">
                         {b.first_name || b.name ? `${b.first_name || ''} ${b.last_name || ''}`.trim() : 'Anonymous Shopper'}
                       </div>
                       <div className="text-[10px] text-[#71717A] font-tabular">{b.email}</div>
                     </td>
-                    <td className="p-4 font-tabular text-[#EDEDED]">
+                    <td className="p-4 font-tabular text-[#121212]">
                       {b.phone || '—'}
                     </td>
                     <td className="p-4 text-[#71717A] font-tabular whitespace-nowrap">
@@ -110,8 +110,8 @@ const SuperAdminBuyersPage = () => {
                     <td className="p-4">
                       <span className={`inline-block px-2 py-0.5 text-[9px] uppercase tracking-fashion border ${
                         b.is_blocked
-                          ? 'bg-[#261313] text-[#FCA5A5] border-[#4D1F1F]'
-                          : 'bg-[#1C281F] text-[#4ADE80] border-[#2E4A35]'
+                          ? 'bg-rose-50 text-rose-800 border-rose-200'
+                          : 'bg-emerald-50 text-emerald-800 border-emerald-200'
                       }`}>
                         {b.is_blocked ? 'Suspended' : 'Active Client'}
                       </span>
@@ -122,8 +122,8 @@ const SuperAdminBuyersPage = () => {
                         onClick={() => handleToggleBlock(b.id, b.email, b.is_blocked)}
                         className={`px-3 py-1 text-[9px] uppercase tracking-fashion font-medium transition-colors cursor-pointer border ${
                           b.is_blocked
-                            ? 'bg-[#1C281F] hover:bg-[#283C2D] text-[#4ADE80] border-[#2E4A35]'
-                            : 'bg-[#261313] hover:bg-[#3D1A1A] text-[#FCA5A5] border-[#4D1F1F]'
+                            ? 'bg-white hover:bg-emerald-50 text-emerald-800 border-emerald-300'
+                            : 'bg-white hover:bg-rose-50 text-rose-800 border-rose-300'
                         }`}
                       >
                         {b.is_blocked ? 'Unblock Shopper' : 'Block Shopper'}

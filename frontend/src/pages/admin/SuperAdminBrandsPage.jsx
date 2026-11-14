@@ -6,11 +6,9 @@ import {
   Eye, 
   Loader2, 
   X, 
-  Mail, 
   Trash2
 } from 'lucide-react';
 import api from '@/services/Axios';
-import { formatCurrency } from '@/utils/formatters';
 
 const SuperAdminBrandsPage = () => {
   const [brands, setBrands] = useState([]);
@@ -73,21 +71,21 @@ const SuperAdminBrandsPage = () => {
 
   if (loading) {
     return (
-      <div className="h-[60vh] flex items-center justify-center font-ui text-[#EDEDED]">
-        <Loader2 className="animate-spin text-white" size={28} />
+      <div className="h-[60vh] flex items-center justify-center font-ui text-[#121212]">
+        <Loader2 className="animate-spin text-[#121212]" size={28} />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 font-ui text-[#EDEDED]">
+    <div className="space-y-6 font-ui text-[#121212]">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#202028]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E8E8E4]">
         <div>
           <span className="text-[10px] font-semibold uppercase tracking-loose-caps text-[#843828] block">
             Partner Moderation
           </span>
-          <h1 className="font-editorial text-3xl font-light text-white">Partner Ateliers Directory</h1>
+          <h1 className="font-editorial text-3xl font-light text-[#121212]">Partner Ateliers Directory</h1>
           <p className="text-xs text-[#71717A] mt-0.5">
             Audit, verify, moderate, or suspend partner clothing labels.
           </p>
@@ -96,7 +94,7 @@ const SuperAdminBrandsPage = () => {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 bg-[#141419] border border-[#202028] text-white text-xs outline-none cursor-pointer"
+            className="px-3 py-2 bg-white border border-[#E8E8E4] text-[#121212] text-xs outline-none cursor-pointer shadow-2xs"
           >
             <option value="all">All Ateliers</option>
             <option value="pending">Pending Moderation</option>
@@ -111,18 +109,18 @@ const SuperAdminBrandsPage = () => {
               placeholder="Search atelier or owner..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 pr-4 py-2 bg-[#141419] border border-[#202028] focus:border-white text-white text-xs outline-none transition-colors w-60"
+              className="pl-9 pr-4 py-2 bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] text-xs outline-none transition-colors w-60 shadow-2xs"
             />
           </div>
         </div>
       </div>
 
       {/* Brands Table */}
-      <div className="bg-[#121217] border border-[#202028] overflow-hidden">
+      <div className="bg-white border border-[#E8E8E4] overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="border-b border-[#202028] bg-[#0E0E12] text-[#71717A] text-[10px] font-semibold uppercase tracking-fashion">
+              <tr className="border-b border-[#E8E8E4] bg-[#F4F4F2] text-[#71717A] text-[10px] font-semibold uppercase tracking-loose-caps">
                 <th className="p-4">Atelier Name</th>
                 <th className="p-4">Founder / Email</th>
                 <th className="p-4">Commission</th>
@@ -131,7 +129,7 @@ const SuperAdminBrandsPage = () => {
                 <th className="p-4 text-right">Moderation Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#1E1E26]">
+            <tbody className="divide-y divide-[#E8E8E4]">
               {filteredBrands.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="p-8 text-center text-[#71717A] italic">
@@ -140,10 +138,10 @@ const SuperAdminBrandsPage = () => {
                 </tr>
               ) : (
                 filteredBrands.map((b) => (
-                  <tr key={b.id} className="hover:bg-[#16161D] transition-colors">
+                  <tr key={b.id} className="hover:bg-[#FBFBFA] transition-colors">
                     <td className="p-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 bg-white text-[#0A0A0C] border border-[#202028] flex items-center justify-center font-editorial text-sm font-semibold shrink-0">
+                        <div className="w-9 h-9 bg-[#121212] text-[#FBFBFA] border border-[#121212] flex items-center justify-center font-editorial text-sm font-semibold shrink-0">
                           {b.logo_url ? (
                             <img src={b.logo_url} alt={b.name} className="w-full h-full object-cover" />
                           ) : (
@@ -151,32 +149,32 @@ const SuperAdminBrandsPage = () => {
                           )}
                         </div>
                         <div>
-                          <div className="font-medium text-white text-xs">{b.name}</div>
+                          <div className="font-medium text-[#121212] text-xs">{b.name}</div>
                           <div className="text-[10px] text-[#71717A] truncate max-w-xs">{b.bio || 'Independent fashion brand'}</div>
                         </div>
                       </div>
                     </td>
 
                     <td className="p-4">
-                      <div className="text-white font-medium">{b.owner_name || 'Founder'}</div>
+                      <div className="text-[#121212] font-medium">{b.owner_name || 'Founder'}</div>
                       <div className="text-[10px] text-[#71717A] font-tabular">{b.owner_email}</div>
                     </td>
 
-                    <td className="p-4 font-tabular text-[#EDEDED]">
+                    <td className="p-4 font-tabular text-[#121212]">
                       {b.commission_rate ?? '5.0'}% Static
                     </td>
 
-                    <td className="p-4 font-tabular text-[#EDEDED]">
+                    <td className="p-4 font-tabular text-[#121212]">
                       {b.product_count ?? 0}
                     </td>
 
                     <td className="p-4">
                       <span className={`inline-flex items-center gap-1 text-[9px] font-medium px-2 py-0.5 uppercase tracking-fashion border ${
                         b.status === 'active'
-                          ? 'bg-[#1C281F] text-[#4ADE80] border-[#2E4A35]'
+                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                           : b.status === 'pending'
-                          ? 'bg-[#2E2018] text-[#FBBF24] border-[#4D3321]'
-                          : 'bg-[#261313] text-[#FCA5A5] border-[#4D1F1F]'
+                          ? 'bg-amber-50 text-amber-800 border-amber-200'
+                          : 'bg-rose-50 text-rose-800 border-rose-200'
                       }`}>
                         {b.status === 'active' ? <CheckCircle2 size={10} /> : <AlertTriangle size={10} />}
                         <span>{b.status}</span>
@@ -189,7 +187,7 @@ const SuperAdminBrandsPage = () => {
                           <button
                             type="button"
                             onClick={() => handleStatusChange(b.id, 'active')}
-                            className="px-2.5 py-1 bg-[#4ADE80] hover:bg-[#38C06C] text-[#0A0A0C] text-[9px] font-semibold uppercase tracking-fashion transition-colors cursor-pointer"
+                            className="px-2.5 py-1 bg-[#121212] hover:bg-black text-[#FBFBFA] text-[9px] font-medium uppercase tracking-fashion transition-colors cursor-pointer"
                           >
                             Verify & Allow Sell
                           </button>
@@ -199,7 +197,7 @@ const SuperAdminBrandsPage = () => {
                           <button
                             type="button"
                             onClick={() => handleStatusChange(b.id, 'suspended')}
-                            className="px-2.5 py-1 bg-[#241A13] hover:bg-[#3A2417] text-[#FBBF24] border border-[#4D3220] text-[9px] font-medium uppercase tracking-fashion transition-colors cursor-pointer"
+                            className="px-2.5 py-1 bg-white hover:bg-amber-50 text-amber-800 border border-amber-300 text-[9px] font-medium uppercase tracking-fashion transition-colors cursor-pointer"
                           >
                             Suspend
                           </button>
@@ -209,7 +207,7 @@ const SuperAdminBrandsPage = () => {
                           <button
                             type="button"
                             onClick={() => handleStatusChange(b.id, 'active')}
-                            className="px-2.5 py-1 bg-[#1C281F] hover:bg-[#283C2D] text-[#4ADE80] border border-[#2E4A35] text-[9px] font-medium uppercase tracking-fashion transition-colors cursor-pointer"
+                            className="px-2.5 py-1 bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 text-[9px] font-medium uppercase tracking-fashion transition-colors cursor-pointer"
                           >
                             Reactivate
                           </button>
@@ -221,7 +219,7 @@ const SuperAdminBrandsPage = () => {
                             setSelectedBrand(b);
                             setIsDetailsOpen(true);
                           }}
-                          className="p-1.5 text-[#71717A] hover:text-white transition-colors cursor-pointer"
+                          className="p-1.5 text-[#71717A] hover:text-[#121212] hover:bg-[#F4F4F2] border border-transparent hover:border-[#E8E8E4] transition-colors cursor-pointer"
                           title="View Details"
                         >
                           <Eye size={13} />
@@ -230,7 +228,7 @@ const SuperAdminBrandsPage = () => {
                         <button
                           type="button"
                           onClick={() => handleDeleteBrand(b.id, b.name)}
-                          className="p-1.5 text-[#71717A] hover:text-[#E17564] transition-colors cursor-pointer"
+                          className="p-1.5 text-[#71717A] hover:text-[#843828] hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-colors cursor-pointer"
                           title="Delete Atelier"
                         >
                           <Trash2 size={13} />
@@ -247,19 +245,19 @@ const SuperAdminBrandsPage = () => {
 
       {/* Brand Inspection Modal */}
       {isDetailsOpen && selectedBrand && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#121217] border border-[#202028] w-full max-w-lg p-6 sm:p-8 space-y-6 shadow-2xl">
-            <div className="flex items-center justify-between pb-4 border-b border-[#202028]">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-[#FBFBFA] border border-[#E8E8E4] w-full max-w-lg p-6 sm:p-8 space-y-6 shadow-2xl">
+            <div className="flex items-center justify-between pb-4 border-b border-[#E8E8E4]">
               <div>
                 <span className="text-[10px] font-semibold uppercase tracking-loose-caps text-[#843828] block">
                   Atelier Dossier
                 </span>
-                <h3 className="font-editorial text-2xl font-light text-white">{selectedBrand.name}</h3>
+                <h3 className="font-editorial text-2xl font-light text-[#121212]">{selectedBrand.name}</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsDetailsOpen(false)}
-                className="text-[#71717A] hover:text-white cursor-pointer"
+                className="text-[#71717A] hover:text-[#121212] cursor-pointer"
               >
                 <X size={18} />
               </button>
@@ -270,30 +268,30 @@ const SuperAdminBrandsPage = () => {
                 <span className="text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] block mb-1">
                   Atelier Biography & Manifesto
                 </span>
-                <p className="text-white leading-relaxed bg-[#0E0E12] p-3 border border-[#1E1E26]">
+                <p className="text-[#121212] leading-relaxed bg-white p-3 border border-[#E8E8E4]">
                   {selectedBrand.bio || 'No brand narrative provided.'}
                 </p>
               </div>
 
               <div className="grid grid-cols-2 gap-3 font-tabular">
-                <div className="p-3 bg-[#0E0E12] border border-[#1E1E26]">
+                <div className="p-3 bg-white border border-[#E8E8E4]">
                   <span className="text-[10px] text-[#71717A] uppercase block">Owner Contact</span>
-                  <strong className="text-white text-xs">{selectedBrand.owner_name}</strong>
-                  <span className="text-[10px] text-[#A1A1AA] block mt-0.5">{selectedBrand.owner_email}</span>
+                  <strong className="text-[#121212] text-xs">{selectedBrand.owner_name}</strong>
+                  <span className="text-[10px] text-[#71717A] block mt-0.5">{selectedBrand.owner_email}</span>
                 </div>
-                <div className="p-3 bg-[#0E0E12] border border-[#1E1E26]">
+                <div className="p-3 bg-white border border-[#E8E8E4]">
                   <span className="text-[10px] text-[#71717A] uppercase block">Platform Commission</span>
-                  <strong className="text-white text-xs">{selectedBrand.commission_rate ?? '5.0'}% Static</strong>
-                  <span className="text-[10px] text-[#4ADE80] block mt-0.5">Disbursement Rate: 95.0%</span>
+                  <strong className="text-[#121212] text-xs">{selectedBrand.commission_rate ?? '5.0'}% Static</strong>
+                  <span className="text-[10px] text-emerald-700 block mt-0.5">Disbursement Rate: 95.0%</span>
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-end pt-2 border-t border-[#202028]">
+            <div className="flex justify-end pt-2 border-t border-[#E8E8E4]">
               <button
                 type="button"
                 onClick={() => setIsDetailsOpen(false)}
-                className="px-5 py-2 bg-white text-[#0A0A0C] text-[10px] font-medium uppercase tracking-fashion cursor-pointer"
+                className="px-5 py-2 bg-[#121212] text-[#FBFBFA] hover:bg-black text-[10px] font-medium uppercase tracking-fashion cursor-pointer transition-colors"
               >
                 Close Dossier
               </button>

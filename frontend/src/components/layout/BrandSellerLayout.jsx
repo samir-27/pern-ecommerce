@@ -12,7 +12,8 @@ import {
     AlertCircle, 
     CheckCircle2, 
     Menu, 
-    X
+    X,
+    ChevronRight
 } from 'lucide-react';
 import api from '@api';
 
@@ -62,28 +63,28 @@ const BrandSellerLayout = ({ children }) => {
     ];
 
     return (
-        <div className="min-h-screen bg-[#0C0C0E] text-[#EDEDED] font-ui flex flex-col md:flex-row antialiased">
+        <div className="min-h-screen bg-[#FBFBFA] text-[#121212] font-ui flex flex-col md:flex-row antialiased selection:bg-[#121212] selection:text-white">
             {/* Sidebar Desktop */}
-            <aside className="w-full md:w-64 bg-[#111115] border-r border-[#202028] flex flex-col justify-between shrink-0">
+            <aside className="w-full md:w-64 bg-white border-r border-[#E8E8E4] flex flex-col justify-between shrink-0 shadow-xs">
                 <div>
                     {/* Atelier Studio Branding Header */}
-                    <div className="p-5 border-b border-[#202028] flex items-center justify-between">
+                    <div className="p-5 border-b border-[#E8E8E4] flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-[#1D1D24] border border-[#2B2B36] flex items-center justify-center font-editorial text-xl text-white">
+                            <div className="w-10 h-10 bg-[#121212] text-[#FBFBFA] border border-[#121212] flex items-center justify-center font-editorial text-xl font-light">
                                 {brand?.name ? brand.name.charAt(0).toUpperCase() : 'A'}
                             </div>
                             <div>
                                 <span className="text-[9px] font-semibold uppercase tracking-loose-caps text-[#843828] block">
                                     Atelier Studio
                                 </span>
-                                <h2 className="text-xs font-semibold text-white truncate max-w-[130px]">
+                                <h2 className="text-xs font-semibold text-[#121212] truncate max-w-[130px]">
                                     {brand?.name || 'Fashion House'}
                                 </h2>
                             </div>
                         </div>
                         <button 
                             type="button"
-                            className="md:hidden text-[#71717A] hover:text-white"
+                            className="md:hidden text-[#71717A] hover:text-[#121212] cursor-pointer"
                             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                         >
                             {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
@@ -92,14 +93,16 @@ const BrandSellerLayout = ({ children }) => {
 
                     {/* Brand Status Pill */}
                     {brand && (
-                        <div className="mx-4 mt-4 p-2.5 bg-[#17171D] border border-[#252530] flex items-center justify-between text-xs">
-                            <span className="text-[11px] text-[#A1A1AA] uppercase tracking-wider">Status</span>
-                            <span className={`inline-flex items-center gap-1 font-medium px-2 py-0.5 text-[10px] uppercase tracking-fashion ${
+                        <div className="mx-4 mt-4 p-2.5 bg-[#F4F4F2] border border-[#E8E8E4] flex items-center justify-between text-xs">
+                            <span className="text-[10px] text-[#71717A] uppercase tracking-wider font-medium">Status</span>
+                            <span className={`inline-flex items-center gap-1 font-medium px-2 py-0.5 text-[9px] uppercase tracking-fashion border ${
                                 brand.status === 'active' 
-                                    ? 'bg-[#1C281F] text-[#4ADE80] border border-[#2E4A35]' 
-                                    : 'bg-[#2E2018] text-[#FBBF24] border border-[#4D3321]'
+                                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
+                                    : brand.status === 'suspended'
+                                    ? 'bg-rose-50 text-rose-800 border-rose-200'
+                                    : 'bg-amber-50 text-amber-800 border-amber-200'
                             }`}>
-                                {brand.status === 'active' ? <CheckCircle2 size={11} /> : <AlertCircle size={11} />}
+                                {brand.status === 'active' ? <CheckCircle2 size={10} /> : <AlertCircle size={10} />}
                                 {brand.status === 'pending' ? 'Verification Pending' : brand.status}
                             </span>
                         </div>
@@ -115,14 +118,17 @@ const BrandSellerLayout = ({ children }) => {
                                     key={item.path}
                                     to={item.path}
                                     onClick={() => setIsMobileMenuOpen(false)}
-                                    className={`flex items-center gap-3 px-3.5 py-2.5 text-xs font-medium tracking-wide transition-colors ${
+                                    className={`flex items-center justify-between px-3.5 py-2.5 text-xs font-medium tracking-wide transition-colors ${
                                         isActive 
-                                            ? 'bg-white text-[#0C0C0E] font-semibold' 
-                                            : 'text-[#A1A1AA] hover:text-white hover:bg-[#1A1A22]'
+                                            ? 'bg-[#121212] text-[#FBFBFA] font-medium shadow-xs' 
+                                            : 'text-[#71717A] hover:text-[#121212] hover:bg-[#F4F4F2]'
                                     }`}
                                 >
-                                    <Icon size={15} className={isActive ? 'text-[#0C0C0E]' : 'text-[#71717A]'} />
-                                    <span>{item.label}</span>
+                                    <div className="flex items-center gap-2.5">
+                                        <Icon size={14} className={isActive ? 'text-[#FBFBFA]' : 'text-[#71717A]'} />
+                                        <span>{item.label}</span>
+                                    </div>
+                                    {isActive && <ChevronRight size={12} className="text-[#FBFBFA]" />}
                                 </Link>
                             );
                         })}
@@ -130,12 +136,12 @@ const BrandSellerLayout = ({ children }) => {
                 </div>
 
                 {/* Bottom Actions */}
-                <div className="p-4 border-t border-[#202028] space-y-2">
+                <div className="p-4 border-t border-[#E8E8E4] space-y-1.5">
                     {brand?.slug && (
                         <Link 
                             to={`/brands/${brand.slug}`} 
                             target="_blank" 
-                            className="flex items-center justify-between px-3 py-2 text-xs text-[#A1A1AA] hover:text-white hover:bg-[#17171D] transition-colors"
+                            className="flex items-center justify-between px-3 py-2 text-xs text-[#71717A] hover:text-[#121212] hover:bg-[#F4F4F2] transition-colors"
                         >
                             <span className="flex items-center gap-2">
                                 <Store size={13} /> Public Atelier View
@@ -146,7 +152,7 @@ const BrandSellerLayout = ({ children }) => {
                     <button
                         type="button"
                         onClick={handleLogout}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-[#E17564] hover:text-[#FFA090] hover:bg-[#2A1513] transition-colors font-medium cursor-pointer"
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs text-[#843828] hover:text-[#121212] hover:bg-[#F4F4F2] transition-colors font-medium cursor-pointer"
                     >
                         <LogOut size={13} /> Sign Out of Studio
                     </button>
@@ -154,13 +160,13 @@ const BrandSellerLayout = ({ children }) => {
             </aside>
 
             {/* Main Workspace Content */}
-            <main className="flex-1 flex flex-col min-h-screen overflow-x-hidden">
+            <main className="flex-1 flex flex-col min-h-screen overflow-x-hidden bg-[#FBFBFA]">
                 {/* Header Sub-bar */}
-                <header className="h-14 border-b border-[#202028] bg-[#0F0F13]/90 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-20">
+                <header className="h-14 border-b border-[#E8E8E4] bg-[#FBFBFA]/90 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-20">
                     <div className="flex items-center gap-2 text-xs text-[#71717A]">
                         <span>Atelier Studio</span>
                         <span>/</span>
-                        <span className="text-[#EDEDED] font-medium capitalize">
+                        <span className="text-[#121212] font-medium capitalize">
                             {location.pathname.replace('/seller', '').replace('/', '') || 'Overview'}
                         </span>
                     </div>
@@ -168,12 +174,12 @@ const BrandSellerLayout = ({ children }) => {
                     <div className="flex items-center gap-4">
                         <Link 
                             to="/" 
-                            className="text-xs text-[#A1A1AA] hover:text-white transition-colors"
+                            className="text-xs text-[#71717A] hover:text-[#121212] transition-colors"
                         >
                             ← Return to Buyer Store
                         </Link>
-                        <div className="h-3 w-px bg-[#202028]" />
-                        <span className="text-[11px] font-tabular uppercase tracking-wider text-[#A1A1AA] bg-[#181820] px-2.5 py-1 border border-[#282834]">
+                        <div className="h-3 w-px bg-[#E8E8E4]" />
+                        <span className="text-[11px] font-tabular uppercase tracking-wider text-[#71717A] bg-[#F4F4F2] px-2.5 py-1 border border-[#E8E8E4]">
                             Take-Rate: 5.0% Static
                         </span>
                     </div>
@@ -181,15 +187,15 @@ const BrandSellerLayout = ({ children }) => {
 
                 {/* Verification Pending Banner */}
                 {brand?.status === 'pending' && (
-                    <div className="bg-[#241A13] border-b border-[#4A3222] px-6 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-[#FDE68A]">
+                    <div className="bg-[#FFFBEB] border-b border-[#FDE68A] px-6 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-[#92400E]">
                         <div className="flex items-center gap-2.5">
-                            <AlertCircle size={16} className="text-[#FBBF24] shrink-0" />
+                            <AlertCircle size={16} className="text-[#D97706] shrink-0" />
                             <div>
-                                <strong className="text-white block font-medium">Atelier Verification Pending:</strong>
-                                <span className="text-[#D1D5DB]">Your brand registration is awaiting Super Admin verification. You will be able to publish garments once verified.</span>
+                                <strong className="text-[#92400E] block font-semibold">Atelier Verification Pending:</strong>
+                                <span className="text-[#B45309]">Your brand registration is awaiting Super Admin verification. You will be able to publish garments once verified.</span>
                             </div>
                         </div>
-                        <span className="px-2.5 py-1 bg-[#3E291B] text-[#FDE68A] text-[9px] uppercase tracking-fashion shrink-0 border border-[#68462D]">
+                        <span className="px-2.5 py-1 bg-[#FEF3C7] text-[#92400E] text-[9px] uppercase tracking-fashion shrink-0 border border-[#FDE68A] font-medium">
                             Awaiting Moderation
                         </span>
                     </div>
@@ -197,15 +203,15 @@ const BrandSellerLayout = ({ children }) => {
 
                 {/* Suspended Brand Notice */}
                 {brand?.status === 'suspended' && (
-                    <div className="bg-[#261313] border-b border-[#4D1F1F] px-6 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-[#FCA5A5]">
+                    <div className="bg-[#FEF2F2] border-b border-[#FECACA] px-6 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-[#991B1B]">
                         <div className="flex items-center gap-2.5">
-                            <AlertCircle size={16} className="text-[#F87171] shrink-0" />
+                            <AlertCircle size={16} className="text-[#DC2626] shrink-0" />
                             <div>
-                                <strong className="text-white block font-medium">Atelier Suspended:</strong>
-                                <span className="text-[#D1D5DB]">Your atelier is temporarily suspended. Garment listings are withheld from buyers.</span>
+                                <strong className="text-[#991B1B] block font-semibold">Atelier Suspended:</strong>
+                                <span className="text-[#B91C1C]">Your atelier is temporarily suspended. Garment listings are withheld from buyers.</span>
                             </div>
                         </div>
-                        <span className="px-2.5 py-1 bg-[#3D1A1A] text-[#FCA5A5] text-[9px] uppercase tracking-fashion shrink-0 border border-[#662828]">
+                        <span className="px-2.5 py-1 bg-[#FEE2E2] text-[#991B1B] text-[9px] uppercase tracking-fashion shrink-0 border border-[#FECACA] font-medium">
                             Suspended
                         </span>
                     </div>
@@ -215,8 +221,8 @@ const BrandSellerLayout = ({ children }) => {
                 <div className="flex-1 p-6 md:p-8 max-w-7xl mx-auto w-full">
                     {loading ? (
                         <div className="space-y-4 animate-pulse">
-                            <div className="h-10 w-2/5 bg-[#17171E]" />
-                            <div className="h-60 w-full bg-[#17171E]" />
+                            <div className="h-10 w-2/5 bg-[#E8E8E4]" />
+                            <div className="h-60 w-full bg-[#E8E8E4]" />
                         </div>
                     ) : children}
                 </div>

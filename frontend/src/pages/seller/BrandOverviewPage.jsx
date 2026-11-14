@@ -50,7 +50,7 @@ const BrandOverviewPage = () => {
   if (loading) {
     return (
       <div className="h-[60vh] flex items-center justify-center">
-        <Loader2 className="animate-spin text-[#EDEDED]" size={28} />
+        <Loader2 className="animate-spin text-[#121212]" size={28} />
       </div>
     );
   }
@@ -58,15 +58,15 @@ const BrandOverviewPage = () => {
   const { brand, products, orders, inventory } = data || {};
 
   return (
-    <div className="space-y-8 font-ui text-[#EDEDED]">
+    <div className="space-y-8 font-ui text-[#121212]">
       {/* Studio Header Banner */}
-      <div className="p-6 md:p-8 bg-[#141419] border border-[#23232C] flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="p-6 md:p-8 bg-white border border-[#E8E8E4] flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xs">
         <div>
           <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-loose-caps text-[#843828] mb-1">
             <ShieldCheck size={13} />
             <span>Atelier Operations Console</span>
           </div>
-          <h1 className="font-editorial text-3xl font-light text-white">
+          <h1 className="font-editorial text-3xl font-light text-[#121212]">
             Welcome back, {brand?.name || 'Partner Atelier'}
           </h1>
           <p className="text-[#71717A] text-xs mt-1 max-w-xl leading-relaxed">
@@ -76,14 +76,14 @@ const BrandOverviewPage = () => {
         <div className="flex items-center gap-3">
           <Link
             to="/seller/products"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-[#F4F4F2] text-[#0C0C0E] text-[11px] font-medium uppercase tracking-fashion transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#121212] hover:bg-black text-[#FBFBFA] text-[11px] font-medium uppercase tracking-fashion transition-colors"
           >
             <Plus size={13} />
             <span>Add Garment</span>
           </Link>
           <Link
             to="/seller/orders"
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#1C1C24] hover:bg-[#252530] text-white text-[11px] font-medium uppercase tracking-fashion border border-[#2C2C38] transition-colors"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-white hover:bg-[#F4F4F2] text-[#121212] text-[11px] font-medium uppercase tracking-fashion border border-[#E8E8E4] transition-colors"
           >
             <span>Fulfill Orders</span>
           </Link>
@@ -93,48 +93,48 @@ const BrandOverviewPage = () => {
       {/* Financial & Catalog Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Gross GMV */}
-        <div className="p-5 bg-[#141419] border border-[#23232C]">
+        <div className="p-5 bg-white border border-[#E8E8E4] shadow-xs">
           <div className="flex items-center justify-between text-[#71717A] mb-3">
             <span className="text-[10px] font-semibold uppercase tracking-fashion">Gross Volume</span>
-            <DollarSign size={14} className="text-[#A1A1AA]" />
+            <DollarSign size={14} className="text-[#71717A]" />
           </div>
-          <div className="font-tabular text-2xl font-semibold text-white">
+          <div className="font-tabular text-2xl font-semibold text-[#121212]">
             {formatCurrency(orders?.gross_sales || 0)}
           </div>
           <span className="text-[10px] text-[#71717A] mt-1 block">Customer order total</span>
         </div>
 
         {/* Net Payout */}
-        <div className="p-5 bg-[#141419] border border-[#23232C]">
+        <div className="p-5 bg-white border border-[#E8E8E4] shadow-xs">
           <div className="flex items-center justify-between text-[#71717A] mb-3">
             <span className="text-[10px] font-semibold uppercase tracking-fashion">Net Payout (95%)</span>
-            <span className="text-[10px] font-tabular font-medium text-[#4ADE80]">Active</span>
+            <span className="text-[10px] font-tabular font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.5 border border-emerald-200">Active</span>
           </div>
-          <div className="font-tabular text-2xl font-semibold text-[#4ADE80]">
+          <div className="font-tabular text-2xl font-semibold text-emerald-800">
             {formatCurrency(orders?.net_earnings || 0)}
           </div>
           <span className="text-[10px] text-[#71717A] mt-1 block">Static 5.0% platform fee</span>
         </div>
 
         {/* Active Catalog */}
-        <div className="p-5 bg-[#141419] border border-[#23232C]">
+        <div className="p-5 bg-white border border-[#E8E8E4] shadow-xs">
           <div className="flex items-center justify-between text-[#71717A] mb-3">
             <span className="text-[10px] font-semibold uppercase tracking-fashion">Live Garments</span>
-            <Shirt size={14} className="text-[#A1A1AA]" />
+            <Shirt size={14} className="text-[#71717A]" />
           </div>
-          <div className="font-tabular text-2xl font-semibold text-white">
+          <div className="font-tabular text-2xl font-semibold text-[#121212]">
             {products?.total_products || 0}
           </div>
           <span className="text-[10px] text-[#71717A] mt-1 block">Active pieces in store</span>
         </div>
 
         {/* Pending Fulfillment */}
-        <div className="p-5 bg-[#141419] border border-[#23232C]">
+        <div className="p-5 bg-white border border-[#E8E8E4] shadow-xs">
           <div className="flex items-center justify-between text-[#71717A] mb-3">
             <span className="text-[10px] font-semibold uppercase tracking-fashion">Pending Dispatch</span>
-            <Clock size={14} className="text-[#A1A1AA]" />
+            <Clock size={14} className="text-[#71717A]" />
           </div>
-          <div className="font-tabular text-2xl font-semibold text-[#FBBF24]">
+          <div className="font-tabular text-2xl font-semibold text-amber-700">
             {orders?.pending_fulfillment || 0}
           </div>
           <span className="text-[10px] text-[#71717A] mt-1 block">Parcels awaiting AWB</span>
@@ -143,16 +143,16 @@ const BrandOverviewPage = () => {
 
       {/* Low Stock Warning Alert if any */}
       {Number(inventory?.low_stock_count || 0) > 0 && (
-        <div className="p-4 bg-[#231811] border border-[#4D3220] flex items-center justify-between gap-4">
+        <div className="p-4 bg-[#FFFBEB] border border-[#FDE68A] flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <AlertTriangle className="text-[#FBBF24] shrink-0" size={18} />
-            <div className="text-xs text-[#FDE68A]">
+            <AlertTriangle className="text-[#D97706] shrink-0" size={18} />
+            <div className="text-xs text-[#92400E]">
               <strong>Low Inventory Alert:</strong> You have {inventory.low_stock_count} garment variant(s) below threshold. Restock to prevent backorders.
             </div>
           </div>
           <Link
             to="/seller/products"
-            className="text-[11px] font-medium uppercase tracking-fashion text-[#FBBF24] hover:underline shrink-0"
+            className="text-[11px] font-medium uppercase tracking-fashion text-[#92400E] hover:underline shrink-0"
           >
             Update Quantities →
           </Link>
@@ -163,15 +163,15 @@ const BrandOverviewPage = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Link
           to="/seller/products"
-          className="p-6 bg-[#141419] border border-[#23232C] hover:border-white transition-colors group"
+          className="p-6 bg-white border border-[#E8E8E4] hover:border-[#121212] transition-colors group shadow-xs"
         >
           <div className="flex items-center justify-between mb-4">
-            <div className="p-2.5 bg-[#1D1D26] text-white">
+            <div className="p-2.5 bg-[#F4F4F2] text-[#121212]">
               <Shirt size={18} />
             </div>
-            <ArrowUpRight size={14} className="text-[#71717A] group-hover:text-white transition-colors" />
+            <ArrowUpRight size={14} className="text-[#71717A] group-hover:text-[#121212] transition-colors" />
           </div>
-          <h3 className="font-editorial text-xl font-light text-white group-hover:text-white">
+          <h3 className="font-editorial text-xl font-light text-[#121212]">
             Clothing Catalog & Variants
           </h3>
           <p className="text-xs text-[#71717A] mt-1 leading-relaxed">
@@ -181,15 +181,15 @@ const BrandOverviewPage = () => {
 
         <Link
           to="/seller/orders"
-          className="p-6 bg-[#141419] border border-[#23232C] hover:border-white transition-colors group"
+          className="p-6 bg-white border border-[#E8E8E4] hover:border-[#121212] transition-colors group shadow-xs"
         >
           <div className="flex items-center justify-between mb-4">
-            <div className="p-2.5 bg-[#1D1D26] text-white">
+            <div className="p-2.5 bg-[#F4F4F2] text-[#121212]">
               <Clock size={18} />
             </div>
-            <ArrowUpRight size={14} className="text-[#71717A] group-hover:text-white transition-colors" />
+            <ArrowUpRight size={14} className="text-[#71717A] group-hover:text-[#121212] transition-colors" />
           </div>
-          <h3 className="font-editorial text-xl font-light text-white group-hover:text-white">
+          <h3 className="font-editorial text-xl font-light text-[#121212]">
             Fulfillment & Consignment Dispatch
           </h3>
           <p className="text-xs text-[#71717A] mt-1 leading-relaxed">

@@ -148,33 +148,33 @@ const BrandProductsPage = () => {
 
   if (loading) {
     return (
-      <div className="h-[60vh] flex items-center justify-center font-ui text-[#EDEDED]">
-        <Loader2 className="animate-spin text-white" size={28} />
+      <div className="h-[60vh] flex items-center justify-center font-ui text-[#121212]">
+        <Loader2 className="animate-spin text-[#121212]" size={28} />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 font-ui text-[#EDEDED]">
+    <div className="space-y-6 font-ui text-[#121212]">
       {error && (
-        <div role="alert" className="flex items-center justify-between gap-4 border border-[#4D1F1F] bg-[#261313] p-4 text-xs text-[#FCA5A5]">
+        <div role="alert" className="flex items-center justify-between gap-4 border border-[#FECACA] bg-[#FEF2F2] p-4 text-xs text-[#991B1B]">
           <span>{error}</span>
           <button type="button" onClick={fetchCatalog} className="font-semibold underline cursor-pointer">Retry</button>
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#23232C]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E8E8E4]">
         <div>
           <span className="text-[10px] font-semibold uppercase tracking-loose-caps text-[#843828] block">
             Atelier Portfolio
           </span>
-          <h1 className="font-editorial text-3xl font-light text-white">Garment Catalog</h1>
+          <h1 className="font-editorial text-3xl font-light text-[#121212]">Garment Catalog</h1>
           <p className="text-xs text-[#71717A] mt-0.5">Manage luxury ready-to-wear lines, variant colorways, and real-time inventory.</p>
         </div>
         <button
           type="button"
           onClick={openAddModal}
-          className="px-5 py-2.5 bg-white hover:bg-[#F4F4F2] text-[#0C0C0E] text-[11px] font-medium uppercase tracking-fashion inline-flex items-center gap-2 transition-colors cursor-pointer self-start sm:self-auto"
+          className="px-5 py-2.5 bg-[#121212] hover:bg-black text-[#FBFBFA] text-[11px] font-medium uppercase tracking-fashion inline-flex items-center gap-2 transition-colors cursor-pointer self-start sm:self-auto"
         >
           <Plus size={13} />
           <span>New Garment</span>

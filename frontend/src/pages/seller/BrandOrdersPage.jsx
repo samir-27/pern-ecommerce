@@ -80,21 +80,21 @@ const BrandOrdersPage = () => {
 
   if (loading) {
     return (
-      <div className="h-[60vh] flex items-center justify-center font-ui text-[#EDEDED]">
-        <Loader2 className="animate-spin text-white" size={28} />
+      <div className="h-[60vh] flex items-center justify-center font-ui text-[#121212]">
+        <Loader2 className="animate-spin text-[#121212]" size={28} />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 font-ui text-[#EDEDED]">
+    <div className="space-y-6 font-ui text-[#121212]">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#23232C]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E8E8E4]">
         <div>
           <span className="text-[10px] font-semibold uppercase tracking-loose-caps text-[#843828] block">
             Client Logistics
           </span>
-          <h1 className="font-editorial text-3xl font-light text-white">Consignment Fulfillment</h1>
+          <h1 className="font-editorial text-3xl font-light text-[#121212]">Consignment Fulfillment</h1>
           <p className="text-xs text-[#71717A] mt-0.5">
             Audit customer orders for your atelier pieces, assign courier tracking numbers, and fulfill dispatches.
           </p>
@@ -106,13 +106,13 @@ const BrandOrdersPage = () => {
             placeholder="Search order ID or client email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 pr-4 py-2 bg-[#141419] border border-[#23232C] focus:border-white text-white text-xs outline-none transition-colors w-64"
+            className="pl-9 pr-4 py-2 bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] text-xs outline-none transition-colors w-64 shadow-2xs"
           />
         </div>
       </div>
 
       {error && (
-        <div className="p-3 bg-[#261313] border border-[#4D1F1F] text-[#FCA5A5] text-xs">
+        <div className="p-3 bg-[#FEF2F2] border border-[#FECACA] text-[#991B1B] text-xs">
           {error}
         </div>
       )}

@@ -103,8 +103,8 @@ const BrandAnalyticsPage = () => {
 
   if (loading) {
     return (
-      <div className="h-[60vh] flex items-center justify-center font-ui text-[#EDEDED]">
-        <Loader2 className="animate-spin text-white" size={28} />
+      <div className="h-[60vh] flex items-center justify-center font-ui text-[#121212]">
+        <Loader2 className="animate-spin text-[#121212]" size={28} />
       </div>
     );
   }
@@ -118,14 +118,14 @@ const BrandAnalyticsPage = () => {
   const maxDailySales = Math.max(...chartData.map(d => d.sales), 1);
 
   return (
-    <div className="space-y-8 font-ui text-[#EDEDED]">
+    <div className="space-y-8 font-ui text-[#121212]">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#23232C]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E8E8E4]">
         <div>
           <span className="text-[10px] font-semibold uppercase tracking-loose-caps text-[#843828] block">
             Commercial Telemetry
           </span>
-          <h1 className="font-editorial text-3xl font-light text-white">Sales & Net Settlement</h1>
+          <h1 className="font-editorial text-3xl font-light text-[#121212]">Sales & Net Settlement</h1>
           <p className="text-xs text-[#71717A] mt-0.5">
             Audit gross merchandise volume, net atelier payouts, and top-performing garments.
           </p>
@@ -133,7 +133,7 @@ const BrandAnalyticsPage = () => {
         <button
           type="button"
           onClick={fetchAllData}
-          className="px-4 py-2 bg-[#141419] border border-[#23232C] hover:border-white text-[#EDEDED] text-[10px] font-medium uppercase tracking-fashion inline-flex items-center gap-1.5 transition-colors cursor-pointer self-start sm:self-auto"
+          className="px-4 py-2 bg-white border border-[#E8E8E4] hover:bg-[#F4F4F2] text-[#121212] text-[10px] font-medium uppercase tracking-fashion inline-flex items-center gap-1.5 transition-colors cursor-pointer self-start sm:self-auto shadow-2xs"
         >
           <RefreshCw size={12} />
           <span>Sync Data</span>
@@ -142,21 +142,21 @@ const BrandAnalyticsPage = () => {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-5 bg-[#141419] border border-[#23232C]">
+        <div className="p-5 bg-white border border-[#E8E8E4] shadow-xs">
           <span className="text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] block mb-2">
             Gross Merch Value
           </span>
-          <div className="font-tabular text-2xl font-semibold text-white">
+          <div className="font-tabular text-2xl font-semibold text-[#121212]">
             {formatCurrency(metrics.totalGross)}
           </div>
           <span className="text-[10px] text-[#71717A] mt-1 block">Total client order billing</span>
         </div>
 
-        <div className="p-5 bg-[#141419] border border-[#23232C]">
+        <div className="p-5 bg-white border border-[#E8E8E4] shadow-xs">
           <span className="text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] block mb-2">
             Net Atelier Payout
           </span>
-          <div className="font-tabular text-2xl font-semibold text-[#4ADE80]">
+          <div className="font-tabular text-2xl font-semibold text-emerald-800">
             {formatCurrency(metrics.totalNet)}
           </div>
           <span className="text-[10px] text-[#71717A] mt-1 block">
@@ -164,21 +164,21 @@ const BrandAnalyticsPage = () => {
           </span>
         </div>
 
-        <div className="p-5 bg-[#141419] border border-[#23232C]">
+        <div className="p-5 bg-white border border-[#E8E8E4] shadow-xs">
           <span className="text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] block mb-2">
             Platform Take-Rate
           </span>
-          <div className="font-tabular text-2xl font-semibold text-white">
+          <div className="font-tabular text-2xl font-semibold text-[#121212]">
             {formatCurrency(metrics.totalCommission)}
           </div>
           <span className="text-[10px] text-[#71717A] mt-1 block">Static 5.0% platform fee</span>
         </div>
 
-        <div className="p-5 bg-[#141419] border border-[#23232C]">
+        <div className="p-5 bg-white border border-[#E8E8E4] shadow-xs">
           <span className="text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] block mb-2">
             Average Order Value
           </span>
-          <div className="font-tabular text-2xl font-semibold text-white">
+          <div className="font-tabular text-2xl font-semibold text-[#121212]">
             {formatCurrency(metrics.aov)}
           </div>
           <span className="text-[10px] text-[#71717A] mt-1 block">Over {metrics.ordersCount} total consignments</span>
@@ -186,10 +186,10 @@ const BrandAnalyticsPage = () => {
       </div>
 
       {/* 14-Day Sales Velocity Chart */}
-      <div className="p-6 bg-[#141419] border border-[#23232C] space-y-6">
+      <div className="p-6 bg-white border border-[#E8E8E4] space-y-6 shadow-xs">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-fashion text-white flex items-center gap-2">
+            <h3 className="text-xs font-semibold uppercase tracking-fashion text-[#121212] flex items-center gap-2">
               <BarChart3 size={14} className="text-[#843828]" />
               <span>14-Day Sales Trajectory</span>
             </h3>
@@ -198,13 +198,13 @@ const BrandAnalyticsPage = () => {
           {hoveredBar && (
             <div className="text-right text-xs font-tabular">
               <span className="text-[#71717A]">{hoveredBar.label}: </span>
-              <strong className="text-white">{formatCurrency(hoveredBar.sales)}</strong>
+              <strong className="text-[#121212]">{formatCurrency(hoveredBar.sales)}</strong>
               <span className="text-[#71717A]"> ({hoveredBar.orders} orders)</span>
             </div>
           )}
         </div>
 
-        <div className="h-44 flex items-end gap-2 pt-6 border-b border-[#23232C]">
+        <div className="h-44 flex items-end gap-2 pt-6 border-b border-[#E8E8E4]">
           {chartData.map((d, i) => {
             const heightPercent = maxDailySales > 0 ? Math.max(6, Math.round((d.sales / maxDailySales) * 100)) : 6;
             return (
@@ -215,7 +215,7 @@ const BrandAnalyticsPage = () => {
                 onMouseLeave={() => setHoveredBar(null)}
               >
                 <div
-                  className="w-full bg-[#2A2A38] group-hover:bg-white transition-colors"
+                  className="w-full bg-[#E8E8E4] group-hover:bg-[#121212] transition-colors"
                   style={{ height: `${heightPercent}%` }}
                 />
                 <span className="text-[9px] text-[#71717A] mt-2 truncate w-full text-center font-tabular">
@@ -228,9 +228,9 @@ const BrandAnalyticsPage = () => {
       </div>
 
       {/* Best-Performing Garments */}
-      <div className="bg-[#141419] border border-[#23232C] p-6 space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-[#23232C]">
-          <h3 className="text-xs font-semibold uppercase tracking-fashion text-white flex items-center gap-2">
+      <div className="bg-white border border-[#E8E8E4] p-6 space-y-4 shadow-xs">
+        <div className="flex items-center justify-between pb-3 border-b border-[#E8E8E4]">
+          <h3 className="text-xs font-semibold uppercase tracking-fashion text-[#121212] flex items-center gap-2">
             <Shirt size={14} className="text-[#843828]" />
             <span>Top-Performing Garments</span>
           </h3>
@@ -242,19 +242,19 @@ const BrandAnalyticsPage = () => {
         {topProducts.length === 0 ? (
           <p className="text-xs text-[#71717A] italic py-4">No product sales velocity recorded yet.</p>
         ) : (
-          <div className="divide-y divide-[#23232C]">
+          <div className="divide-y divide-[#E8E8E4]">
             {topProducts.map((p, idx) => (
               <div key={idx} className="py-3 flex items-center justify-between gap-4 text-xs">
                 <div className="flex items-center gap-3">
                   <span className="font-tabular text-[10px] text-[#71717A] w-5">#{idx + 1}</span>
                   <div>
-                    <h4 className="font-medium text-white text-xs">{p.name}</h4>
+                    <h4 className="font-medium text-[#121212] text-xs">{p.name}</h4>
                     <span className="text-[10px] text-[#71717A]">{p.clothing_type}</span>
                   </div>
                 </div>
 
                 <div className="text-right font-tabular">
-                  <span className="text-xs font-semibold text-white block">{p.units_sold} Units Sold</span>
+                  <span className="text-xs font-semibold text-[#121212] block">{p.units_sold} Units Sold</span>
                   <span className="text-[10px] text-[#71717A]">{formatCurrency(p.total_revenue)}</span>
                 </div>
               </div>

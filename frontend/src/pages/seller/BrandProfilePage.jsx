@@ -99,36 +99,27 @@ const BrandProfilePage = () => {
       formDataObj.append('bio', formData.bio);
       formDataObj.append('policyReturn', formData.policyReturn);
       formDataObj.append('policyShipping', formData.policyShipping);
-      if (formData.logoUrl && !logoFile) formDataObj.append('logoUrl', formData.logoUrl);
-      if (formData.bannerUrl && !bannerFile) formDataObj.append('bannerUrl', formData.bannerUrl);
-      if (logoFile) formDataObj.append('logo', logoFile);
-      if (bannerFile) formDataObj.append('banner', bannerFile);
 
-      let res;
-      try {
-        res = await api.put('/brand/profile', formDataObj);
-      } catch {
-        res = await api.put('/seller/store', formDataObj);
+      if (logoFile) {
+        formDataObj.append('logo', logoFile);
+      } else if (formData.logoUrl) {
+        formDataObj.append('logoUrl', formData.logoUrl);
       }
 
-      if (res.data?.logo_url) {
-        setLogoPreview(res.data.logo_url);
-        setFormData(p => ({ ...p, logoUrl: res.data.logo_url }));
+      if (bannerFile) {
+        formDataObj.append('banner', bannerFile);
+      } else if (formData.bannerUrl) {
+        formDataObj.append('bannerUrl', formData.bannerUrl);
       }
-      if (res.data?.banner_url) {
-        setBannerPreview(res.data.banner_url);
-        setFormData(p => ({ ...p, bannerUrl: res.data.banner_url }));
-      }
-      setLogoFile(null);
-      setBannerFile(null);
 
-      setStatusMsg({ type: 'success', text: 'Atelier profile details and media successfully saved.' });
-    } catch (err) {
-      console.error('Error saving brand profile:', err);
-      setStatusMsg({
-        type: 'error',
-        text: err.response?.data?.error || err.response?.data?.message || 'Failed to update brand profile.'
+      await api.put('/brand/profile', formDataObj, {
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
+
+      setStatusMsg({ type: 'success', text: 'Brand atelier profile and policies updated successfully.' });
+    } catch (err) {
+      console.error('Error updating brand profile:', err);
+      setStatusMsg({ type: 'error', text: err.response?.data?.error || 'Failed to update brand profile.' });
     } finally {
       setSaving(false);
     }
@@ -136,19 +127,19 @@ const BrandProfilePage = () => {
 
   if (loading) {
     return (
-      <div className="h-[60vh] flex items-center justify-center font-ui text-[#EDEDED]">
-        <Loader2 className="animate-spin text-white" size={28} />
+      <div className="h-[60vh] flex items-center justify-center font-ui text-[#121212]">
+        <Loader2 className="animate-spin text-[#121212]" size={28} />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 max-w-4xl font-ui text-[#EDEDED]">
-      <div className="pb-4 border-b border-[#23232C]">
+    <div className="space-y-6 font-ui text-[#121212] max-w-4xl">
+      <div className="pb-4 border-b border-[#E8E8E4]">
         <span className="text-[10px] font-semibold uppercase tracking-loose-caps text-[#843828] block">
-          Atelier Identity
+          Brand Atelier Identity
         </span>
-        <h1 className="font-editorial text-3xl font-light text-white">Visual Presentation & Policies</h1>
+        <h1 className="font-editorial text-3xl font-light text-[#121212]">Visual Presentation & Policies</h1>
         <p className="text-xs text-[#71717A] mt-0.5">
           Customize your public atelier hero cover, monogram logo, bio description, and client return guidelines.
         </p>
@@ -157,8 +148,8 @@ const BrandProfilePage = () => {
       {statusMsg.text && (
         <div className={`p-3.5 flex items-center gap-2.5 text-xs font-medium ${
           statusMsg.type === 'success'
-            ? 'bg-[#1C281F] border border-[#2E4A35] text-[#4ADE80]'
-            : 'bg-[#261313] border border-[#4D1F1F] text-[#FCA5A5]'
+            ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
+            : 'bg-[#FEF2F2] border border-[#FECACA] text-[#991B1B]'
         }`}>
           {statusMsg.type === 'success' ? <Check size={14} /> : <AlertCircle size={14} />}
           <span>{statusMsg.text}</span>
@@ -167,8 +158,8 @@ const BrandProfilePage = () => {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Visual Assets Showcase */}
-        <div className="p-6 bg-[#141419] border border-[#23232C] space-y-6">
-          <h3 className="text-xs font-semibold uppercase tracking-fashion text-white flex items-center gap-2">
+        <div className="p-6 bg-white border border-[#E8E8E4] space-y-6 shadow-xs">
+          <h3 className="text-xs font-semibold uppercase tracking-fashion text-[#121212] flex items-center gap-2">
             <Image size={14} className="text-[#843828]" />
             <span>Brand Imagery Assets</span>
           </h3>
@@ -178,16 +169,16 @@ const BrandProfilePage = () => {
             <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A]">
               Hero Cover Banner
             </label>
-            <div className="relative h-44 bg-[#0C0C0E] border border-dashed border-[#282834] flex items-center justify-center group overflow-hidden">
+            <div className="relative h-44 bg-[#F4F4F2] border border-dashed border-[#E8E8E4] flex items-center justify-center group overflow-hidden">
               {bannerPreview ? (
-                <img src={bannerPreview} alt="Banner Preview" className="w-full h-full object-cover opacity-80" />
+                <img src={bannerPreview} alt="Banner Preview" className="w-full h-full object-cover" />
               ) : (
                 <div className="text-center text-[#71717A] p-4">
-                  <Upload size={20} className="mx-auto mb-1.5 opacity-40" />
+                  <Upload size={20} className="mx-auto mb-1.5 opacity-40 text-[#71717A]" />
                   <span className="text-xs">No brand banner uploaded</span>
                 </div>
               )}
-              <label className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer gap-2 text-white text-xs font-medium uppercase tracking-fashion">
+              <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer gap-2 text-white text-xs font-medium uppercase tracking-fashion">
                 <Upload size={14} /> Upload Banner
                 <input type="file" accept="image/*" onChange={handleBannerFileChange} className="hidden" />
               </label>
@@ -198,7 +189,7 @@ const BrandProfilePage = () => {
               value={formData.bannerUrl}
               onChange={handleBannerUrlChange}
               placeholder="Or enter image URL..."
-              className="w-full px-3.5 py-2 bg-[#0C0C0E] border border-[#23232C] focus:border-white text-white text-xs outline-none transition-colors"
+              className="w-full px-3.5 py-2 bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] text-xs outline-none transition-colors shadow-2xs"
             />
           </div>
 
@@ -208,13 +199,13 @@ const BrandProfilePage = () => {
               Atelier Logo Monogram
             </label>
             <div className="flex items-center gap-4">
-              <div className="relative w-20 h-20 bg-[#0C0C0E] border border-dashed border-[#282834] flex items-center justify-center shrink-0 group overflow-hidden">
+              <div className="relative w-20 h-20 bg-[#F4F4F2] border border-dashed border-[#E8E8E4] flex items-center justify-center shrink-0 group overflow-hidden">
                 {logoPreview ? (
                   <img src={logoPreview} alt="Logo Preview" className="w-full h-full object-cover" />
                 ) : (
                   <Upload size={16} className="text-[#71717A]" />
                 )}
-                <label className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer text-white">
+                <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer text-white">
                   <Upload size={13} />
                   <input type="file" accept="image/*" onChange={handleLogoFileChange} className="hidden" />
                 </label>
@@ -226,7 +217,7 @@ const BrandProfilePage = () => {
                   value={formData.logoUrl}
                   onChange={handleLogoUrlChange}
                   placeholder="Or enter logo image URL..."
-                  className="w-full px-3.5 py-2 bg-[#0C0C0E] border border-[#23232C] focus:border-white text-white text-xs outline-none transition-colors"
+                  className="w-full px-3.5 py-2 bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] text-xs outline-none transition-colors shadow-2xs"
                 />
                 <span className="text-[10px] text-[#71717A] block">Square 1:1 ratio recommended.</span>
               </div>
@@ -235,8 +226,8 @@ const BrandProfilePage = () => {
         </div>
 
         {/* Narrative & Atelier Info */}
-        <div className="p-6 bg-[#141419] border border-[#23232C] space-y-4">
-          <h3 className="text-xs font-semibold uppercase tracking-fashion text-white">Atelier Manifesto & Narrative</h3>
+        <div className="p-6 bg-white border border-[#E8E8E4] space-y-4 shadow-xs">
+          <h3 className="text-xs font-semibold uppercase tracking-fashion text-[#121212]">Atelier Manifesto & Narrative</h3>
 
           <div>
             <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5">
@@ -248,7 +239,7 @@ const BrandProfilePage = () => {
               required
               value={formData.name}
               onChange={handleChange}
-              className="w-full px-3.5 py-2.5 bg-[#0C0C0E] border border-[#23232C] focus:border-white text-white text-xs outline-none transition-colors"
+              className="w-full px-3.5 py-2.5 bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] text-xs outline-none transition-colors shadow-2xs"
             />
           </div>
 
@@ -262,14 +253,14 @@ const BrandProfilePage = () => {
               value={formData.bio}
               onChange={handleChange}
               placeholder="Describe your design aesthetics, fabric sourcing heritage, and atelier ethos..."
-              className="w-full p-3 bg-[#0C0C0E] border border-[#23232C] focus:border-white text-white text-xs outline-none transition-colors"
+              className="w-full p-3 bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] text-xs outline-none transition-colors shadow-2xs"
             />
           </div>
         </div>
 
         {/* Shipping & Return Policies */}
-        <div className="p-6 bg-[#141419] border border-[#23232C] space-y-4">
-          <h3 className="text-xs font-semibold uppercase tracking-fashion text-white">Client Service Policies</h3>
+        <div className="p-6 bg-white border border-[#E8E8E4] space-y-4 shadow-xs">
+          <h3 className="text-xs font-semibold uppercase tracking-fashion text-[#121212]">Client Service Policies</h3>
 
           <div>
             <label className="block text-[10px] font-semibold uppercase tracking-fashion text-[#71717A] mb-1.5 flex items-center gap-1.5">
@@ -281,7 +272,7 @@ const BrandProfilePage = () => {
               value={formData.policyReturn}
               onChange={handleChange}
               placeholder="e.g. 7-day complimentary return on unworn garments with original atelier tags intact."
-              className="w-full p-3 bg-[#0C0C0E] border border-[#23232C] focus:border-white text-white text-xs outline-none transition-colors"
+              className="w-full p-3 bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] text-xs outline-none transition-colors shadow-2xs"
             />
           </div>
 
@@ -295,7 +286,7 @@ const BrandProfilePage = () => {
               value={formData.policyShipping}
               onChange={handleChange}
               placeholder="e.g. Dispatched via BlueDart / Delhivery Priority Air Cargo within 24 hours of confirmation."
-              className="w-full p-3 bg-[#0C0C0E] border border-[#23232C] focus:border-white text-white text-xs outline-none transition-colors"
+              className="w-full p-3 bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] text-xs outline-none transition-colors shadow-2xs"
             />
           </div>
         </div>
@@ -304,7 +295,7 @@ const BrandProfilePage = () => {
           <button
             type="submit"
             disabled={saving}
-            className="px-6 py-2.5 bg-white hover:bg-[#F4F4F2] text-[#0C0C0E] text-[11px] font-medium uppercase tracking-fashion transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-40"
+            className="px-6 py-2.5 bg-[#121212] hover:bg-black text-[#FBFBFA] text-[11px] font-medium uppercase tracking-fashion transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-40"
           >
             <Save size={13} />
             <span>{saving ? 'Saving...' : 'Save Profile Changes'}</span>

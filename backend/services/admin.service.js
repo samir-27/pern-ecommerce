@@ -146,18 +146,20 @@ export const getAdminProductsService = async () => {
     return result.rows;
 };
 
-export const moderateProductService = async (adminUser, productId, { status, rejectionReason }) => {
+export const moderateProductService = async (adminUser, productId, { status, rejectionReason, moderationNote }) => {
     const validStatuses = ['approved', 'rejected', 'pending_approval'];
     if (!validStatuses.includes(status)) {
         throw new ApiError(400, 'Invalid status');
     }
 
+    const note = rejectionReason || moderationNote || null;
+
     const result = await pool.query(
         `UPDATE products
-         SET status = $1, rejection_reason = $2
+         SET status = $1, rejection_reason = $2, moderation_note = $2
          WHERE id = $3
          RETURNING *`,
-        [status, rejectionReason || null, productId]
+        [status, note, productId]
     );
 
     if (result.rows.length === 0) {
@@ -169,7 +171,7 @@ export const moderateProductService = async (adminUser, productId, { status, rej
         action: 'PRODUCT_MODERATED',
         targetEntity: 'products',
         targetId: Number(productId),
-        details: { status, rejectionReason }
+        details: { status, rejectionReason: note, moderationNote: note }
     });
 
     return result.rows[0];

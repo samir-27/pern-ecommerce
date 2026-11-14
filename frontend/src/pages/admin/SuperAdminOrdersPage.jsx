@@ -30,20 +30,20 @@ const SuperAdminOrdersPage = () => {
 
   if (loading) {
     return (
-      <div className="h-[60vh] flex items-center justify-center font-ui text-[#EDEDED]">
-        <Loader2 className="animate-spin text-white" size={28} />
+      <div className="h-[60vh] flex items-center justify-center font-ui text-[#121212]">
+        <Loader2 className="animate-spin text-[#121212]" size={28} />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 font-ui text-[#EDEDED]">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#202028]">
+    <div className="space-y-6 font-ui text-[#121212]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#E8E8E4]">
         <div>
           <span className="text-[10px] font-semibold uppercase tracking-loose-caps text-[#843828] block">
             Transaction Ledger
           </span>
-          <h1 className="font-editorial text-3xl font-light text-white">Platform Consignment Orders</h1>
+          <h1 className="font-editorial text-3xl font-light text-[#121212]">Platform Consignment Orders</h1>
           <p className="text-xs text-[#71717A] mt-0.5">
             Global ledger of customer checkouts, multi-vendor splits, and 5.0% take-rate collections.
           </p>
@@ -55,16 +55,16 @@ const SuperAdminOrdersPage = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search order number or client..."
-            className="pl-9 pr-4 py-2 bg-[#121217] border border-[#202028] focus:border-white text-white text-xs w-64 outline-none transition-colors"
+            className="pl-9 pr-4 py-2 bg-white border border-[#E8E8E4] focus:border-[#121212] text-[#121212] text-xs w-64 outline-none transition-colors shadow-2xs"
           />
         </div>
       </div>
 
-      <div className="bg-[#121217] border border-[#202028] overflow-hidden">
+      <div className="bg-white border border-[#E8E8E4] overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
-              <tr className="border-b border-[#202028] bg-[#0E0E12] text-[#71717A] text-[10px] font-semibold uppercase tracking-fashion">
+              <tr className="border-b border-[#E8E8E4] bg-[#F4F4F2] text-[#71717A] text-[10px] font-semibold uppercase tracking-loose-caps">
                 <th className="p-4">Order Code</th>
                 <th className="p-4">Purchasing Client</th>
                 <th className="p-4">Gross Order Amount</th>
@@ -73,7 +73,7 @@ const SuperAdminOrdersPage = () => {
                 <th className="p-4">Date & Time</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#1E1E26]">
+            <tbody className="divide-y divide-[#E8E8E4]">
               {filteredOrders.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="p-8 text-center text-[#71717A] italic">
@@ -86,22 +86,22 @@ const SuperAdminOrdersPage = () => {
                   const commission = Number(o.commission_amount || (gross * 0.05));
 
                   return (
-                    <tr key={o.id} className="hover:bg-[#16161D] transition-colors">
-                      <td className="p-4 font-tabular font-medium text-white">
+                    <tr key={o.id} className="hover:bg-[#FBFBFA] transition-colors">
+                      <td className="p-4 font-tabular font-medium text-[#121212]">
                         #{o.order_number || String(o.id).padStart(5, '0')}
                       </td>
                       <td className="p-4">
-                        <div className="text-white font-medium">{o.user_name || 'Verified Client'}</div>
+                        <div className="text-[#121212] font-medium">{o.user_name || 'Verified Client'}</div>
                         <div className="text-[10px] text-[#71717A] font-tabular">{o.user_email}</div>
                       </td>
-                      <td className="p-4 font-tabular font-semibold text-white">
+                      <td className="p-4 font-tabular font-semibold text-[#121212]">
                         {formatCurrency(gross)}
                       </td>
-                      <td className="p-4 font-tabular text-[#4ADE80]">
+                      <td className="p-4 font-tabular text-emerald-800 font-semibold">
                         {formatCurrency(commission)}
                       </td>
                       <td className="p-4">
-                        <span className="inline-block px-2 py-0.5 bg-[#1C281F] text-[#4ADE80] border border-[#2E4A35] text-[9px] uppercase tracking-fashion">
+                        <span className="inline-block px-2 py-0.5 bg-emerald-50 text-emerald-800 border border-emerald-200 text-[9px] uppercase tracking-fashion">
                           {o.payment_status || 'Paid (Razorpay)'}
                         </span>
                       </td>
